@@ -1,0 +1,649 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		C8AEECB02EB2D7A200720184 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */; };
+		C8AEECB12EB2D7A200720184 /* LessonEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA72EB2D7A200720184 /* LessonEngine.swift */; };
+		C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */; };
+		C8AEECB32EB2D7A200720184 /* AllSetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */; };
+		C8AEECB42EB2D7A200720184 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */; };
+		C8AEECB52EB2D7A200720184 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA22EB2D7A200720184 /* ContentView.swift */; };
+		C8AEECB62EB2D7A200720184 /* SensorSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAE2EB2D7A200720184 /* SensorSample.swift */; };
+		C8AEECB72EB2D7A200720184 /* CreateAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA32EB2D7A200720184 /* CreateAccount.swift */; };
+		C8AEECB82EB2D7A200720184 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */; };
+		C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */; };
+		C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */; };
+		C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */; };
+		C8AEECBC2EB2D7A200720184 /* LessonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA82EB2D7A200720184 /* LessonView.swift */; };
+		C8AEECBD2EB2D7A200720184 /* PairDeviceSearchingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAA2EB2D7A200720184 /* PairDeviceSearchingView.swift */; };
+		C8AEECBE2EB2D7A200720184 /* PairDeviceFoundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA92EB2D7A200720184 /* PairDeviceFoundView.swift */; };
+		C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA12EB2D7A200720184 /* CompletionView.swift */; };
+		C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA52EB2D7A200720184 /* HomeView.swift */; };
+		C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */; };
+		C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C89A84BF2EB138170074B855 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C89A84A92EB138150074B855 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C89A84B02EB138150074B855;
+			remoteInfo = RealRehabPractice;
+		};
+		C89A84C92EB138170074B855 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C89A84A92EB138150074B855 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C89A84B02EB138150074B855;
+			remoteInfo = RealRehabPractice;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		C89A84B12EB138150074B855 /* RealRehabPractice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RealRehabPractice.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C89A84BE2EB138170074B855 /* RealRehabPracticeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C89A84C82EB138170074B855 /* RealRehabPracticeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllSetView.swift; sourceTree = "<group>"; };
+		C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
+		C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrateDeviceView.swift; sourceTree = "<group>"; };
+		C8AEECA12EB2D7A200720184 /* CompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionView.swift; sourceTree = "<group>"; };
+		C8AEECA22EB2D7A200720184 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		C8AEECA32EB2D7A200720184 /* CreateAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateAccount.swift; sourceTree = "<group>"; };
+		C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSubCategoryView.swift; sourceTree = "<group>"; };
+		C8AEECA52EB2D7A200720184 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyMapView.swift; sourceTree = "<group>"; };
+		C8AEECA72EB2D7A200720184 /* LessonEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonEngine.swift; sourceTree = "<group>"; };
+		C8AEECA82EB2D7A200720184 /* LessonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonView.swift; sourceTree = "<group>"; };
+		C8AEECA92EB2D7A200720184 /* PairDeviceFoundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceFoundView.swift; sourceTree = "<group>"; };
+		C8AEECAA2EB2D7A200720184 /* PairDeviceSearchingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceSearchingView.swift; sourceTree = "<group>"; };
+		C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeSensorSimulator.swift; sourceTree = "<group>"; };
+		C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealRehabPracticeApp.swift; sourceTree = "<group>"; };
+		C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RehabOverviewView.swift; sourceTree = "<group>"; };
+		C8AEECAE2EB2D7A200720184 /* SensorSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorSample.swift; sourceTree = "<group>"; };
+		C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		C89A84C12EB138170074B855 /* RealRehabPracticeTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = RealRehabPracticeTests;
+			sourceTree = "<group>";
+		};
+		C89A84CB2EB138170074B855 /* RealRehabPracticeUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = RealRehabPracticeUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C89A84AE2EB138150074B855 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C89A84BB2EB138170074B855 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C89A84C52EB138170074B855 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C89A84A82EB138150074B855 = {
+			isa = PBXGroup;
+			children = (
+				C8AEECA22EB2D7A200720184 /* ContentView.swift */,
+				C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */,
+				C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */,
+				C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */,
+				C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */,
+				C8AEECA12EB2D7A200720184 /* CompletionView.swift */,
+				C8AEECA32EB2D7A200720184 /* CreateAccount.swift */,
+				C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */,
+				C8AEECA52EB2D7A200720184 /* HomeView.swift */,
+				C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */,
+				C8AEECA72EB2D7A200720184 /* LessonEngine.swift */,
+				C8AEECA82EB2D7A200720184 /* LessonView.swift */,
+				C8AEECA92EB2D7A200720184 /* PairDeviceFoundView.swift */,
+				C8AEECAA2EB2D7A200720184 /* PairDeviceSearchingView.swift */,
+				C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */,
+				C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */,
+				C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */,
+				C8AEECAE2EB2D7A200720184 /* SensorSample.swift */,
+				C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */,
+				C89A84C12EB138170074B855 /* RealRehabPracticeTests */,
+				C89A84CB2EB138170074B855 /* RealRehabPracticeUITests */,
+				C89A84B22EB138150074B855 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C89A84B22EB138150074B855 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C89A84B12EB138150074B855 /* RealRehabPractice.app */,
+				C89A84BE2EB138170074B855 /* RealRehabPracticeTests.xctest */,
+				C89A84C82EB138170074B855 /* RealRehabPracticeUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C89A84B02EB138150074B855 /* RealRehabPractice */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C89A84D22EB138170074B855 /* Build configuration list for PBXNativeTarget "RealRehabPractice" */;
+			buildPhases = (
+				C89A84AD2EB138150074B855 /* Sources */,
+				C89A84AE2EB138150074B855 /* Frameworks */,
+				C89A84AF2EB138150074B855 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RealRehabPractice;
+			packageProductDependencies = (
+			);
+			productName = RealRehabPractice;
+			productReference = C89A84B12EB138150074B855 /* RealRehabPractice.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C89A84BD2EB138170074B855 /* RealRehabPracticeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C89A84D52EB138170074B855 /* Build configuration list for PBXNativeTarget "RealRehabPracticeTests" */;
+			buildPhases = (
+				C89A84BA2EB138170074B855 /* Sources */,
+				C89A84BB2EB138170074B855 /* Frameworks */,
+				C89A84BC2EB138170074B855 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C89A84C02EB138170074B855 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C89A84C12EB138170074B855 /* RealRehabPracticeTests */,
+			);
+			name = RealRehabPracticeTests;
+			packageProductDependencies = (
+			);
+			productName = RealRehabPracticeTests;
+			productReference = C89A84BE2EB138170074B855 /* RealRehabPracticeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C89A84C72EB138170074B855 /* RealRehabPracticeUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C89A84D82EB138170074B855 /* Build configuration list for PBXNativeTarget "RealRehabPracticeUITests" */;
+			buildPhases = (
+				C89A84C42EB138170074B855 /* Sources */,
+				C89A84C52EB138170074B855 /* Frameworks */,
+				C89A84C62EB138170074B855 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C89A84CA2EB138170074B855 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C89A84CB2EB138170074B855 /* RealRehabPracticeUITests */,
+			);
+			name = RealRehabPracticeUITests;
+			packageProductDependencies = (
+			);
+			productName = RealRehabPracticeUITests;
+			productReference = C89A84C82EB138170074B855 /* RealRehabPracticeUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C89A84A92EB138150074B855 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					C89A84B02EB138150074B855 = {
+						CreatedOnToolsVersion = 26.0.1;
+						LastSwiftMigration = 2600;
+					};
+					C89A84BD2EB138170074B855 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = C89A84B02EB138150074B855;
+					};
+					C89A84C72EB138170074B855 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = C89A84B02EB138150074B855;
+					};
+				};
+			};
+			buildConfigurationList = C89A84AC2EB138150074B855 /* Build configuration list for PBXProject "RealRehabPractice" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = C89A84A82EB138150074B855;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C89A84B22EB138150074B855 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C89A84B02EB138150074B855 /* RealRehabPractice */,
+				C89A84BD2EB138170074B855 /* RealRehabPracticeTests */,
+				C89A84C72EB138170074B855 /* RealRehabPracticeUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C89A84AF2EB138150074B855 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C8AEECB02EB2D7A200720184 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C89A84BC2EB138170074B855 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C89A84C62EB138170074B855 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C89A84AD2EB138150074B855 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C8AEECB12EB2D7A200720184 /* LessonEngine.swift in Sources */,
+				C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */,
+				C8AEECB32EB2D7A200720184 /* AllSetView.swift in Sources */,
+				C8AEECB42EB2D7A200720184 /* WelcomeView.swift in Sources */,
+				C8AEECB52EB2D7A200720184 /* ContentView.swift in Sources */,
+				C8AEECB62EB2D7A200720184 /* SensorSample.swift in Sources */,
+				C8AEECB72EB2D7A200720184 /* CreateAccount.swift in Sources */,
+				C8AEECB82EB2D7A200720184 /* AppRouter.swift in Sources */,
+				C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */,
+				C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */,
+				C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */,
+				C8AEECBC2EB2D7A200720184 /* LessonView.swift in Sources */,
+				C8AEECBD2EB2D7A200720184 /* PairDeviceSearchingView.swift in Sources */,
+				C8AEECBE2EB2D7A200720184 /* PairDeviceFoundView.swift in Sources */,
+				C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */,
+				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
+				C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */,
+				C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C89A84BA2EB138170074B855 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C89A84C42EB138170074B855 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C89A84C02EB138170074B855 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C89A84B02EB138150074B855 /* RealRehabPractice */;
+			targetProxy = C89A84BF2EB138170074B855 /* PBXContainerItemProxy */;
+		};
+		C89A84CA2EB138170074B855 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C89A84B02EB138150074B855 /* RealRehabPractice */;
+			targetProxy = C89A84C92EB138170074B855 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		C89A84D02EB138170074B855 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		C89A84D12EB138170074B855 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		C89A84D32EB138170074B855 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sean.RealRehabPractice;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C89A84D42EB138170074B855 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sean.RealRehabPractice;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C89A84D62EB138170074B855 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sean.RealRehabPracticeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RealRehabPractice.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RealRehabPractice";
+			};
+			name = Debug;
+		};
+		C89A84D72EB138170074B855 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sean.RealRehabPracticeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RealRehabPractice.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RealRehabPractice";
+			};
+			name = Release;
+		};
+		C89A84D92EB138170074B855 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sean.RealRehabPracticeUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = RealRehabPractice;
+			};
+			name = Debug;
+		};
+		C89A84DA2EB138170074B855 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sean.RealRehabPracticeUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = RealRehabPractice;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C89A84AC2EB138150074B855 /* Build configuration list for PBXProject "RealRehabPractice" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C89A84D02EB138170074B855 /* Debug */,
+				C89A84D12EB138170074B855 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C89A84D22EB138170074B855 /* Build configuration list for PBXNativeTarget "RealRehabPractice" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C89A84D32EB138170074B855 /* Debug */,
+				C89A84D42EB138170074B855 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C89A84D52EB138170074B855 /* Build configuration list for PBXNativeTarget "RealRehabPracticeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C89A84D62EB138170074B855 /* Debug */,
+				C89A84D72EB138170074B855 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C89A84D82EB138170074B855 /* Build configuration list for PBXNativeTarget "RealRehabPracticeUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C89A84D92EB138170074B855 /* Debug */,
+				C89A84DA2EB138170074B855 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C89A84A92EB138150074B855 /* Project object */;
+}

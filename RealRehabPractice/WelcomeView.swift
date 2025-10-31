@@ -1,4 +1,5 @@
 import SwiftUI
+import Supabase
 
 struct WelcomeView: View {
     @EnvironmentObject var router: Router
@@ -59,5 +60,19 @@ struct WelcomeView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            Task {
+                do {
+                    _ = try await SupabaseService.shared.client
+                        .from("accounts")
+                        .select()
+                        .limit(1)
+                        .execute()
+                    print("✅ Supabase connection OK")
+                } catch {
+                    print("❌ Supabase error:", error)
+                }
+            }
+        }
     }
 }

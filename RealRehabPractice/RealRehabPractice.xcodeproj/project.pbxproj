@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		C8003FA22EB42E72008DC812 /* SupabaseConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */; };
+		C8003FAA2EB44077008DC812 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8003FA92EB4406C008DC812 /* SupabaseService.swift */; };
+		C8003FAD2EB441F1008DC812 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = C8003FAC2EB441F1008DC812 /* Supabase */; };
 		C8AEECB02EB2D7A200720184 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */; };
 		C8AEECB12EB2D7A200720184 /* LessonEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA72EB2D7A200720184 /* LessonEngine.swift */; };
 		C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */; };
@@ -48,6 +50,7 @@
 
 /* Begin PBXFileReference section */
 		C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SupabaseConfig.plist; sourceTree = "<group>"; };
+		C8003FA92EB4406C008DC812 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		C89A84B12EB138150074B855 /* RealRehabPractice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RealRehabPractice.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C89A84BE2EB138170074B855 /* RealRehabPracticeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C89A84C82EB138170074B855 /* RealRehabPracticeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -90,6 +93,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C8003FAD2EB441F1008DC812 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -113,6 +117,7 @@
 		C89A84A82EB138150074B855 = {
 			isa = PBXGroup;
 			children = (
+				C8003FA92EB4406C008DC812 /* SupabaseService.swift */,
 				C8AEECA22EB2D7A200720184 /* ContentView.swift */,
 				C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */,
 				C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */,
@@ -166,6 +171,7 @@
 			);
 			name = RealRehabPractice;
 			packageProductDependencies = (
+				C8003FAC2EB441F1008DC812 /* Supabase */,
 			);
 			productName = RealRehabPractice;
 			productReference = C89A84B12EB138150074B855 /* RealRehabPractice.app */;
@@ -250,6 +256,9 @@
 			);
 			mainGroup = C89A84A82EB138150074B855;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C8003FAB2EB441F1008DC812 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C89A84B22EB138150074B855 /* Products */;
 			projectDirPath = "";
@@ -306,6 +315,7 @@
 				C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */,
 				C8AEECBC2EB2D7A200720184 /* LessonView.swift in Sources */,
 				C8AEECBD2EB2D7A200720184 /* PairDeviceSearchingView.swift in Sources */,
+				C8003FAA2EB44077008DC812 /* SupabaseService.swift in Sources */,
 				C8AEECBE2EB2D7A200720184 /* PairDeviceFoundView.swift in Sources */,
 				C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */,
 				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
@@ -648,6 +658,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C8003FAB2EB441F1008DC812 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C8003FAC2EB441F1008DC812 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C8003FAB2EB441F1008DC812 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C89A84A92EB138150074B855 /* Project object */;
 }

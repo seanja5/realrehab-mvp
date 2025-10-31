@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C8003FA22EB42E72008DC812 /* SupabaseConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */; };
 		C8AEECB02EB2D7A200720184 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */; };
 		C8AEECB12EB2D7A200720184 /* LessonEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA72EB2D7A200720184 /* LessonEngine.swift */; };
 		C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */; };
@@ -46,6 +47,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SupabaseConfig.plist; sourceTree = "<group>"; };
 		C89A84B12EB138150074B855 /* RealRehabPractice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RealRehabPractice.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C89A84BE2EB138170074B855 /* RealRehabPracticeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C89A84C82EB138170074B855 /* RealRehabPracticeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -113,6 +115,7 @@
 			children = (
 				C8AEECA22EB2D7A200720184 /* ContentView.swift */,
 				C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */,
+				C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */,
 				C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */,
 				C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */,
 				C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */,
@@ -264,6 +267,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C8003FA22EB42E72008DC812 /* SupabaseConfig.plist in Resources */,
 				C8AEECB02EB2D7A200720184 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

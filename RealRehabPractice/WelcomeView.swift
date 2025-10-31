@@ -58,5 +58,6 @@ struct WelcomeView: View {
                 .safeAreaPadding(.bottom)
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
 }

@@ -33,6 +33,7 @@ struct RealRehabPracticeApp: App {
                     }
             }
             .environmentObject(router)
+            .preferredColorScheme(.light)   // <- force Light mode app-wide
         }
     }
 }

@@ -46,7 +46,7 @@ struct CreateAccountView: View {
             lightGrayBg.ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Header with back button, title, and progress dots
+                // Header with back button
                 VStack(spacing: 12) {
                     HStack {
                         Button(action: { router.go(.welcome) }) {
@@ -56,27 +56,15 @@ struct CreateAccountView: View {
                         }
                         Spacer()
                     }
-                    
-                    Text("Step 1")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    
-                    // Progress dots
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(lightBlue)
-                            .frame(width: 8, height: 8)
-                        Circle()
-                            .stroke(lightBlue, lineWidth: 1.5)
-                            .frame(width: 8, height: 8)
-                        Circle()
-                            .stroke(lightBlue, lineWidth: 1.5)
-                            .frame(width: 8, height: 8)
-                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
-                .padding(.bottom, 24)
+                .padding(.bottom, 8)
+                
+                // Step indicator
+                StepIndicator(current: 1, total: 3, showLabel: true)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
                 
                 ScrollView {
                     VStack(spacing: 24) {
@@ -193,37 +181,21 @@ struct CreateAccountView: View {
                         }
                         .padding(.horizontal, 20)
                         
-                        // Spacer for bottom button clearance
-                        Spacer()
-                            .frame(height: 100)
+                        // Create Account button at the bottom of scroll content
+                        PrimaryButton(
+                            title: "Create Account!",
+                            isDisabled: !isFormValid,
+                            action: {
+                                if isFormValid {
+                                    router.go(.pairDeviceSearching)
+                                }
+                            }
+                        )
+                        .padding(.horizontal, 20)
                     }
+                    .padding(.bottom, 40)
                 }
-                
-                Spacer()
-            }
-            
-            // Floating bottom button
-            VStack {
-                Spacer()
-                Button(action: {
-                    if isFormValid {
-                        router.go(.pairDeviceSearching)
-                    }
-                }) {
-                    Text("Create Account!")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(darkBlue)
-                        .clipShape(RoundedRectangle(cornerRadius: 22))
-                        .opacity(isFormValid ? 1.0 : 0.5)
-                }
-                .disabled(!isFormValid)
-                .padding(.horizontal, 20)
-                .safeAreaInset(edge: .bottom) {
-                    Color.clear.frame(height: 20)
-                }
+                .ignoresSafeArea(.keyboard)
             }
         }
         .navigationBarHidden(true)

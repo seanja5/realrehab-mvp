@@ -10,6 +10,7 @@
 		C8003FA22EB42E72008DC812 /* SupabaseConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */; };
 		C8003FAA2EB44077008DC812 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8003FA92EB4406C008DC812 /* SupabaseService.swift */; };
 		C8003FAD2EB441F1008DC812 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = C8003FAC2EB441F1008DC812 /* Supabase */; };
+		C8003FB52EB7FD57008DC812 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8003FB42EB7FC39008DC812 /* Components.swift */; };
 		C8AEECB02EB2D7A200720184 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */; };
 		C8AEECB12EB2D7A200720184 /* LessonEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA72EB2D7A200720184 /* LessonEngine.swift */; };
 		C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */; };
@@ -51,6 +52,7 @@
 /* Begin PBXFileReference section */
 		C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SupabaseConfig.plist; sourceTree = "<group>"; };
 		C8003FA92EB4406C008DC812 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		C8003FB42EB7FC39008DC812 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		C89A84B12EB138150074B855 /* RealRehabPractice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RealRehabPractice.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C89A84BE2EB138170074B855 /* RealRehabPracticeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C89A84C82EB138170074B855 /* RealRehabPracticeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -117,6 +119,7 @@
 		C89A84A82EB138150074B855 = {
 			isa = PBXGroup;
 			children = (
+				C8003FB42EB7FC39008DC812 /* Components.swift */,
 				C8003FA92EB4406C008DC812 /* SupabaseService.swift */,
 				C8AEECA22EB2D7A200720184 /* ContentView.swift */,
 				C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */,
@@ -319,6 +322,7 @@
 				C8AEECBE2EB2D7A200720184 /* PairDeviceFoundView.swift in Sources */,
 				C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */,
 				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
+				C8003FB52EB7FD57008DC812 /* Components.swift in Sources */,
 				C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */,
 				C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */,
 			);
@@ -481,6 +485,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 87Q5X6P55P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -488,6 +493,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -514,6 +520,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 87Q5X6P55P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -521,6 +528,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

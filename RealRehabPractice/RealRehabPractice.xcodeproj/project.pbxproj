@@ -24,12 +24,11 @@
 		C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */; };
 		C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */; };
 		C8AEECBC2EB2D7A200720184 /* LessonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA82EB2D7A200720184 /* LessonView.swift */; };
-		C8AEECBD2EB2D7A200720184 /* PairDeviceSearchingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAA2EB2D7A200720184 /* PairDeviceSearchingView.swift */; };
-		C8AEECBE2EB2D7A200720184 /* PairDeviceFoundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA92EB2D7A200720184 /* PairDeviceFoundView.swift */; };
 		C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA12EB2D7A200720184 /* CompletionView.swift */; };
 		C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA52EB2D7A200720184 /* HomeView.swift */; };
 		C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */; };
 		C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */; };
+		C8D677BD2EB8285A00829144 /* PairDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677BC2EB8285A00829144 /* PairDeviceView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,13 +67,12 @@
 		C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyMapView.swift; sourceTree = "<group>"; };
 		C8AEECA72EB2D7A200720184 /* LessonEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonEngine.swift; sourceTree = "<group>"; };
 		C8AEECA82EB2D7A200720184 /* LessonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonView.swift; sourceTree = "<group>"; };
-		C8AEECA92EB2D7A200720184 /* PairDeviceFoundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceFoundView.swift; sourceTree = "<group>"; };
-		C8AEECAA2EB2D7A200720184 /* PairDeviceSearchingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceSearchingView.swift; sourceTree = "<group>"; };
 		C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeSensorSimulator.swift; sourceTree = "<group>"; };
 		C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealRehabPracticeApp.swift; sourceTree = "<group>"; };
 		C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RehabOverviewView.swift; sourceTree = "<group>"; };
 		C8AEECAE2EB2D7A200720184 /* SensorSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorSample.swift; sourceTree = "<group>"; };
 		C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		C8D677BC2EB8285A00829144 /* PairDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -134,10 +132,9 @@
 				C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */,
 				C8AEECA72EB2D7A200720184 /* LessonEngine.swift */,
 				C8AEECA82EB2D7A200720184 /* LessonView.swift */,
-				C8AEECA92EB2D7A200720184 /* PairDeviceFoundView.swift */,
-				C8AEECAA2EB2D7A200720184 /* PairDeviceSearchingView.swift */,
 				C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */,
 				C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */,
+				C8D677BC2EB8285A00829144 /* PairDeviceView.swift */,
 				C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */,
 				C8AEECAE2EB2D7A200720184 /* SensorSample.swift */,
 				C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */,
@@ -316,10 +313,9 @@
 				C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */,
 				C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */,
 				C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */,
+				C8D677BD2EB8285A00829144 /* PairDeviceView.swift in Sources */,
 				C8AEECBC2EB2D7A200720184 /* LessonView.swift in Sources */,
-				C8AEECBD2EB2D7A200720184 /* PairDeviceSearchingView.swift in Sources */,
 				C8003FAA2EB44077008DC812 /* SupabaseService.swift in Sources */,
-				C8AEECBE2EB2D7A200720184 /* PairDeviceFoundView.swift in Sources */,
 				C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */,
 				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
 				C8003FB52EB7FD57008DC812 /* Components.swift in Sources */,

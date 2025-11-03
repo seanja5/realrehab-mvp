@@ -187,7 +187,7 @@ struct CreateAccountView: View {
                             isDisabled: !isFormValid,
                             action: {
                                 if isFormValid {
-                                    router.go(.pairDeviceSearching)
+                                    router.go(.pairDevice)
                                 }
                             }
                         )

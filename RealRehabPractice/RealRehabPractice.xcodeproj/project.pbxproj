@@ -117,27 +117,13 @@
 		C89A84A82EB138150074B855 = {
 			isa = PBXGroup;
 			children = (
-				C8003FB42EB7FC39008DC812 /* Components.swift */,
-				C8003FA92EB4406C008DC812 /* SupabaseService.swift */,
-				C8AEECA22EB2D7A200720184 /* ContentView.swift */,
-				C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */,
-				C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */,
-				C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */,
-				C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */,
-				C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */,
-				C8AEECA12EB2D7A200720184 /* CompletionView.swift */,
-				C8AEECA32EB2D7A200720184 /* CreateAccount.swift */,
-				C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */,
-				C8AEECA52EB2D7A200720184 /* HomeView.swift */,
-				C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */,
-				C8AEECA72EB2D7A200720184 /* LessonEngine.swift */,
-				C8AEECA82EB2D7A200720184 /* LessonView.swift */,
-				C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */,
-				C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */,
-				C8D677BC2EB8285A00829144 /* PairDeviceView.swift */,
-				C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */,
-				C8AEECAE2EB2D7A200720184 /* SensorSample.swift */,
-				C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */,
+				C8D677C12EB831E500829144 /* Views */,
+				C8D677C42EB8321E00829144 /* Utilities */,
+				C8D677C32EB8321800829144 /* Resources */,
+				C8D677C22EB8321100829144 /* Models */,
+				C8D677C02EB831DD00829144 /* Services */,
+				C8D677BF2EB831D600829144 /* Components */,
+				C8D677BE2EB831BF00829144 /* App */,
 				C89A84C12EB138170074B855 /* RealRehabPracticeTests */,
 				C89A84CB2EB138170074B855 /* RealRehabPracticeUITests */,
 				C89A84B22EB138150074B855 /* Products */,
@@ -152,6 +138,100 @@
 				C89A84C82EB138170074B855 /* RealRehabPracticeUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C8D677BE2EB831BF00829144 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */,
+				C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		C8D677BF2EB831D600829144 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				C8003FB42EB7FC39008DC812 /* Components.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		C8D677C02EB831DD00829144 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C8003FA92EB4406C008DC812 /* SupabaseService.swift */,
+				C8AEECA72EB2D7A200720184 /* LessonEngine.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		C8D677C12EB831E500829144 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C8D677C72EB8327900829144 /* Lessons */,
+				C8D677C62EB8327100829144 /* Home */,
+				C8D677C52EB8326500829144 /* Onboarding */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C8D677C22EB8321100829144 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		C8D677C32EB8321800829144 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */,
+				C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		C8D677C42EB8321E00829144 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				C8AEECA22EB2D7A200720184 /* ContentView.swift */,
+				C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */,
+				C8AEECAE2EB2D7A200720184 /* SensorSample.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		C8D677C52EB8326500829144 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */,
+				C8AEECA32EB2D7A200720184 /* CreateAccount.swift */,
+				C8D677BC2EB8285A00829144 /* PairDeviceView.swift */,
+				C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */,
+				C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		C8D677C62EB8327100829144 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				C8AEECA52EB2D7A200720184 /* HomeView.swift */,
+				C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */,
+				C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		C8D677C72EB8327900829144 /* Lessons */ = {
+			isa = PBXGroup;
+			children = (
+				C8AEECA82EB2D7A200720184 /* LessonView.swift */,
+				C8AEECA12EB2D7A200720184 /* CompletionView.swift */,
+				C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */,
+			);
+			path = Lessons;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

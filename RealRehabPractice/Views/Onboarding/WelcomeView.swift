@@ -11,10 +11,10 @@ struct WelcomeView: View {
                 // Centered Title Section
                 VStack(alignment: .center, spacing: 4) {
                     Text("Real")
-                        .font(.system(size: 36, weight: .bold, design: .default))
+                        .font(.rrHeadline)
                         .foregroundStyle(Color.brandLightBlue)
                     Text("Rehab")
-                        .font(.system(size: 36, weight: .bold, design: .default))
+                        .font(.rrHeadline)
                         .foregroundStyle(Color.brandDarkBlue)
                 }
                 

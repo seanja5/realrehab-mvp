@@ -99,6 +99,7 @@ struct PairDeviceView: View {
                 PrimaryButton(
                     title: "Pair Device!",
                     isDisabled: isPairButtonDisabled,
+                    useLargeFont: true,
                     action: {
                         router.go(.calibrateDevice)
                     }

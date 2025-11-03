@@ -24,4 +24,11 @@ extension View {
             .background(Color(red: 0.95, green: 0.95, blue: 0.95).ignoresSafeArea())
     }
 }
-
+// MARK: - Back-compat shim so Components can use Theme.*
+enum Theme {
+    static let headline = Font.rrHeadline
+    static let title    = Font.rrTitle
+    static let body     = Font.rrBody
+    static let callout  = Font.rrCallout
+    static let caption  = Font.rrCaption
+}

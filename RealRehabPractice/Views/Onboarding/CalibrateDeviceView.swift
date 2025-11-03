@@ -42,6 +42,7 @@ struct CalibrateDeviceView: View {
                 PrimaryButton(
                     title: "Finish Calibration!",
                     isDisabled: !(startSet && maxSet),
+                    useLargeFont: true,
                     action: {
                         router.go(.allSet)
                     }

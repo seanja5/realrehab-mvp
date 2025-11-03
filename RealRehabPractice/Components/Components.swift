@@ -17,12 +17,13 @@ extension Color {
 struct PrimaryButton: View {
     let title: String
     var isDisabled: Bool = false
+    var useLargeFont: Bool = false
     var action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 17, weight: .bold))
+                .font(useLargeFont ? .rrTitle : .rrBody)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 32)
@@ -45,7 +46,7 @@ struct SecondaryButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 17, weight: .bold))
+                .font(.rrBody)
                 .foregroundStyle(isDisabled ? Color.gray : .brandDarkBlue)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 32)
@@ -74,7 +75,7 @@ struct StepIndicator: View {
         VStack(spacing: 8) {
             if showLabel {
                 Text("Step \(current)")
-                    .font(.headline)
+                    .font(.rrTitle)
             }
 
             HStack(spacing: 16) {
@@ -112,14 +113,92 @@ struct BackButton: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.rrBody)
                 if let title {
                     Text(title)
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.rrBody)
                 }
             }
         }
         .foregroundColor(Color.brandDarkBlue) // ✅ FIXED: explicitly declare Color
         .accessibilityLabel(title ?? "Back")
+    }
+}
+
+// MARK: - SearchBar
+struct SearchBar: View {
+    @Binding var text: String
+    var placeholder: String = "Search"
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+
+            TextField(placeholder, text: $text)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
+                .font(.rrBody)
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 44)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color(.systemGray6))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Search")
+    }
+}
+
+// MARK: - BodyPartCard
+struct BodyPartCard: View {
+    let title: String
+    var image: Image? = nil
+    var imageName: String? = nil
+    var tappable: Bool = true
+    var action: (() -> Void)? = nil
+
+    var body: some View {
+        VStack(spacing: 8) {
+            // Image block
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.gray.opacity(0.15))
+                .frame(width: 110, height: 110)
+                .overlay(
+                    Group {
+                        if let image = image {
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        } else if let imageName = imageName {
+                            Image(imageName, bundle: .main)
+                                .resizable()
+                                .scaledToFill()
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        } else {
+                            Image(systemName: "photo")
+                                .font(.rrBody)
+                                .foregroundStyle(.gray)
+                        }
+                    }
+                )
+
+            Text(title)
+                .font(.rrCaption)
+                .foregroundStyle(.primary)
+                .frame(maxWidth: 110, alignment: .center)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if tappable { action?() }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
     }
 }

@@ -52,8 +52,7 @@ struct CreateAccountView: View {
                     VStack(spacing: 24) {
                         // Title
                         Text("Create an Account")
-                            .font(.monospaced(.headline)())
-                            .fontWeight(.bold)
+                            .font(.rrHeadline)
                             .padding(.bottom, 8)
                         
                         VStack(spacing: 16) {
@@ -87,8 +86,7 @@ struct CreateAccountView: View {
                             // Create a Password Section
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("Create a Password")
-                                    .font(.monospaced(.headline)())
-                                    .fontWeight(.bold)
+                                    .font(.rrTitle)
                                     .foregroundStyle(.primary)
                                 
                                 FormSecureField(title: "Password", placeholder: "Password", text: $password)
@@ -103,8 +101,7 @@ struct CreateAccountView: View {
                             // Date & Gender Section
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("Date of Birth")
-                                    .font(.monospaced(.headline)())
-                                    .fontWeight(.bold)
+                                    .font(.rrTitle)
                                     .foregroundStyle(.primary)
                                 
                                 HStack(spacing: 12) {
@@ -116,8 +113,7 @@ struct CreateAccountView: View {
                                 }
                                 
                                 Text("Date of Surgery")
-                                    .font(.monospaced(.headline)())
-                                    .fontWeight(.bold)
+                                    .font(.rrTitle)
                                     .foregroundStyle(.primary)
                                     .padding(.top, 8)
                                 
@@ -135,8 +131,7 @@ struct CreateAccountView: View {
                             // Physical Therapist Info Section
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("Physical Therapist Info")
-                                    .font(.monospaced(.headline)())
-                                    .fontWeight(.bold)
+                                    .font(.rrTitle)
                                     .foregroundStyle(.primary)
                                 
                                 HStack(spacing: 12) {
@@ -167,6 +162,7 @@ struct CreateAccountView: View {
                         PrimaryButton(
                             title: "Create Account!",
                             isDisabled: !isFormValid,
+                            useLargeFont: true,
                             action: {
                                 if isFormValid {
                                     router.go(.pairDevice)
@@ -207,10 +203,11 @@ struct CreateAccountView: View {
 private func FormTextField(title: String, placeholder: String, text: Binding<String>) -> some View {
     VStack(alignment: .leading, spacing: 6) {
         Text(title)
-            .font(.caption)
+            .font(.rrCaption)
             .foregroundStyle(.secondary)
         
         TextField(placeholder, text: text)
+            .font(.rrBody)
             .padding(14)
             .background(Color(fieldFill))
             .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -220,10 +217,11 @@ private func FormTextField(title: String, placeholder: String, text: Binding<Str
 private func FormSecureField(title: String, placeholder: String, text: Binding<String>) -> some View {
     VStack(alignment: .leading, spacing: 6) {
         Text(title)
-            .font(.caption)
+            .font(.rrCaption)
             .foregroundStyle(.secondary)
         
         SecureField(placeholder, text: text)
+            .font(.rrBody)
             .padding(14)
             .background(Color(fieldFill))
             .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -233,7 +231,7 @@ private func FormSecureField(title: String, placeholder: String, text: Binding<S
 private func FormDateField(title: String, date: Binding<Date>) -> some View {
     VStack(alignment: .leading, spacing: 6) {
         Text(title)
-            .font(.caption)
+            .font(.rrCaption)
             .foregroundStyle(.secondary)
         
         HStack {
@@ -244,7 +242,7 @@ private func FormDateField(title: String, date: Binding<Date>) -> some View {
             Spacer()
             
             Image(systemName: "calendar")
-                .font(.caption)
+                .font(.rrCaption)
                 .foregroundStyle(.secondary)
         }
         .padding(14)
@@ -256,7 +254,7 @@ private func FormDateField(title: String, date: Binding<Date>) -> some View {
 private func FormMenuField(title: String, selection: Binding<String>, options: [String]) -> some View {
     VStack(alignment: .leading, spacing: 6) {
         Text(title)
-            .font(.caption)
+            .font(.rrCaption)
             .foregroundStyle(.secondary)
         
         Menu {
@@ -268,10 +266,11 @@ private func FormMenuField(title: String, selection: Binding<String>, options: [
         } label: {
             HStack {
                 Text(selection.wrappedValue)
+                    .font(.rrBody)
                     .foregroundStyle(selection.wrappedValue == "Select" ? Color.secondary : Color.primary)
                 Spacer()
                 Image(systemName: "chevron.down")
-                    .font(.caption2)
+                    .font(.rrCaption)
                     .foregroundStyle(.secondary)
             }
             .padding(14)

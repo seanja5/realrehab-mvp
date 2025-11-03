@@ -28,7 +28,7 @@ struct AllSetView: View {
             
             // Bottom button
             VStack {
-                PrimaryButton(title: "Get Started!") {
+                PrimaryButton(title: "Get Started!", useLargeFont: true) {
                     router.go(.home)
                 }
             }

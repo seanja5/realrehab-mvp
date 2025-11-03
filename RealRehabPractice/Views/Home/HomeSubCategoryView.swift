@@ -2,25 +2,45 @@ import SwiftUI
 
 struct HomeSubCategoryView: View {
     @EnvironmentObject var router: Router
-    @State private var search = ""
+    @State private var searchText = ""
+    
+    private let ligaments: [(String, String)] = [
+        ("ACL", "acl_placeholder"),
+        ("Meniscus", "meniscus_placeholder"),
+        ("PCL", "pcl_placeholder")
+    ]
+    
+    private let tendons: [(String, String)] = [
+        ("Jumper's Knee", "jumpers_placeholder"),
+        ("IT Band", "itband_placeholder")
+    ]
+    
+    private let kneeReplacement: [(String, String)] = [
+        ("Mobility", "mobility_placeholder"),
+        ("Swelling Reduction", "swelling_placeholder"),
+        ("Range of Motion", "rom_placeholder")
+    ]
+    
     var body: some View {
-        VStack {
-            TextField("Search", text: $search)
-                .textFieldStyle(.roundedBorder)
-                .padding()
-            List {
-                Section("Ligaments") {
-                    Text("ACL").font(.rrBody)
-                    Text("Meniscus").font(.rrBody)
-                    Text("PCL").font(.rrBody)
-                }
-                Section("Tendons") {
-                    Text("Jumper's Knee").font(.rrBody)
-                    Text("IT Band").font(.rrBody)
-                }
+        ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 24) {
+                // Search
+                SearchBar(text: $searchText, placeholder: "Search Knee")
+                    .padding(.top, RRSpace.pageTop)
+                    .padding(.horizontal, 16)
+                
+                // Ligaments
+                section(title: "Ligaments", items: ligaments)
+                
+                // Tendons
+                section(title: "Tendons", items: tendons)
+                
+                // Knee Replacement Recovery
+                section(title: "Knee Replacement Recovery", items: kneeReplacement)
             }
-            .scrollContentBackground(.hidden)
+            .padding(.bottom, 24)
         }
+        .rrPageBackground()
         .navigationTitle("Discover")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
@@ -28,11 +48,33 @@ struct HomeSubCategoryView: View {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Next") { router.go(.rehabOverview) }
-                    .font(.rrBody)
+        }
+    }
+    
+    @ViewBuilder
+    private func section(title: String, items: [(String, String)]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.rrTitle)
+                .bold()
+                .padding(.horizontal, 16)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 16) {
+                    ForEach(items, id: \.0) { (name, imageName) in
+                        BodyPartCard(
+                            title: name,
+                            imageName: imageName,
+                            tappable: name == "ACL",
+                            action: name == "ACL" ? {
+                                router.go(.rehabOverview)
+                            } : nil
+                        )
+                        .frame(width: 110)
+                    }
+                }
+                .padding(.horizontal, 16)
             }
         }
-        .rrPageBackground()
     }
 }

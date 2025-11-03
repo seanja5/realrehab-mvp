@@ -7,18 +7,35 @@ struct RehabOverviewView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("ACL Rehab").font(.title2.bold())
+            VStack(alignment: .leading, spacing: RRSpace.section) {
+                Text("ACL Rehab")
+                    .font(.rrHeadline)
                 Text("Plan details, schedule, and preferences.")
+                    .font(.rrCallout)
                     .foregroundStyle(.secondary)
-                Divider().padding(.vertical, 4)
+                Divider()
+                    .padding(.vertical, 4)
                 Toggle("Allow Reminders", isOn: $allowReminders)
+                    .font(.rrBody)
                 Toggle("Allow Camera", isOn: $allowCamera)
-                Button("Confirm Journey!") { router.go(.journeyMap) }
-                    .buttonStyle(.borderedProminent)
+                    .font(.rrBody)
+                Spacer()
+                    .frame(minHeight: 40)
+                PrimaryButton(title: "Confirm Journey!") {
+                    router.go(.journeyMap)
+                }
             }
-            .padding()
+            .padding(.horizontal, 24)
+            .padding(.bottom, 40)
         }
+        .rrPageBackground()
         .navigationTitle("Rehab Overview")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton()
+            }
+        }
     }
 }

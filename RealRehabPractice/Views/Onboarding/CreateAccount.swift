@@ -13,7 +13,6 @@ struct CreateAccountView: View {
     // Color constants - matching WelcomeView
     private let darkBlue = Color(red: 0.1, green: 0.2, blue: 0.6)
     private let lightBlue = Color(red: 0.2, green: 0.4, blue: 0.8)
-    private let lightGrayBg = Color(red: 0.95, green: 0.95, blue: 0.95)
     
     // Personal Info State
     @State private var firstName = ""
@@ -43,27 +42,10 @@ struct CreateAccountView: View {
     
     var body: some View {
         ZStack {
-            lightGrayBg.ignoresSafeArea()
-            
             VStack(spacing: 0) {
-                // Header with back button
-                VStack(spacing: 12) {
-                    HStack {
-                        Button(action: { router.go(.welcome) }) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(.primary)
-                        }
-                        Spacer()
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-                
                 // Step indicator
                 StepIndicator(current: 1, total: 3, showLabel: true)
-                    .padding(.top, 8)
+                    .padding(.top, RRSpace.pageTop)
                     .padding(.bottom, 24)
                 
                 ScrollView {
@@ -198,7 +180,14 @@ struct CreateAccountView: View {
                 .ignoresSafeArea(.keyboard)
             }
         }
-        .navigationBarHidden(true)
+        .rrPageBackground()
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton()
+            }
+        }
     }
     
     // Validation

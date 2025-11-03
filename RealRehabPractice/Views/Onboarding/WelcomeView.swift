@@ -3,13 +3,8 @@ import SwiftUI
 struct WelcomeView: View {
     @EnvironmentObject var router: Router
     
-    // Background color
-    private let lightGrayBg = Color(red: 0.95, green: 0.95, blue: 0.95)
-    
     var body: some View {
         ZStack {
-            lightGrayBg.ignoresSafeArea()
-            
             VStack(spacing: 0) {
                 Spacer()
                 
@@ -40,6 +35,7 @@ struct WelcomeView: View {
                 .safeAreaPadding(.bottom)
             }
         }
+        .rrPageBackground()
         .navigationBarBackButtonHidden(true)
     }
 }

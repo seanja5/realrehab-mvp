@@ -29,6 +29,7 @@
 		C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */; };
 		C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */; };
 		C8D677BD2EB8285A00829144 /* PairDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677BC2EB8285A00829144 /* PairDeviceView.swift */; };
+		C8D677C92EB839FC00829144 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677C82EB839FC00829144 /* Theme.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,6 +74,7 @@
 		C8AEECAE2EB2D7A200720184 /* SensorSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorSample.swift; sourceTree = "<group>"; };
 		C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		C8D677BC2EB8285A00829144 /* PairDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceView.swift; sourceTree = "<group>"; };
+		C8D677C82EB839FC00829144 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -152,6 +154,7 @@
 		C8D677BF2EB831D600829144 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				C8D677C82EB839FC00829144 /* Theme.swift */,
 				C8003FB42EB7FC39008DC812 /* Components.swift */,
 			);
 			path = Components;
@@ -399,6 +402,7 @@
 				C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */,
 				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
 				C8003FB52EB7FD57008DC812 /* Components.swift in Sources */,
+				C8D677C92EB839FC00829144 /* Theme.swift in Sources */,
 				C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */,
 				C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */,
 			);

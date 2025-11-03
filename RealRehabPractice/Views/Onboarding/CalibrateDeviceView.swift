@@ -7,25 +7,57 @@ struct CalibrateDeviceView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            StepIndicator(current: 3, total: 3, showLabel: true)
-                .padding(.top, 8)
-            
-            VStack(spacing: 16) {
-                Text("Calibrate Device").font(.title2.weight(.bold))
-                Text("Set your movement range so tracking is accurate.")
-                    .foregroundStyle(.secondary).multilineTextAlignment(.center)
-                Divider()
-                VStack(alignment: .leading, spacing: 12) {
-                    Button(startSet ? "Starting Position ✓" : "Set Starting Position") { startSet = true }
-                        .buttonStyle(.borderedProminent)
-                    Button(maxSet ? "Maximum Position ✓" : "Set Maximum Position") { maxSet = true }
-                        .buttonStyle(.bordered)
+            ScrollView {
+                VStack(spacing: 0) {
+                    StepIndicator(current: 3, total: 3, showLabel: true)
+                        .padding(.top, 8)
+                    
+                    VStack(spacing: RRSpace.section) {
+                        Text("Calibrate Device")
+                            .font(.rrHeadline)
+                        Text("Set your movement range so tracking is accurate.")
+                            .font(.rrCallout)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                        Divider()
+                            .padding(.vertical, 4)
+                        VStack(alignment: .leading, spacing: RRSpace.stack) {
+                            SecondaryButton(title: startSet ? "Starting Position ✓" : "Set Starting Position") {
+                                startSet = true
+                            }
+                            SecondaryButton(title: maxSet ? "Maximum Position ✓" : "Set Maximum Position") {
+                                maxSet = true
+                            }
+                        }
+                        Spacer()
+                            .frame(minHeight: 40)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 40)
                 }
-                Spacer()
-                Button("Finish Calibration!") { router.go(.allSet) }
-                    .buttonStyle(.borderedProminent).controlSize(.large)
             }
-            .padding()
+            
+            // Bottom button
+            VStack {
+                PrimaryButton(
+                    title: "Finish Calibration!",
+                    isDisabled: !(startSet && maxSet),
+                    action: {
+                        router.go(.allSet)
+                    }
+                )
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
+            .safeAreaPadding(.bottom)
+        }
+        .rrPageBackground()
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton()
+            }
         }
     }
 }

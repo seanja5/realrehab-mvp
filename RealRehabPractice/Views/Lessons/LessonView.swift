@@ -18,21 +18,23 @@ struct LessonView: View {
     @State private var randomSimulationRunning = false
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Simple custom header (kept from your version)
+        VStack(spacing: RRSpace.section) {
+            // Header
             HStack {
-                Image(systemName: "chevron.left")
                 Spacer()
-                Text("Knee Extension").font(.headline)
+                Text("Knee Extension")
+                    .font(.rrTitle)
                 Spacer()
                 Spacer().frame(width: 18)
             }
             .padding(.horizontal)
+            .padding(.top, RRSpace.pageTop)
 
             // Target control
             VStack(alignment: .leading) {
                 Text("Target: \(Int(engine.targets.kneeTargetDeg))°")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.rrCaption)
+                    .foregroundStyle(.secondary)
                 Slider(
                     value: Binding(
                         get: { engine.targets.kneeTargetDeg },
@@ -46,7 +48,8 @@ struct LessonView: View {
 
             // Rep counter
             Text("# of Repetitions: \(engine.repCount)/20")
-                .font(.subheadline).monospacedDigit()
+                .font(.rrCallout)
+                .monospacedDigit()
                 .padding(.horizontal, 12).padding(.vertical, 8)
                 .background(.ultraThinMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -71,7 +74,7 @@ struct LessonView: View {
                         ? "Keep it coming!"
                         : (engine.lastEvaluation.reason ?? "Not Quite!")
                     )
-                    .font(.title3.weight(.semibold))
+                    .font(.rrTitle)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal)
@@ -101,13 +104,27 @@ struct LessonView: View {
                 .buttonStyle(.bordered)
                 .tint(randomSimulationRunning ? .red : .blue)
 
-                Button("Complete Session!") {
+                PrimaryButton(title: "Complete Session!") {
                     stop()
-                    router.go(.completion)                 // ← navigate to completion
+                    router.go(.completion)
                 }
-                .buttonStyle(.borderedProminent)
             }
+            .padding(.horizontal, 24)
             .padding(.bottom, 24)
+            .safeAreaPadding(.bottom)
+        }
+        .rrPageBackground()
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton {
+                    // Clean up running session before going back
+                    if running {
+                        stop()
+                    }
+                }
+            }
         }
         // Flash effect on correctness change
         .onChange(of: engine.lastEvaluation.isCorrect) { _, _ in

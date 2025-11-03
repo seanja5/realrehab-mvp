@@ -4,47 +4,46 @@ struct JourneyMapView: View {
     @EnvironmentObject var router: Router
 
     var body: some View {
-        VStack(spacing: 24) {
-            Text("Recovery Journey")
-                .font(.title2.bold())
-                .padding(.top, 20)
+        ScrollView {
+            VStack(spacing: RRSpace.section) {
+                Text("Recovery Journey")
+                    .font(.rrHeadline)
+                    .padding(.top, RRSpace.pageTop)
 
-            // Placeholder visualization area
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.gray.opacity(0.15))
-                .frame(height: 240)
-                .overlay(
-                    VStack {
-                        Image(systemName: "figure.walk.motion")
-                            .font(.system(size: 48))
-                            .foregroundColor(.blue)
-                            .padding(.bottom, 8)
-                        Text("Journey Progress Overview")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                    }
-                )
+                // Placeholder visualization area
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.gray.opacity(0.15))
+                    .frame(height: 240)
+                    .overlay(
+                        VStack {
+                            Image(systemName: "figure.walk.motion")
+                                .font(.system(size: 48))
+                                .foregroundStyle(Color.brandLightBlue)
+                                .padding(.bottom, 8)
+                            Text("Journey Progress Overview")
+                                .font(.rrTitle)
+                                .foregroundStyle(.secondary)
+                        }
+                    )
 
-            Spacer()
+                Spacer()
+                    .frame(minHeight: 40)
 
-            // Single route to the lesson screen
-            Button(action: {
-                router.go(.lesson)
-            }) {
-                Text("Start Lesson")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
+                PrimaryButton(title: "Start Lesson") {
+                    router.go(.lesson)
+                }
             }
-            .padding(.horizontal, 40)
-            .buttonStyle(.plain)
-
-            Spacer()
+            .padding(.horizontal, 24)
+            .padding(.bottom, 40)
         }
-        .padding()
+        .rrPageBackground()
         .navigationTitle("Dashboard")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton()
+            }
+        }
     }
 }

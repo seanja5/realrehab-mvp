@@ -29,24 +29,24 @@ struct PairDeviceView: View {
                 .padding(.top, 8)
             
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: RRSpace.section) {
                     // Header content (always visible)
                     Image(systemName: "bluetooth")
                         .font(.system(size: 72))
                         .foregroundStyle(Color.brandLightBlue)
                     
                     Text("Searching for device...")
-                        .font(.title3.weight(.semibold))
+                        .font(.rrTitle)
                     
                     Text("Make sure your device is powered on and within close proximity.")
-                        .font(.subheadline)
+                        .font(.rrCallout)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                     
                     // Devices Found section
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: RRSpace.stack) {
                         Text("Devices Found:")
-                            .font(.headline)
+                            .font(.rrTitle)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Divider()
@@ -71,12 +71,12 @@ struct PairDeviceView: View {
                                     // Right: Device info
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(device.name)
-                                            .font(.headline)
+                                            .font(.rrTitle)
                                         Text(device.kind)
-                                            .font(.subheadline)
+                                            .font(.rrCallout)
                                             .foregroundStyle(.secondary)
                                         Text("S/N: \(device.serial)")
-                                            .font(.subheadline)
+                                            .font(.rrCallout)
                                             .foregroundStyle(.secondary)
                                     }
                                     
@@ -107,6 +107,14 @@ struct PairDeviceView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
             .safeAreaPadding(.bottom)
+        }
+        .rrPageBackground()
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton()
+            }
         }
         .onAppear {
             // Simulate device discovery after 3.5 seconds

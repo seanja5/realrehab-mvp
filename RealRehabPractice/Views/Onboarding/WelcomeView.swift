@@ -9,12 +9,12 @@ struct WelcomeView: View {
                 Spacer()
                 
                 // Centered Title Section
-                VStack(alignment: .center, spacing: 4) {
+                VStack(alignment: .center, spacing: 3) {
                     Text("Real")
-                        .font(.rrHeadline)
+                        .font(.system(size: 46, weight: .bold))
                         .foregroundStyle(Color.brandLightBlue)
                     Text("Rehab")
-                        .font(.rrHeadline)
+                        .font(.system(size: 42, weight: .bold))
                         .foregroundStyle(Color.brandDarkBlue)
                 }
                 

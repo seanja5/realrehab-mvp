@@ -95,7 +95,11 @@ struct LessonView: View {
             .padding(.bottom, 12)
             
             // Bottom primary action
-            PrimaryButton(title: "Complete Session!", useLargeFont: true) {
+            PrimaryButton(
+                title: "Complete Session!",
+                isDisabled: engine.repCount < 20,
+                useLargeFont: true
+            ) {
                 engine.stopGuidedSimulation()
                 router.go(.completion)
             }
@@ -118,13 +122,6 @@ struct LessonView: View {
         }
         .onDisappear {
             engine.stopGuidedSimulation()
-        }
-        // Auto-advance when reps hit 20
-        .onChange(of: engine.repCount) { _, newValue in
-            if newValue >= 20 {
-                engine.stopGuidedSimulation()
-                router.go(.completion)
-            }
         }
     }
 }

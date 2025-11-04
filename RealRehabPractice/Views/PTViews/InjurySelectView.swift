@@ -60,8 +60,10 @@ struct InjurySelectView: View {
                         BodyPartCard(
                             title: name,
                             imageName: imageName,
-                            tappable: false,
-                            action: nil
+                            tappable: name == "ACL",
+                            action: name == "ACL" ? {
+                                router.go(.ptJourneyMap)
+                            } : nil
                         )
                         .frame(width: 110)
                     }

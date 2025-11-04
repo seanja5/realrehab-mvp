@@ -31,11 +31,12 @@
 		C8D677BD2EB8285A00829144 /* PairDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677BC2EB8285A00829144 /* PairDeviceView.swift */; };
 		C8D677C92EB839FC00829144 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677C82EB839FC00829144 /* Theme.swift */; };
 		C8D677D12EB97B4700829144 /* SchedulingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677D02EB97B4700829144 /* SchedulingModels.swift */; };
-		C8D677E52EBA84BF00829144 /* PatientListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677E12EBA84BF00829144 /* PatientListView.swift */; };
-		C8D677E62EBA84BF00829144 /* InjurySelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677E02EBA84BF00829144 /* InjurySelectView.swift */; };
-		C8D677E72EBA84BF00829144 /* CategorySelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677DF2EBA84BF00829144 /* CategorySelectView.swift */; };
-		C8D677E82EBA84BF00829144 /* PTLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677E22EBA84BF00829144 /* PTLoginView.swift */; };
-		C8D677E92EBA84BF00829144 /* SelectLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677E32EBA84BF00829144 /* SelectLoginView.swift */; };
+		C8D677F02EBA932000829144 /* InjurySelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EB2EBA932000829144 /* InjurySelectView.swift */; };
+		C8D677F12EBA932000829144 /* PatientListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EC2EBA932000829144 /* PatientListView.swift */; };
+		C8D677F22EBA932000829144 /* PTLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677ED2EBA932000829144 /* PTLoginView.swift */; };
+		C8D677F32EBA932000829144 /* CategorySelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EA2EBA932000829144 /* CategorySelectView.swift */; };
+		C8D677F42EBA932000829144 /* SelectLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EE2EBA932000829144 /* SelectLoginView.swift */; };
+		C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -82,11 +83,12 @@
 		C8D677BC2EB8285A00829144 /* PairDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceView.swift; sourceTree = "<group>"; };
 		C8D677C82EB839FC00829144 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		C8D677D02EB97B4700829144 /* SchedulingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulingModels.swift; sourceTree = "<group>"; };
-		C8D677DF2EBA84BF00829144 /* CategorySelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySelectView.swift; sourceTree = "<group>"; };
-		C8D677E02EBA84BF00829144 /* InjurySelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjurySelectView.swift; sourceTree = "<group>"; };
-		C8D677E12EBA84BF00829144 /* PatientListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientListView.swift; sourceTree = "<group>"; };
-		C8D677E22EBA84BF00829144 /* PTLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLoginView.swift; sourceTree = "<group>"; };
-		C8D677E32EBA84BF00829144 /* SelectLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectLoginView.swift; sourceTree = "<group>"; };
+		C8D677EA2EBA932000829144 /* CategorySelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySelectView.swift; sourceTree = "<group>"; };
+		C8D677EB2EBA932000829144 /* InjurySelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjurySelectView.swift; sourceTree = "<group>"; };
+		C8D677EC2EBA932000829144 /* PatientListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientListView.swift; sourceTree = "<group>"; };
+		C8D677ED2EBA932000829144 /* PTLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLoginView.swift; sourceTree = "<group>"; };
+		C8D677EE2EBA932000829144 /* SelectLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectLoginView.swift; sourceTree = "<group>"; };
+		C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJourneyMapView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -141,7 +143,6 @@
 				C89A84C12EB138170074B855 /* RealRehabPracticeTests */,
 				C89A84CB2EB138170074B855 /* RealRehabPracticeUITests */,
 				C89A84B22EB138150074B855 /* Products */,
-				C8D677E42EBA84BF00829144 /* PTViews */,
 			);
 			sourceTree = "<group>";
 		};
@@ -185,6 +186,7 @@
 		C8D677C12EB831E500829144 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				C8D677EF2EBA932000829144 /* PTViews */,
 				C8D677C72EB8327900829144 /* Lessons */,
 				C8D677C62EB8327100829144 /* Home */,
 				C8D677C52EB8326500829144 /* Onboarding */,
@@ -251,14 +253,15 @@
 			path = Lessons;
 			sourceTree = "<group>";
 		};
-		C8D677E42EBA84BF00829144 /* PTViews */ = {
+		C8D677EF2EBA932000829144 /* PTViews */ = {
 			isa = PBXGroup;
 			children = (
-				C8D677DF2EBA84BF00829144 /* CategorySelectView.swift */,
-				C8D677E02EBA84BF00829144 /* InjurySelectView.swift */,
-				C8D677E12EBA84BF00829144 /* PatientListView.swift */,
-				C8D677E22EBA84BF00829144 /* PTLoginView.swift */,
-				C8D677E32EBA84BF00829144 /* SelectLoginView.swift */,
+				C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */,
+				C8D677EA2EBA932000829144 /* CategorySelectView.swift */,
+				C8D677EB2EBA932000829144 /* InjurySelectView.swift */,
+				C8D677EC2EBA932000829144 /* PatientListView.swift */,
+				C8D677ED2EBA932000829144 /* PTLoginView.swift */,
+				C8D677EE2EBA932000829144 /* SelectLoginView.swift */,
 			);
 			path = PTViews;
 			sourceTree = "<group>";
@@ -418,13 +421,9 @@
 				C8AEECB52EB2D7A200720184 /* ContentView.swift in Sources */,
 				C8AEECB62EB2D7A200720184 /* SensorSample.swift in Sources */,
 				C8AEECB72EB2D7A200720184 /* CreateAccount.swift in Sources */,
-				C8D677E52EBA84BF00829144 /* PatientListView.swift in Sources */,
-				C8D677E62EBA84BF00829144 /* InjurySelectView.swift in Sources */,
-				C8D677E72EBA84BF00829144 /* CategorySelectView.swift in Sources */,
-				C8D677E82EBA84BF00829144 /* PTLoginView.swift in Sources */,
-				C8D677E92EBA84BF00829144 /* SelectLoginView.swift in Sources */,
 				C8AEECB82EB2D7A200720184 /* AppRouter.swift in Sources */,
 				C8D677D12EB97B4700829144 /* SchedulingModels.swift in Sources */,
+				C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */,
 				C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */,
 				C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */,
 				C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */,
@@ -435,6 +434,11 @@
 				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
 				C8003FB52EB7FD57008DC812 /* Components.swift in Sources */,
 				C8D677C92EB839FC00829144 /* Theme.swift in Sources */,
+				C8D677F02EBA932000829144 /* InjurySelectView.swift in Sources */,
+				C8D677F12EBA932000829144 /* PatientListView.swift in Sources */,
+				C8D677F22EBA932000829144 /* PTLoginView.swift in Sources */,
+				C8D677F32EBA932000829144 /* CategorySelectView.swift in Sources */,
+				C8D677F42EBA932000829144 /* SelectLoginView.swift in Sources */,
 				C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */,
 				C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */,
 			);

@@ -171,8 +171,28 @@ This rehabilitation journey will take you through a series of lessons and benchm
             // Primary button at very bottom of page (not floating above content)
             VStack {
                 PrimaryButton(title: "Confirm Journey!", isDisabled: !canConfirm) {
-                    // Navigate forward or call your flow
-                    // Example: router.go(.journeyMap)
+                    // Save schedule data to UserDefaults
+                    if startDateChosen {
+                        UserDefaults.standard.set(startDate, forKey: "scheduleStartDate")
+                        UserDefaults.standard.set(true, forKey: "scheduleStartDateChosen")
+                    } else {
+                        UserDefaults.standard.set(false, forKey: "scheduleStartDateChosen")
+                    }
+                    
+                    // Save selected days by their order (to handle duplicate labels like "T" and "S")
+                    let dayOrders = selectedDays.map { $0.order }
+                    UserDefaults.standard.set(dayOrders, forKey: "scheduleSelectedDays")
+                    
+                    // Save times by day order (not label, to handle duplicate labels)
+                    var timesDict: [Int: TimeInterval] = [:]
+                    for (day, time) in times {
+                        timesDict[day.order] = time.timeIntervalSince1970
+                    }
+                    if let encoded = try? JSONEncoder().encode(timesDict) {
+                        UserDefaults.standard.set(encoded, forKey: "scheduleTimes")
+                    }
+                    
+                    // Navigate forward
                     router.go(.journeyMap)
                 }
                 .padding(.horizontal, 16)
@@ -362,47 +382,3 @@ private struct TrianglePlay: Shape {
     }
 }
 
-// MARK: - Weekday
-
-private enum Weekday: CaseIterable, Hashable {
-    case sun, mon, tue, wed, thu, fri, sat
-
-    static let allCasesOrdered: [Weekday] = [.sun, .mon, .tue, .wed, .thu, .fri, .sat]
-    static var allCases: [Weekday] { allCasesOrdered }
-
-    var order: Int {
-        switch self {
-        case .sun: return 0
-        case .mon: return 1
-        case .tue: return 2
-        case .wed: return 3
-        case .thu: return 4
-        case .fri: return 5
-        case .sat: return 6
-        }
-    }
-
-    var name: String {
-        switch self {
-        case .sun: return "Sunday"
-        case .mon: return "Monday"
-        case .tue: return "Tuesday"
-        case .wed: return "Wednesday"
-        case .thu: return "Thursday"
-        case .fri: return "Friday"
-        case .sat: return "Saturday"
-        }
-    }
-
-    var shortLabel: String {
-        switch self {
-        case .sun: return "S"
-        case .mon: return "M"
-        case .tue: return "T"
-        case .wed: return "W"
-        case .thu: return "T"
-        case .fri: return "F"
-        case .sat: return "S"
-        }
-    }
-}

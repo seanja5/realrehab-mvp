@@ -9,105 +9,94 @@ import SwiftUI
 import Combine
 
 struct LessonView: View {
-    @EnvironmentObject var router: Router                     // ← add router for navigation
+    @EnvironmentObject var router: Router
     @StateObject private var engine = LessonEngine()
-    @State private var sim = PracticeSensorSimulator()
-    @State private var cancellable: AnyCancellable?
-    @State private var running = false
-    @State private var flashOpacity: Double = 0.0
-    @State private var randomSimulationRunning = false
+    @State private var hasStarted = false
 
     var body: some View {
-        VStack(spacing: RRSpace.section) {
-            // Header
+        VStack(alignment: .center, spacing: 0) {
+            // Title
+            Text("Knee Extension")
+                .font(.rrHeadline)
+                .padding(.top, 8)
+            
+            // Progress (non-interactive)
+            VStack(spacing: 8) {
+                ProgressView(value: min(Double(engine.repCount) / 20.0, 1.0))
+                    .progressViewStyle(.linear)
+                    .tint(Color.brandDarkBlue)
+                    .padding(.horizontal, 16)
+                
+                Text("Repetitions: \(engine.repCount)/20")
+                    .font(.rrCallout)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .background(Color.gray.opacity(0.25))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .padding(.top, 8)
+            
+            // Feedback card (no play icon)
+            Group {
+                if engine.lastEvaluation.isCorrect {
+                    // green card
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(LinearGradient(
+                            colors: [Color.green.opacity(0.25), Color.green],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ))
+                        .overlay(
+                            Text("Keep it coming!")
+                                .font(.rrTitle)
+                                .foregroundStyle(.primary)
+                        )
+                } else {
+                    // red card with message
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.red)
+                        .overlay(
+                            VStack(spacing: 8) {
+                                Text("Not Quite!")
+                                    .font(.rrTitle)
+                                
+                                if let reason = engine.lastEvaluation.reason, !reason.isEmpty {
+                                    Text(reason)
+                                        .font(.rrBody)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 12)
+                                }
+                            }
+                            .foregroundStyle(.white)
+                        )
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 260)
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            
+            Spacer(minLength: 16)
+            
+            // Controls row (secondary begin button)
             HStack {
-                Spacer()
-                Text("Knee Extension")
-                    .font(.rrTitle)
-                Spacer()
-                Spacer().frame(width: 18)
-            }
-            .padding(.horizontal)
-            .padding(.top, RRSpace.pageTop)
-
-            // Target control
-            VStack(alignment: .leading) {
-                Text("Target: \(Int(engine.targets.kneeTargetDeg))°")
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
-                Slider(
-                    value: Binding(
-                        get: { engine.targets.kneeTargetDeg },
-                        set: { engine.targets.kneeTargetDeg = $0 }
-                    ),
-                    in: 120...175,
-                    step: 1
-                )
-            }
-            .padding(.horizontal)
-
-            // Rep counter
-            Text("# of Repetitions: \(engine.repCount)/20")
-                .font(.rrCallout)
-                .monospacedDigit()
-                .padding(.horizontal, 12).padding(.vertical, 8)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-
-            // Feedback card with red/green flash
-            ZStack {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(engine.lastEvaluation.isCorrect ? Color.green.opacity(0.35) : Color.red.opacity(0.35))
-                    .opacity(flashOpacity)
-                    .animation(.easeOut(duration: 0.25), value: flashOpacity)
-
-                VStack(spacing: 12) {
-                    Button {
-                        running ? stop() : start()
-                    } label: {
-                        Image(systemName: running ? "stop.fill" : "play.fill")
-                            .font(.system(size: 48, weight: .bold))
-                    }
-
-                    Text(
-                        engine.lastEvaluation.isCorrect
-                        ? "Keep it coming!"
-                        : (engine.lastEvaluation.reason ?? "Not Quite!")
-                    )
-                    .font(.rrTitle)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal)
+                SecondaryButton(
+                    title: hasStarted ? "Lesson Running…" : "Begin Lesson",
+                    isDisabled: hasStarted
+                ) {
+                    guard !hasStarted else { return }
+                    hasStarted = true
+                    engine.reset()
+                    engine.startRandomSimulation()
                 }
-                .padding(24)
             }
-            .frame(maxWidth: .infinity, maxHeight: 360)
-            .background(
-                LinearGradient(colors: [.clear, .black.opacity(0.08)],
-                               startPoint: .top, endPoint: .bottom)
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
-            )
-            .padding(.horizontal)
-
-            Spacer()
-
-            // Controls
-            VStack(spacing: 12) {
-                Button(randomSimulationRunning ? "Stop Random Test" : "Start Random Test") {
-                    if randomSimulationRunning {
-                        engine.stopRandomSimulation()
-                    } else {
-                        engine.startRandomSimulation()
-                    }
-                    randomSimulationRunning.toggle()
-                }
-                .buttonStyle(.bordered)
-                .tint(randomSimulationRunning ? .red : .blue)
-
-                PrimaryButton(title: "Complete Session!") {
-                    stop()
-                    router.go(.completion)
-                }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 12)
+            
+            // Bottom primary action
+            PrimaryButton(title: "Complete Session!", useLargeFont: true) {
+                engine.stopRandomSimulation()
+                router.go(.completion)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
@@ -120,40 +109,21 @@ struct LessonView: View {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton {
                     // Clean up running session before going back
-                    if running {
-                        stop()
+                    if hasStarted {
+                        engine.stopRandomSimulation()
                     }
                 }
             }
         }
-        // Flash effect on correctness change
-        .onChange(of: engine.lastEvaluation.isCorrect) { _, _ in
-            flashOpacity = 0.75
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { flashOpacity = 0.0 }
+        .onDisappear {
+            engine.stopRandomSimulation()
         }
         // Auto-advance when reps hit 20
         .onChange(of: engine.repCount) { _, newValue in
             if newValue >= 20 {
-                stop()
-                router.go(.completion)                     // ← auto-advance
+                engine.stopRandomSimulation()
+                router.go(.completion)
             }
         }
-    }
-
-    private func start() {
-        engine.reset()
-        sim.start()
-        cancellable = sim.publisher
-            .receive(on: DispatchQueue.main)
-            .sink { sample in engine.ingest(sample) }
-        running = true
-    }
-
-    private func stop() {
-        sim.stop()
-        cancellable?.cancel(); cancellable = nil
-        engine.stopRandomSimulation()
-        randomSimulationRunning = false
-        running = false
     }
 }

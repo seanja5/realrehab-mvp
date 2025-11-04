@@ -30,6 +30,7 @@
 		C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */; };
 		C8D677BD2EB8285A00829144 /* PairDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677BC2EB8285A00829144 /* PairDeviceView.swift */; };
 		C8D677C92EB839FC00829144 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677C82EB839FC00829144 /* Theme.swift */; };
+		C8D677D12EB97B4700829144 /* SchedulingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677D02EB97B4700829144 /* SchedulingModels.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,6 +76,7 @@
 		C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		C8D677BC2EB8285A00829144 /* PairDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceView.swift; sourceTree = "<group>"; };
 		C8D677C82EB839FC00829144 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		C8D677D02EB97B4700829144 /* SchedulingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulingModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -182,6 +184,7 @@
 		C8D677C22EB8321100829144 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				C8D677D02EB97B4700829144 /* SchedulingModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -393,6 +396,7 @@
 				C8AEECB62EB2D7A200720184 /* SensorSample.swift in Sources */,
 				C8AEECB72EB2D7A200720184 /* CreateAccount.swift in Sources */,
 				C8AEECB82EB2D7A200720184 /* AppRouter.swift in Sources */,
+				C8D677D12EB97B4700829144 /* SchedulingModels.swift in Sources */,
 				C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */,
 				C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */,
 				C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */,

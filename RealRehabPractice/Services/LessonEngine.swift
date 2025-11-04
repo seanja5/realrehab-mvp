@@ -19,18 +19,36 @@ struct Evaluation {
     let reason: String?
 }
 
+enum Phase {
+    case idle
+    case incorrectHold
+    case upstroke
+    case downstroke
+}
+
 final class LessonEngine: ObservableObject {
     @Published private(set) var repCount: Int = 0
     @Published private(set) var lastEvaluation: Evaluation = .init(isCorrect: false, reason: "Waiting…")
+    @Published var phase: Phase = .idle
+    @Published var fill: Double = 0.0  // 0.0...1.0 for the green overlay fill
+    @Published var statusText: String = "Waiting…"
+    
+    let repTarget = 20
 
     private var inCooldown = false
     private var simulationTimer: Timer?
+    private var guidedRunToken: UUID?
+    private var animationTimer: Timer?
     var targets = LessonTargets()
 
     func reset() {
         repCount = 0
         inCooldown = false
         lastEvaluation = .init(isCorrect: false, reason: "Waiting…")
+        phase = .idle
+        fill = 0.0
+        statusText = "Waiting…"
+        stopGuidedSimulation()
     }
     
     func startRandomSimulation() {
@@ -84,6 +102,151 @@ final class LessonEngine: ObservableObject {
     func stopRandomSimulation() {
         simulationTimer?.invalidate()
         simulationTimer = nil
+    }
+    
+    func startGuidedSimulation() {
+        stopGuidedSimulation()
+        let token = UUID()
+        guidedRunToken = token
+        
+        // Start with incorrectHold for 3 seconds
+        runIncorrectHold(duration: 3.0, token: token)
+    }
+    
+    func stopGuidedSimulation() {
+        guidedRunToken = nil
+        animationTimer?.invalidate()
+        animationTimer = nil
+        phase = .idle
+        fill = 0.0
+        statusText = "Waiting…"
+        lastEvaluation = .init(isCorrect: false, reason: "Waiting…")
+    }
+    
+    private func runIncorrectHold(duration: TimeInterval, token: UUID) {
+        guard guidedRunToken == token else { return }
+        
+        phase = .incorrectHold
+        fill = 0.0
+        statusText = "Not Quite!"
+        lastEvaluation = .init(isCorrect: false, reason: nil)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            guard let self = self, self.guidedRunToken == token else { return }
+            
+            // Check if we've reached target
+            if self.repCount >= self.repTarget {
+                self.phase = .idle
+                self.statusText = "Great work!"
+                self.fill = 1.0
+                self.lastEvaluation = .init(isCorrect: true, reason: nil)
+                return
+            }
+            
+            self.runUpstroke(token: token)
+        }
+    }
+    
+    private func runUpstroke(token: UUID) {
+        guard guidedRunToken == token else { return }
+        
+        phase = .upstroke
+        statusText = "Keep it Coming!"
+        lastEvaluation = .init(isCorrect: true, reason: nil)
+        
+        // Start fill at 0.1 (10%)
+        fill = 0.1
+        
+        // Animate fill to 1.0 over 3 seconds using linear interpolation
+        let startTime = Date()
+        let duration: TimeInterval = 3.0
+        let startFill: Double = 0.1
+        let endFill: Double = 1.0
+        
+        animationTimer?.invalidate()
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: true) { [weak self] timer in
+            guard let self = self, self.guidedRunToken == token else {
+                timer.invalidate()
+                return
+            }
+            
+            DispatchQueue.main.async {
+                let elapsed = Date().timeIntervalSince(startTime)
+                let progress = min(elapsed / duration, 1.0)
+                self.fill = startFill + (endFill - startFill) * progress
+                
+                if progress >= 1.0 {
+                    timer.invalidate()
+                    self.animationTimer = nil
+                    
+                    // Increment rep count when fill reaches top
+                    self.repCount += 1
+                    
+                    // Check if we've reached target
+                    if self.repCount >= self.repTarget {
+                        self.phase = .idle
+                        self.statusText = "Great work!"
+                        self.fill = 1.0
+                        self.lastEvaluation = .init(isCorrect: true, reason: nil)
+                        return
+                    }
+                    
+                    // Check if we need a 4-rep pause
+                    if self.repCount % 4 == 0 {
+                        self.runIncorrectHold(duration: 2.0, token: token)
+                    } else {
+                        self.runDownstroke(token: token)
+                    }
+                }
+            }
+        }
+        RunLoop.main.add(animationTimer!, forMode: .common)
+    }
+    
+    private func runDownstroke(token: UUID) {
+        guard guidedRunToken == token else { return }
+        
+        phase = .downstroke
+        statusText = "Keep it Coming!"
+        lastEvaluation = .init(isCorrect: true, reason: nil)
+        
+        // Animate fill from 1.0 to 0.0 over 3 seconds using linear interpolation
+        let startTime = Date()
+        let duration: TimeInterval = 3.0
+        let startFill: Double = 1.0
+        let endFill: Double = 0.0
+        
+        animationTimer?.invalidate()
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: true) { [weak self] timer in
+            guard let self = self, self.guidedRunToken == token else {
+                timer.invalidate()
+                return
+            }
+            
+            DispatchQueue.main.async {
+                let elapsed = Date().timeIntervalSince(startTime)
+                let progress = min(elapsed / duration, 1.0)
+                self.fill = startFill + (endFill - startFill) * progress
+                
+                if progress >= 1.0 {
+                    timer.invalidate()
+                    self.animationTimer = nil
+                    
+                    // Check if we've reached target
+                    if self.repCount >= self.repTarget {
+                        self.phase = .idle
+                        self.statusText = "Great work!"
+                        self.fill = 1.0
+                        self.lastEvaluation = .init(isCorrect: true, reason: nil)
+                        return
+                    }
+                    
+                    // Continue cycling
+                    self.runUpstroke(token: token)
+                }
+            }
+        }
+        RunLoop.main.add(animationTimer!, forMode: .common)
     }
 
     func ingest(_ s: SensorSample) {

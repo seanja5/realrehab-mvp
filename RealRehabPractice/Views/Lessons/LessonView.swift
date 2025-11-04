@@ -37,39 +37,40 @@ struct LessonView: View {
             .padding(.top, 8)
             
             // Feedback card (no play icon)
-            Group {
-                if engine.lastEvaluation.isCorrect {
-                    // green card
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(LinearGradient(
-                            colors: [Color.green.opacity(0.25), Color.green],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ))
-                        .overlay(
-                            Text("Keep it coming!")
-                                .font(.rrTitle)
-                                .foregroundStyle(.primary)
-                        )
-                } else {
-                    // red card with message
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.red)
-                        .overlay(
-                            VStack(spacing: 8) {
-                                Text("Not Quite!")
-                                    .font(.rrTitle)
-                                
-                                if let reason = engine.lastEvaluation.reason, !reason.isEmpty {
-                                    Text(reason)
-                                        .font(.rrBody)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal, 12)
-                                }
-                            }
-                            .foregroundStyle(.white)
-                        )
+            ZStack {
+                // Base rounded panel
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(engine.phase == .incorrectHold
+                          ? Color.red
+                          : (engine.phase == .idle ? Color.gray.opacity(0.3) : Color.green.opacity(0.25)))
+                
+                // Green fill overlay only during strokes
+                if engine.phase == .upstroke || engine.phase == .downstroke {
+                    GeometryReader { geo in
+                        let h = geo.size.height
+                        // Bottom-anchored fill whose height animates with engine.fill
+                        VStack {
+                            Spacer()
+                            LinearGradient(
+                                colors: [Color.green.opacity(0.25), Color.green],
+                                startPoint: .bottom,
+                                endPoint: .top
+                            )
+                            .frame(height: max(0, h * max(0.1, engine.fill))) // start at ~10%
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .allowsHitTesting(false)
                 }
+                
+                // Center text
+                Text(
+                    engine.phase == .idle ? "Waiting…" :
+                    (engine.phase == .incorrectHold ? "Not Quite!" : "Keep it Coming!")
+                )
+                .font(.rrTitle)
+                .foregroundStyle(engine.phase == .incorrectHold ? .white : .primary)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 260)
@@ -87,7 +88,7 @@ struct LessonView: View {
                     guard !hasStarted else { return }
                     hasStarted = true
                     engine.reset()
-                    engine.startRandomSimulation()
+                    engine.startGuidedSimulation()
                 }
             }
             .padding(.horizontal, 24)
@@ -95,7 +96,7 @@ struct LessonView: View {
             
             // Bottom primary action
             PrimaryButton(title: "Complete Session!", useLargeFont: true) {
-                engine.stopRandomSimulation()
+                engine.stopGuidedSimulation()
                 router.go(.completion)
             }
             .padding(.horizontal, 24)
@@ -110,18 +111,18 @@ struct LessonView: View {
                 BackButton {
                     // Clean up running session before going back
                     if hasStarted {
-                        engine.stopRandomSimulation()
+                        engine.stopGuidedSimulation()
                     }
                 }
             }
         }
         .onDisappear {
-            engine.stopRandomSimulation()
+            engine.stopGuidedSimulation()
         }
         // Auto-advance when reps hit 20
         .onChange(of: engine.repCount) { _, newValue in
             if newValue >= 20 {
-                engine.stopRandomSimulation()
+                engine.stopGuidedSimulation()
                 router.go(.completion)
             }
         }

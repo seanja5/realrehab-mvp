@@ -1,0 +1,74 @@
+import SwiftUI
+
+struct InjurySelectView: View {
+    @EnvironmentObject var router: Router
+    
+    private let ligaments: [(String, String)] = [
+        ("ACL", "acl_placeholder"),
+        ("Meniscus", "meniscus_placeholder"),
+        ("PCL", "pcl_placeholder")
+    ]
+    
+    private let tendons: [(String, String)] = [
+        ("Jumper's Knee", "jumpers_placeholder"),
+        ("IT Band", "itband_placeholder")
+    ]
+    
+    private let kneeReplacement: [(String, String)] = [
+        ("Mobility", "mobility_placeholder"),
+        ("Swelling Reduction", "swelling_placeholder"),
+        ("Range of Motion", "rom_placeholder")
+    ]
+    
+    var body: some View {
+        ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 24) {
+                // Ligaments
+                section(title: "Ligaments", items: ligaments)
+                
+                // Tendons
+                section(title: "Tendons", items: tendons)
+                
+                // Knee Replacement Recovery
+                section(title: "Knee Replacement Recovery", items: kneeReplacement)
+            }
+            .padding(.top, RRSpace.pageTop)
+            .padding(.bottom, 24)
+        }
+        .rrPageBackground()
+        .navigationTitle("Select Injury")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton()
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func section(title: String, items: [(String, String)]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.rrTitle)
+                .bold()
+                .padding(.horizontal, 16)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 16) {
+                    ForEach(items, id: \.0) { (name, imageName) in
+                        BodyPartCard(
+                            title: name,
+                            imageName: imageName,
+                            tappable: false,
+                            action: nil
+                        )
+                        .frame(width: 110)
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+}
+

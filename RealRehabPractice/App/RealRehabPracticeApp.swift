@@ -28,6 +28,11 @@ struct RealRehabPracticeApp: App {
                         case .journeyMap: JourneyMapView()
                         case .lesson: LessonView()                // ← single lesson screen
                         case .completion: CompletionView()
+                        case .selectLogin: SelectLoginView()
+                        case .ptLogin: PTLoginView()
+                        case .patientList: PatientListView()
+                        case .ptCategorySelect: CategorySelectView()
+                        case .ptInjurySelect: InjurySelectView()
                         }
                     }
             }

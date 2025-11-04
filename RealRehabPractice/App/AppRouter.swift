@@ -13,6 +13,11 @@ enum Route: Hashable {
     case journeyMap
     case lesson
     case completion
+    case selectLogin
+    case ptLogin
+    case patientList
+    case ptCategorySelect
+    case ptInjurySelect
 }
 
 final class Router: ObservableObject {   // class + ObservableObject

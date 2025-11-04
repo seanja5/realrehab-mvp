@@ -41,7 +41,7 @@ struct HomeSubCategoryView: View {
             .padding(.bottom, 24)
         }
         .rrPageBackground()
-        .navigationTitle("Discover")
+        .navigationTitle("Injuries")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {

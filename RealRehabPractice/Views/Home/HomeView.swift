@@ -42,6 +42,7 @@ struct HomeView: View {
             .padding(.bottom, 24)
         }
         .rrPageBackground()
+        .navigationTitle("Discover")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {

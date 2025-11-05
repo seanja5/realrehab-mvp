@@ -31,6 +31,7 @@ struct RealRehabPracticeApp: App {
                         case .selectLogin: SelectLoginView()
                         case .ptLogin: PTLoginView()
                         case .patientList: PatientListView()
+                        case .ptPatientDetail: PatientDetailView()
                         case .ptCategorySelect: CategorySelectView()
                         case .ptInjurySelect: InjurySelectView()
                         case .ptJourneyMap: PTJourneyMapView()

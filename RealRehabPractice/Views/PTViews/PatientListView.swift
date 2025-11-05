@@ -6,12 +6,12 @@ struct PatientListView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 24) {
-                // First card is tappable → routes to .ptCategorySelect
+                // First card is tappable → routes to .ptPatientDetail
                 PatientCard(
                     name: "Andrews, Sean",
                     dob: "07/21/2003",
                     gender: "M",
-                    onTap: { router.go(.ptCategorySelect) }
+                    onTap: { router.go(.ptPatientDetail) }
                 )
                 
                 // The rest are non-interactive placeholders for now

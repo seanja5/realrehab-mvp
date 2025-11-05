@@ -37,6 +37,7 @@
 		C8D677F32EBA932000829144 /* CategorySelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EA2EBA932000829144 /* CategorySelectView.swift */; };
 		C8D677F42EBA932000829144 /* SelectLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EE2EBA932000829144 /* SelectLoginView.swift */; };
 		C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */; };
+		C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -89,6 +90,7 @@
 		C8D677ED2EBA932000829144 /* PTLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLoginView.swift; sourceTree = "<group>"; };
 		C8D677EE2EBA932000829144 /* SelectLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectLoginView.swift; sourceTree = "<group>"; };
 		C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJourneyMapView.swift; sourceTree = "<group>"; };
+		C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -256,6 +258,7 @@
 		C8D677EF2EBA932000829144 /* PTViews */ = {
 			isa = PBXGroup;
 			children = (
+				C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */,
 				C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */,
 				C8D677EA2EBA932000829144 /* CategorySelectView.swift */,
 				C8D677EB2EBA932000829144 /* InjurySelectView.swift */,
@@ -423,6 +426,7 @@
 				C8AEECB72EB2D7A200720184 /* CreateAccount.swift in Sources */,
 				C8AEECB82EB2D7A200720184 /* AppRouter.swift in Sources */,
 				C8D677D12EB97B4700829144 /* SchedulingModels.swift in Sources */,
+				C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */,
 				C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */,
 				C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */,
 				C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */,

@@ -41,16 +41,17 @@ struct PTDetailView: View {
                         .font(.rrTitle)
                         .padding(.horizontal, 16)
                     
-                    // Gray landscape box - tappable
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.gray.opacity(0.15))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 190)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            router.go(.rehabOverview)
-                        }
-                        .padding(.horizontal, 16)
+                    // Gray landscape box - tappable → JourneyMapView
+                    Button {
+                        router.go(.journeyMap)
+                    } label: {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.gray.opacity(0.15))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 190)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
                     
                     // ACL Rehab text below box
                     Text("ACL Rehab")
@@ -58,10 +59,13 @@ struct PTDetailView: View {
                         .foregroundStyle(.primary)
                         .padding(.top, 10)
                         .padding(.horizontal, 16)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            router.go(.rehabOverview)
-                        }
+                    
+                    // Edit Schedule button
+                    SecondaryButton(title: "Edit Schedule") {
+                        router.go(.rehabOverview)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
                 }
                 .padding(.top, 4)
                 

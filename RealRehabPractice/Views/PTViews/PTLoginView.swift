@@ -20,11 +20,6 @@ struct PTLoginView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // Title
-                Text("Login")
-                    .font(.rrHeadline)
-                    .padding(.top, RRSpace.pageTop)
-                
                 VStack(spacing: 16) {
                     // First Name / Last Name
                     HStack(spacing: 12) {
@@ -49,6 +44,7 @@ struct PTLoginView: View {
                         .autocorrectionDisabled()
                 }
                 .padding(.horizontal, 20)
+                .padding(.top, RRSpace.pageTop)
                 .padding(.bottom, 40)
             }
         }

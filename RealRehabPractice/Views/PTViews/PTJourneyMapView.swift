@@ -5,13 +5,13 @@ struct PTJourneyMapView: View {
     
     // MARK: - State
     @State private var nodes: [LessonNode] = [
-        LessonNode(title: "Knee Extension", icon: .person, isLocked: false, reps: 12, restSec: 30),
-        LessonNode(title: "Wall Sits", icon: .video, isLocked: false, reps: 12, restSec: 30),
-        LessonNode(title: "Lunges", icon: .video, isLocked: false, reps: 12, restSec: 30),
-        LessonNode(title: "Knee Extension", icon: .video, isLocked: false, reps: 12, restSec: 30),
-        LessonNode(title: "Wall Sits", icon: .video, isLocked: false, reps: 12, restSec: 30),
-        LessonNode(title: "Lunges", icon: .video, isLocked: false, reps: 12, restSec: 30),
-        LessonNode(title: "Knee Extension", icon: .video, isLocked: false, reps: 12, restSec: 30)
+        LessonNode(title: "Knee Extension", icon: .person, isLocked: false, reps: 20, restSec: 3),
+        LessonNode(title: "Wall Sits", icon: .video, isLocked: false, reps: 12, restSec: 3),
+        LessonNode(title: "Lunges", icon: .video, isLocked: false, reps: 12, restSec: 3),
+        LessonNode(title: "Knee Extension", icon: .video, isLocked: false, reps: 12, restSec: 3),
+        LessonNode(title: "Wall Sits", icon: .video, isLocked: false, reps: 12, restSec: 3),
+        LessonNode(title: "Lunges", icon: .video, isLocked: false, reps: 12, restSec: 3),
+        LessonNode(title: "Knee Extension", icon: .video, isLocked: false, reps: 12, restSec: 3)
     ]
     
     @State private var showingAddSheet = false

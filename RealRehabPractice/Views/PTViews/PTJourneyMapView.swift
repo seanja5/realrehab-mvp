@@ -17,13 +17,17 @@ struct PTJourneyMapView: View {
     @State private var showingAddSheet = false
     @State private var addSelection = 0
     @State private var showingRehabOverview = false
-    @State private var selectedNodeIndex: Int?
+    @State private var selectedNodeID: UUID? = nil
     @State private var showingEditor = false
+    @State private var tempReps: Int = 12
+    @State private var tempRest: Int = 3
+    @State private var tempLocked: Bool = false
     
     // Drag state
     @State private var draggingIndex: Int?
     @State private var dragOffset: CGSize = .zero
     @State private var isDragging = false
+    @State private var pressedIndex: Int? = nil // Index of bubble that is "pressed"/enlarged by tap
     
     private let exerciseTypes = ["Knee Extension (Advanced)", "Wall Sits", "Lunges"]
     
@@ -69,46 +73,58 @@ struct PTJourneyMapView: View {
                             
                             PTNodeView(
                                 node: node,
-                                scale: draggingIndex == index ? 1.2 : 1.0
+                                scale: (draggingIndex == index || pressedIndex == index) ? 1.2 : 1.0
                             )
-                            .position(displayPosition)
-                            .gesture(
-                                LongPressGesture(minimumDuration: 0.3)
-                                    .sequenced(before: DragGesture(minimumDistance: 0))
-                                    .onChanged { value in
-                                        switch value {
-                                        case .second(true, let drag):
-                                            if let dragValue = drag {
-                                                if draggingIndex == nil {
-                                                    draggingIndex = index
-                                                    isDragging = true
-                                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                                        // Trigger scale animation
-                                                    }
+                            .contentShape(Rectangle()) // Ensure full hit area
+                            
+                            // 1) TAP: enlarge, open editor, then shrink when editor closes
+                            .highPriorityGesture(
+                                TapGesture()
+                                    .onEnded {
+                                        // Ignore taps during active drag or when another overlay is showing
+                                        guard !isDragging, draggingIndex == nil, !showingEditor, !showingRehabOverview else { return }
+                                        
+                                        pressedIndex = index
+                                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                            // Visual enlarge handled by scale binding
+                                        }
+                                        beginEdit(node: node)
+                                    }
+                            )
+                            
+                            // 2) LONG PRESS (0.5s) + DRAG: enter drag mode and move node
+                            .simultaneousGesture(
+                                LongPressGesture(minimumDuration: 0.5)
+                                    .onEnded { _ in
+                                        // Start drag mode
+                                        if draggingIndex == nil && !showingEditor && !showingRehabOverview {
+                                            draggingIndex = index
+                                            isDragging = true
+                                            pressedIndex = nil
+                                        }
+                                    }
+                                    .simultaneously(with:
+                                        DragGesture(minimumDistance: 1)
+                                            .onChanged { value in
+                                                guard isDragging, draggingIndex == index else { return }
+                                                dragOffset = value.translation
+                                            }
+                                            .onEnded { value in
+                                                if isDragging, draggingIndex == index {
+                                                    handleDragEnd(from: index, translation: value.translation, geometry: geometry)
                                                 }
-                                                dragOffset = dragValue.translation
+                                                // Reset safety
+                                                isDragging = false
+                                                draggingIndex = nil
+                                                dragOffset = .zero
                                             }
-                                        default:
-                                            break
-                                        }
-                                    }
-                                    .onEnded { value in
-                                        switch value {
-                                        case .second(true, let drag):
-                                            if let dragValue = drag {
-                                                handleDragEnd(from: index, translation: dragValue.translation, geometry: geometry)
-                                            }
-                                        default:
-                                            break
-                                        }
-                                    }
+                                    )
                             )
-                            .onTapGesture {
-                                if draggingIndex == nil {
-                                    selectedNodeIndex = index
-                                    showingEditor = true
-                                }
-                            }
+                            .allowsHitTesting(!showingEditor && !showingRehabOverview)
+                            .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: dragOffset)
+                            .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: draggingIndex)
+                            .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: pressedIndex)
+                            .position(displayPosition)
                         }
                     }
                     .frame(height: maxHeight)
@@ -121,6 +137,7 @@ struct PTJourneyMapView: View {
                     .frame(height: 100)
             }
         }
+        .scrollDisabled(isDragging) // Disable scrolling while dragging
         .safeAreaInset(edge: .top) {
             // Sticky header card (matches JourneyMapView exactly)
             VStack(spacing: 0) {
@@ -183,8 +200,8 @@ struct PTJourneyMapView: View {
             addLessonSheet
         }
         .overlay {
-            if showingEditor, let index = selectedNodeIndex {
-                editorPopover(for: nodes[index], index: index)
+            if showingEditor {
+                editorPopover
             }
             
             // Dismiss popover when tapping outside
@@ -294,111 +311,103 @@ struct PTJourneyMapView: View {
     }
     
     // MARK: - Editor Popover (centered)
-    private func editorPopover(for node: LessonNode, index: Int) -> some View {
-        Color.black.opacity(0.3)
+    private var editorPopover: some View {
+        Color.black.opacity(0.25)
             .ignoresSafeArea()
             .onTapGesture {
-                showingEditor = false
-                selectedNodeIndex = nil
+                withAnimation(.spring()) {
+                    showingEditor = false
+                    selectedNodeID = nil
+                    pressedIndex = nil
+                }
             }
             .overlay {
-                VStack(spacing: 20) {
-                    Text(node.title)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(selectedNodeTitle)
                         .font(.rrTitle)
+                        .foregroundStyle(.primary)
                     
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Set number of repetitions")
                             .font(.rrBody)
                         
-                        HStack {
-                            Menu {
-                                Button("8") { nodes[index].reps = 8 }
-                                Button("10") { nodes[index].reps = 10 }
-                                Button("12") { nodes[index].reps = 12 }
-                                Button("15") { nodes[index].reps = 15 }
-                                Button("20") { nodes[index].reps = 20 }
-                            } label: {
-                                HStack {
-                                    Text("\(nodes[index].reps)")
-                                        .font(.rrBody)
-                                    Image(systemName: "chevron.down")
-                                        .font(.rrCaption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                                )
+                        HStack(spacing: 8) {
+                            Stepper(value: $tempReps, in: 1...200) {
+                                Text("\(tempReps)")
+                                    .font(.rrBody)
+                                    .frame(minWidth: 40)
                             }
-                            
-                            TextField("", value: Binding(
-                                get: { nodes[index].reps },
-                                set: { nodes[index].reps = $0 }
-                            ), format: .number)
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
                         }
                     }
                     
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Time in between repetitions (sec)")
                             .font(.rrBody)
                         
-                        HStack {
-                            Menu {
-                                Button("2") { nodes[index].restSec = 2 }
-                                Button("3") { nodes[index].restSec = 3 }
-                                Button("5") { nodes[index].restSec = 5 }
-                                Button("10") { nodes[index].restSec = 10 }
-                            } label: {
-                                HStack {
-                                    Text("\(nodes[index].restSec)")
-                                        .font(.rrBody)
-                                    Image(systemName: "chevron.down")
-                                        .font(.rrCaption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                                )
+                        HStack(spacing: 8) {
+                            Stepper(value: $tempRest, in: 0...120) {
+                                Text("\(tempRest)")
+                                    .font(.rrBody)
+                                    .frame(minWidth: 40)
                             }
-                            
-                            TextField("", value: Binding(
-                                get: { nodes[index].restSec },
-                                set: { nodes[index].restSec = $0 }
-                            ), format: .number)
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
                         }
                     }
                     
-                    Toggle("Lock Lesson?", isOn: Binding(
-                        get: { nodes[index].isLocked },
-                        set: { nodes[index].isLocked = $0 }
-                    ))
+                    Toggle(isOn: $tempLocked) {
+                        Text("Lock Lesson?")
+                            .font(.rrBody)
+                    }
                     
                     PrimaryButton(title: "Set Parameters") {
-                        showingEditor = false
-                        selectedNodeIndex = nil
+                        commitEdit()
                     }
                 }
                 .padding(20)
+                .frame(maxWidth: 340)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 20)
                         .fill(Color.white)
-                        .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 4)
+                        .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
                 )
-                .padding(.horizontal, 40)
             }
+    }
+    
+    // MARK: - Computed Properties
+    private var selectedNodeTitle: String {
+        if let id = selectedNodeID,
+           let node = nodes.first(where: { $0.id == id }) {
+            return node.title
+        }
+        return "Lesson"
+    }
+    
+    // MARK: - Helper Functions for Editor
+    private func nodeIndex(for id: UUID) -> Int? {
+        nodes.firstIndex(where: { $0.id == id })
+    }
+    
+    private func beginEdit(node: LessonNode) {
+        tempReps = node.reps
+        tempRest = node.restSec
+        tempLocked = node.isLocked
+        selectedNodeID = node.id
+        withAnimation(.spring()) {
+            showingEditor = true
+        }
+    }
+    
+    private func commitEdit() {
+        if let id = selectedNodeID,
+           let idx = nodeIndex(for: id) {
+            nodes[idx].reps = tempReps
+            nodes[idx].restSec = tempRest
+            nodes[idx].isLocked = tempLocked
+        }
+        withAnimation(.spring()) {
+            showingEditor = false
+            selectedNodeID = nil
+            pressedIndex = nil
+        }
     }
     
     // MARK: - Helper Functions
@@ -410,7 +419,6 @@ struct PTJourneyMapView: View {
     }
     
     private func handleDragEnd(from index: Int, translation: CGSize, geometry: GeometryProxy) {
-        let nodeX = (index % 2 == 0) ? geometry.size.width * 0.3 : geometry.size.width * 0.7
         let finalY = nodes[index].yOffset + 40 + translation.height // Account for padding offset
         
         // Find nearest index based on Y position

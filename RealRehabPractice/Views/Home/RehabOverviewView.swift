@@ -33,24 +33,11 @@ struct RehabOverviewView: View {
                         .scaledToFill()
                         .frame(height: 180)
                         .clipped()
-                        .overlay(
-                            TrianglePlay()
-                                .fill(Color.white)
-                                .frame(width: 36, height: 36)
-                                .shadow(radius: 4),
-                            alignment: .center
-                        )
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 } else {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.black.opacity(0.2))
-                            .frame(height: 180)
-                        TrianglePlay()
-                            .fill(Color.white)
-                            .frame(width: 36, height: 36)
-                            .shadow(radius: 4)
-                    }
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.black.opacity(0.2))
+                        .frame(height: 180)
                 }
 
                 // Title section

@@ -67,7 +67,8 @@ struct LessonView: View {
                 // Center text
                 Text(
                     engine.phase == .idle ? "Waiting…" :
-                    (engine.phase == .incorrectHold ? "Not Quite!" : "Keep it Coming!")
+                    (engine.phase == .incorrectHold ? "Not Quite!" :
+                     (engine.phase == .upstroke || engine.phase == .downstroke ? "You've Got It!" : "Keep it Coming!"))
                 )
                 .font(.rrTitle)
                 .foregroundStyle(engine.phase == .incorrectHold ? .white : .primary)

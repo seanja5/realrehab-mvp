@@ -21,10 +21,22 @@ struct CalibrateDeviceView: View {
                             .multilineTextAlignment(.center)
                         Divider()
                             .padding(.vertical, 4)
+                        
                         VStack(alignment: .leading, spacing: RRSpace.stack) {
+                            Text("Relax your leg until your knee is bent at roughly a 90-degree angle. When you're ready, tap Set Starting Position.")
+                                .font(.rrBody)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
+                            
                             SecondaryButton(title: startSet ? "Starting Position ✓" : "Set Starting Position") {
                                 startSet = true
                             }
+                            
+                            Text("Now slowly extend your leg as far as you comfortably can, then tap Set Maximum Position.")
+                                .font(.rrBody)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
+                            
                             SecondaryButton(title: maxSet ? "Maximum Position ✓" : "Set Maximum Position") {
                                 maxSet = true
                             }

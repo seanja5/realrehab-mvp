@@ -211,7 +211,7 @@ Both flows share data (schedule, lesson nodes, progress) through `UserDefaults` 
 - **Purpose**: PT's editable journey map for managing patient lessons
 - **User Actions**: 
   - Tap bubble → opens editor popover (set reps, rest time, lock toggle)
-  - Long-press (0.5s) + drag → reorder lesson nodes
+  - Long-press (0.3s) + drag → reorder lesson nodes
   - Tap "+" button → add new lesson (picker sheet)
   - Tap "more" icon (ellipsis) → shows rehab overview popover
 - **Goal**: Customize and manage patient's rehabilitation journey
@@ -340,7 +340,7 @@ This applies the light gray background consistently.
 - **PTJourneyMapView** (PT): Fully editable
   - All nodes are blue (never gray)
   - Lock overlay shown as small lock icon on top-right
-  - Drag-and-drop reordering (long-press 0.5s + drag)
+  - Drag-and-drop reordering (long-press 0.3s + drag)
   - Tap to edit (reps, rest time, lock status)
   - Add new lessons via "+" button
   - Instant drag tracking (no animation during drag)

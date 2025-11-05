@@ -92,9 +92,9 @@ struct PTJourneyMapView: View {
                                     }
                             )
                             
-                            // 2) LONG PRESS (0.5s) + DRAG: enter drag mode and move node
+                            // 2) LONG PRESS (0.3s) + DRAG: enter drag mode and move node
                             .simultaneousGesture(
-                                LongPressGesture(minimumDuration: 0.5)
+                                LongPressGesture(minimumDuration: 0.3)
                                     .onEnded { _ in
                                         // Start drag mode
                                         if draggingIndex == nil && !showingEditor && !showingRehabOverview {

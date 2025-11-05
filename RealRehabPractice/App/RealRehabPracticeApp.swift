@@ -23,6 +23,7 @@ struct RealRehabPracticeApp: App {
                         case .pairDevice: PairDeviceView()
                         case .calibrateDevice: CalibrateDeviceView()
                         case .allSet: AllSetView()
+                        case .ptDetail: PTDetailView()
                         case .home: HomeView()
                         case .homeSubCategory: HomeSubCategoryView()
                         case .rehabOverview: RehabOverviewView()

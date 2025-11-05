@@ -38,6 +38,7 @@
 		C8D677F42EBA932000829144 /* SelectLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EE2EBA932000829144 /* SelectLoginView.swift */; };
 		C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */; };
 		C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */; };
+		C8D678002EBB095E00829144 /* PTDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FF2EBB095E00829144 /* PTDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -91,6 +92,7 @@
 		C8D677EE2EBA932000829144 /* SelectLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectLoginView.swift; sourceTree = "<group>"; };
 		C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJourneyMapView.swift; sourceTree = "<group>"; };
 		C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDetailView.swift; sourceTree = "<group>"; };
+		C8D677FF2EBB095E00829144 /* PTDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -238,6 +240,7 @@
 		C8D677C62EB8327100829144 /* Home */ = {
 			isa = PBXGroup;
 			children = (
+				C8D677FF2EBB095E00829144 /* PTDetailView.swift */,
 				C8AEECA52EB2D7A200720184 /* HomeView.swift */,
 				C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */,
 				C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */,
@@ -445,6 +448,7 @@
 				C8D677F42EBA932000829144 /* SelectLoginView.swift in Sources */,
 				C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */,
 				C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */,
+				C8D678002EBB095E00829144 /* PTDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

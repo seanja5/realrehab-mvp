@@ -7,6 +7,7 @@ enum Route: Hashable {
     case pairDevice
     case calibrateDevice
     case allSet
+    case ptDetail
     case home
     case homeSubCategory
     case rehabOverview

@@ -29,7 +29,7 @@ struct AllSetView: View {
             // Bottom button
             VStack {
                 PrimaryButton(title: "Get Started!", useLargeFont: true) {
-                    router.go(.home)
+                    router.go(.ptDetail)
                 }
             }
             .padding(.horizontal, 24)

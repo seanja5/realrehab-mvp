@@ -85,8 +85,8 @@ struct CompletionView: View {
                     router.go(.journeyMap)
                 }
                 
-                SecondaryButton(title: "Back to Home") {
-                    router.go(.home)
+                SecondaryButton(title: "Return to Dashboard") {
+                    router.go(.ptDetail)
                 }
             }
             .padding(.horizontal, 24)

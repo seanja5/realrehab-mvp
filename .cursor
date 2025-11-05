@@ -1,0 +1,440 @@
+# Real Rehab App - Design & Logic Guide
+
+## App Overview
+
+**Real Rehab** is a rehabilitation assistant app that connects patients with physical therapists through a shared platform. The app features two distinct user flows:
+
+- **Patient Flow**: Onboarding → Device pairing → Home discovery → Rehab journey → Interactive lessons → Progress tracking
+- **Physical Therapist Flow**: Login → Patient selection → Injury categorization → Journey map management → Lesson customization
+
+Both flows share data (schedule, lesson nodes, progress) through `UserDefaults` and future backend integration.
+
+---
+
+## User Journey Map
+
+### Patient Flow
+
+#### WelcomeView.swift
+- **Purpose**: Entry point and app introduction
+- **User Actions**: 
+  - Tap "Get Started!" → `CreateAccountView`
+  - Tap "Log In" → `SelectLoginView`
+- **Goal**: Begin onboarding or access existing account
+- **Connected Screens**: `CreateAccountView`, `SelectLoginView`
+- **Core Components**: `PrimaryButton`, `SecondaryButton`
+- **Data**: None
+- **Notes**: No back button (entry point). Large stacked "Real Rehab" title.
+
+#### CreateAccount.swift
+- **Purpose**: Collect patient registration information
+- **User Actions**: 
+  - Fill form fields (first name, last name, email, phone, password)
+  - Tap "Create Account!" → `PairDeviceView`
+- **Goal**: Create new patient account
+- **Connected Screens**: `PairDeviceView`
+- **Core Components**: `BackButton`, `PrimaryButton`, `StepIndicator`, `FormTextField`
+- **Data**: User credentials (stored locally, future: backend)
+- **Notes**: Uses `.rrPageBackground()`, `StepIndicator` shows step 1 of 4.
+
+#### PairDeviceView.swift
+- **Purpose**: Bluetooth pairing with rehabilitation sensor device
+- **User Actions**: 
+  - Tap "Pair Device!" → `CalibrateDeviceView`
+- **Goal**: Connect to BLE sensor hardware
+- **Connected Screens**: `CalibrateDeviceView`
+- **Core Components**: `BackButton`, `PrimaryButton`, `StepIndicator`
+- **Data**: Device pairing state (future: BLE connection)
+- **Notes**: Uses `.rrPageBackground()`, `StepIndicator` shows step 2 of 4.
+
+#### CalibrateDeviceView.swift
+- **Purpose**: Calibrate sensor device at starting and maximum positions
+- **User Actions**: 
+  - Tap "Set Starting Position" (SecondaryButton)
+  - Tap "Set Maximum Position" (SecondaryButton)
+  - Tap "Finish Calibration!" → `AllSetView` (disabled until both positions set)
+- **Goal**: Establish baseline and range of motion for exercises
+- **Connected Screens**: `AllSetView`
+- **Core Components**: `BackButton`, `PrimaryButton`, `SecondaryButton`, `StepIndicator`
+- **Data**: Calibration data (starting position, max position)
+- **Notes**: Uses `.rrPageBackground()`, `StepIndicator` shows step 3 of 4. Primary button at bottom, disabled until both positions set.
+
+#### AllSetView.swift
+- **Purpose**: Onboarding completion confirmation
+- **User Actions**: 
+  - Tap "Get Started!" → `HomeView`
+- **Goal**: Complete onboarding and enter main app
+- **Connected Screens**: `HomeView`
+- **Core Components**: `BackButton`, `PrimaryButton`, `StepIndicator`
+- **Data**: Onboarding completion flag
+- **Notes**: Uses `.rrPageBackground()`, `StepIndicator` shows step 4 of 4. Primary button at bottom.
+
+#### HomeView.swift
+- **Purpose**: Discovery hub for body parts and injury categories
+- **User Actions**: 
+  - Search (SearchBar)
+  - Tap "Knee" card → `HomeSubCategoryView`
+  - Other cards are placeholders (non-functional)
+- **Goal**: Browse and select injury category
+- **Connected Screens**: `HomeSubCategoryView`
+- **Core Components**: `SearchBar`, `BodyPartCard`, `BackButton`
+- **Data**: None
+- **Notes**: Uses `.rrPageBackground()`, navigation title "Discover". Sections: "Lower Extremity", "Upper Extremity", "Spine & Core".
+
+#### HomeSubCategoryView.swift
+- **Purpose**: Subcategory selection for specific injury types
+- **User Actions**: 
+  - Search (SearchBar placeholder: "Search Knee")
+  - Tap "ACL" card → `RehabOverviewView`
+  - Other cards are placeholders
+- **Goal**: Select specific injury type
+- **Connected Screens**: `RehabOverviewView`
+- **Core Components**: `SearchBar`, `BodyPartCard`, `BackButton`
+- **Data**: None
+- **Notes**: Uses `.rrPageBackground()`, navigation title "Injuries". Sections: "Ligaments", "Tendons", "Knee Replacement Recovery".
+
+#### RehabOverviewView.swift
+- **Purpose**: Configure rehabilitation journey schedule and preferences
+- **User Actions**: 
+  - Select start date (opens date picker sheet)
+  - Select days of week (circular chips)
+  - Select times per day (opens time picker sheet)
+  - Toggle "Allow Reminders" and "Allow Camera"
+  - Tap "Confirm Journey!" → `JourneyMapView` (disabled until start date + at least one day selected)
+- **Goal**: Set up personalized rehab schedule
+- **Connected Screens**: `JourneyMapView`
+- **Core Components**: `BackButton`, `PrimaryButton`, `FieldCard`, `DayChip`, `SummaryCard`, `TrianglePlay`
+- **Data**: Saves to `UserDefaults`:
+  - `scheduleStartDateChosen` (Bool)
+  - `scheduleStartDate` (Date)
+  - `scheduleSelectedDays` ([Int] - weekday orders)
+  - `scheduleTimes` ([Int: TimeInterval] - encoded as JSON)
+- **Notes**: Uses `.rrPageBackground()`, navigation title "ACL Rehab". Live schedule summary card updates as user selects days/times.
+
+#### JourneyMapView.swift
+- **Purpose**: Visual journey map showing lesson progression
+- **User Actions**: 
+  - View journey path (zig-zag connecting lines)
+  - Tap unlocked lesson node → shows callout popover → "Go!" → `LessonView`
+  - Tap "more" icon (ellipsis) → shows schedule summary popover
+- **Goal**: View progress and access lessons
+- **Connected Screens**: `LessonView`
+- **Core Components**: `BackButton`, `ScheduleSummaryPopover`, `NodeView`
+- **Data**: Loads from `UserDefaults` (schedule data from `RehabOverviewView`)
+- **Notes**: Uses `.rrPageBackground()`, sticky header card. Nodes: blue (active/unlocked), gray (locked). First node uses `figure.stand` icon, others use `video.fill` or `lock.fill`.
+
+#### LessonView.swift
+- **Purpose**: Interactive rehabilitation lesson session
+- **User Actions**: 
+  - Tap "Begin Lesson" (SecondaryButton) → starts guided simulation
+  - Watch animated progress bar and rep counter
+  - View coaching feedback card (green for correct, red for incorrect)
+  - Tap "Complete Session!" → `CompletionView` (disabled until 20 reps)
+- **Goal**: Complete exercise session with motion feedback
+- **Connected Screens**: `CompletionView`
+- **Core Components**: `BackButton`, `PrimaryButton`, `SecondaryButton`, `ProgressView`
+- **Data**: Session data (reps, accuracy, duration) - stored in `LessonEngine`
+- **Notes**: Uses `.rrPageBackground()`. Guided animation cycle with `Timer`. Calls `engine.stopGuidedSimulation()` on disappear.
+
+#### CompletionView.swift
+- **Purpose**: Session completion summary and navigation
+- **User Actions**: 
+  - View session metrics (Session time, Range of motion, Accuracy)
+  - Tap "Back to Journey Map" → `JourneyMapView`
+  - Tap "Back to Home" → `HomeView`
+- **Goal**: Review session results and choose next action
+- **Connected Screens**: `JourneyMapView`, `HomeView`
+- **Core Components**: `BackButton`, `PrimaryButton`, `SecondaryButton`
+- **Data**: Session summary (displayed from `LessonEngine`)
+- **Notes**: Uses `.rrPageBackground()`. Three stacked metric cards (Session, Range, Accuracy). Two buttons pinned to bottom.
+
+---
+
+### Physical Therapist Flow
+
+#### SelectLoginView.swift
+- **Purpose**: Choose login type (Patient vs PT)
+- **User Actions**: 
+  - Tap "Patient Login" → `HomeView`
+  - Tap "PT Login" → `PTLoginView`
+- **Goal**: Route to appropriate login flow
+- **Connected Screens**: `HomeView`, `PTLoginView`
+- **Core Components**: `BackButton`, `PrimaryButton`, `SecondaryButton`
+- **Data**: None
+- **Notes**: Uses `.rrPageBackground()`, navigation title "Login".
+
+#### PTLoginView.swift
+- **Purpose**: PT login form
+- **User Actions**: 
+  - Fill form fields (first name, last name, phone, email)
+  - Tap "Login" → `PatientListView` (disabled until all fields filled)
+- **Goal**: Authenticate PT user
+- **Connected Screens**: `PatientListView`
+- **Core Components**: `BackButton`, `PrimaryButton`, `FormTextField`
+- **Data**: PT credentials (future: backend authentication)
+- **Notes**: Uses `.rrPageBackground()`, navigation title "Login". No duplicate title text above fields.
+
+#### PatientListView.swift
+- **Purpose**: List of PT's patients
+- **User Actions**: 
+  - Tap "Andrews, Sean, M, DOB 07/21/2003" card → `CategorySelectView`
+  - Other patient cards are placeholders (non-functional)
+- **Goal**: Select patient to manage
+- **Connected Screens**: `CategorySelectView`
+- **Core Components**: `BackButton`, `PatientCard`
+- **Data**: Patient list (hardcoded for now, future: backend)
+- **Notes**: Uses `.rrPageBackground()`, navigation title "Patients". Cards styled like `ScheduleSummaryCard` (rounded corners, white background, soft shadow).
+
+#### CategorySelectView.swift
+- **Purpose**: Select body part category for patient injury
+- **User Actions**: 
+  - Tap "Knee" card → `InjurySelectView`
+  - Other cards are placeholders
+- **Goal**: Choose injury category
+- **Connected Screens**: `InjurySelectView`
+- **Core Components**: `BackButton`, `BodyPartCard`
+- **Data**: None
+- **Notes**: Uses `.rrPageBackground()`, navigation title "Select Category". Layout matches `HomeView` with sections and horizontal carousels.
+
+#### InjurySelectView.swift
+- **Purpose**: Select specific injury type
+- **User Actions**: 
+  - Tap "ACL" card → `PTJourneyMapView`
+  - Other cards are placeholders
+- **Goal**: Choose specific injury
+- **Connected Screens**: `PTJourneyMapView`
+- **Core Components**: `BackButton`, `BodyPartCard`
+- **Data**: None
+- **Notes**: Uses `.rrPageBackground()`, navigation title "Select Injury". Layout matches `HomeSubCategoryView`.
+
+#### PTJourneyMapView.swift
+- **Purpose**: PT's editable journey map for managing patient lessons
+- **User Actions**: 
+  - Tap bubble → opens editor popover (set reps, rest time, lock toggle)
+  - Long-press (0.5s) + drag → reorder lesson nodes
+  - Tap "+" button → add new lesson (picker sheet)
+  - Tap "more" icon (ellipsis) → shows rehab overview popover
+- **Goal**: Customize and manage patient's rehabilitation journey
+- **Connected Screens**: None (end of PT flow)
+- **Core Components**: `BackButton`, `PTNodeView`, `PTEditorPopover`, `AddLessonSheet`, `RehabOverviewPopover`
+- **Data**: 
+  - `LessonNode` array (local state)
+  - Loads schedule data from `UserDefaults` (for overview popover)
+- **Notes**: Uses `.rrPageBackground()`, sticky header card. All nodes are blue (never gray). Drag-and-drop reordering with instant tracking. Tap opens editor, long-press starts drag. ScrollView disabled during drag.
+
+---
+
+## Routing
+
+### Route Enum (`AppRouter.swift`)
+
+All routes defined in `Route` enum:
+
+**Patient Routes:**
+- `.welcome` → `WelcomeView`
+- `.createAccount` → `CreateAccountView`
+- `.pairDevice` → `PairDeviceView`
+- `.calibrateDevice` → `CalibrateDeviceView`
+- `.allSet` → `AllSetView`
+- `.home` → `HomeView`
+- `.homeSubCategory` → `HomeSubCategoryView`
+- `.rehabOverview` → `RehabOverviewView`
+- `.journeyMap` → `JourneyMapView`
+- `.lesson` → `LessonView`
+- `.completion` → `CompletionView`
+
+**PT Routes:**
+- `.selectLogin` → `SelectLoginView`
+- `.ptLogin` → `PTLoginView`
+- `.patientList` → `PatientListView`
+- `.ptCategorySelect` → `CategorySelectView`
+- `.ptInjurySelect` → `InjurySelectView`
+- `.ptJourneyMap` → `PTJourneyMapView`
+
+### Router Usage
+
+```swift
+@EnvironmentObject var router: Router
+
+// Navigate forward
+router.go(.home)
+
+// Reset to specific route
+router.reset(to: .welcome)
+```
+
+---
+
+## Style Guide
+
+### Typography
+Always use Theme.swift font tokens:
+- `.rrHeadline` - 22pt, bold (main titles)
+- `.rrTitle` - 18pt, semibold (section headers, card titles)
+- `.rrBody` - 16pt, regular (body text, buttons)
+- `.rrCallout` - 14pt, regular (secondary text)
+- `.rrCaption` - 12pt, regular (labels, captions)
+
+**Never use**: `.font(.system(...))` or Apple semantic fonts directly.
+
+### Colors
+- `Color.brandDarkBlue` - Primary actions, buttons, accents
+- `Color.brandLightBlue` - Secondary accents, connecting lines
+- `Color(red: 0.95, green: 0.95, blue: 0.95)` - Page background (use `.rrPageBackground()` helper)
+
+### Spacing
+- `RRSpace.pageTop` - 20pt (top padding for page content)
+- `RRSpace.section` - 16pt (between sections)
+- `RRSpace.stack` - 12pt (between stack items)
+- Standard horizontal padding: 16-20pt
+
+### Background
+Every screen must use:
+```swift
+.rrPageBackground()
+```
+This applies the light gray background consistently.
+
+### Navigation
+- **Back Button**: Always use `BackButton()` component in toolbar:
+  ```swift
+  .navigationBarBackButtonHidden(true)
+  .toolbar {
+      ToolbarItem(placement: .topBarLeading) {
+          BackButton()
+      }
+  }
+  ```
+- **Exception**: `WelcomeView` has NO back button (entry point)
+- **Navigation Title**: Use `.navigationTitle("...")` with `.navigationBarTitleDisplayMode(.inline)`
+
+### Buttons
+- **PrimaryButton**: Filled blue button for primary actions
+  - `useLargeFont: true` for prominent buttons
+  - `isDisabled: Bool` for conditional enabling
+- **SecondaryButton**: Outlined button for secondary actions
+- Always use these components, never create custom button styles
+
+### Layout Principles
+- Use `ScrollView` for content that may overflow
+- Standard horizontal padding: 16-20pt
+- Bottom-pinned buttons: Use `.safeAreaInset(edge: .bottom)`
+- Sticky headers: Use `.safeAreaInset(edge: .top)`
+
+---
+
+## Functional Notes
+
+### Device Pairing
+- `PairDeviceView` is placeholder for future BLE sensor integration
+- Calibration data stored locally (future: sync with backend)
+
+### Journey Maps
+- **JourneyMapView** (Patient): Read-only visualization
+  - Blue bubbles = active/unlocked lessons
+  - Gray bubbles = locked lessons
+  - First node uses `figure.stand` icon
+  - Other nodes use `video.fill` or `lock.fill` icons
+  - Zig-zag path with connecting lines
+  
+- **PTJourneyMapView** (PT): Fully editable
+  - All nodes are blue (never gray)
+  - Lock overlay shown as small lock icon on top-right
+  - Drag-and-drop reordering (long-press 0.5s + drag)
+  - Tap to edit (reps, rest time, lock status)
+  - Add new lessons via "+" button
+  - Instant drag tracking (no animation during drag)
+
+### Lesson System
+- `LessonView` uses `LessonEngine` for guided simulation
+- Motion feedback loop with animated progress bar
+- Coaching feedback card (green = correct, red = incorrect)
+- "Complete Session!" button disabled until 20 reps achieved
+- Calls `engine.stopGuidedSimulation()` on disappear
+
+### Schedule System
+- Schedule data saved in `RehabOverviewView`:
+  - Start date (Date)
+  - Selected days ([Int] - weekday orders)
+  - Times per day ([Int: TimeInterval] - encoded as JSON)
+- Loaded in `JourneyMapView` and `PTJourneyMapView` for schedule summary popover
+- Uses `Weekday` enum from `SchedulingModels.swift`
+
+### Data Models
+- **Weekday**: Enum (sun=0, mon=1, ..., sat=6) with `order`, `shortLabel`, `name`
+- **DayTime**: Struct for time-of-day (minutes from midnight)
+- **LessonNode**: PT-side model with `id`, `title`, `icon`, `isLocked`, `reps`, `restSec`, `yOffset`
+
+---
+
+## Update Rule
+
+When adding a new screen or feature:
+
+1. **Add to this file**:
+   - Screen name and filename
+   - Purpose and user actions
+   - Connected screens
+   - Core components used
+   - Data saved/modified
+
+2. **Update Router**:
+   - Add new case to `Route` enum in `AppRouter.swift`
+   - Add navigation destination in `RealRehabPracticeApp.swift`
+
+3. **Verify Style**:
+   - Uses `.rrPageBackground()`
+   - Uses `BackButton()` if navigable
+   - Uses Theme.swift fonts
+   - Uses `PrimaryButton`/`SecondaryButton`
+   - Standard spacing and padding
+
+4. **Document Data Flow**:
+   - If saving to `UserDefaults`, document keys
+   - If sharing data between screens, document the flow
+   - If using shared models, reference them
+
+---
+
+## Shared Components Reference
+
+### Buttons
+- `PrimaryButton(title:isDisabled:useLargeFont:action:)` - Filled blue button
+- `SecondaryButton(title:isDisabled:action:)` - Outlined blue button
+
+### Navigation
+- `BackButton(title:action:)` - Toolbar back button component
+
+### Forms
+- `FormTextField(title:placeholder:text:)` - Text input with label
+
+### Display
+- `SearchBar(text:placeholder:)` - Search input field
+- `BodyPartCard(title:image:imageName:tappable:action:)` - Category/injury card
+- `StepIndicator(current:total:showLabel:)` - Onboarding progress indicator
+
+### Popovers/Sheets
+- `ScheduleSummaryPopover(startDate:selectedDays:times:onDismiss:)` - Schedule summary card
+- `RehabOverviewPopover(onDismiss:)` - PT rehab overview card
+- `PTEditorPopover` - PT lesson editor (defined in PTJourneyMapView)
+- `AddLessonSheet` - PT add lesson sheet (defined in PTJourneyMapView)
+
+### Node Views
+- `NodeView(node:)` - Patient journey map node
+- `PTNodeView(node:scale:)` - PT journey map node (always blue, supports lock overlay)
+
+---
+
+## Key Files Reference
+
+- **Router**: `RealRehabPractice/App/AppRouter.swift`
+- **App Entry**: `RealRehabPractice/App/RealRehabPracticeApp.swift`
+- **Theme**: `RealRehabPractice/Components/Theme.swift`
+- **Components**: `RealRehabPractice/Components/Components.swift`
+- **Scheduling Models**: `RealRehabPractice/Models/SchedulingModels.swift`
+- **Lesson Engine**: `RealRehabPractice/Services/LessonEngine.swift` (referenced in LessonView)
+
+---
+
+*Last Updated: [Auto-update when new screens/features added]*
+

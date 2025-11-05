@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 @main
 struct RealRehabPracticeApp: App {
@@ -38,6 +39,12 @@ struct RealRehabPracticeApp: App {
                         }
                     }
             }
+            .simultaneousGesture(
+                TapGesture()
+                    .onEnded { _ in
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+            )
             .environmentObject(router)
             .preferredColorScheme(.light)   // <- force Light mode app-wide
         }

@@ -3,7 +3,6 @@ import SwiftUI
 struct PatientDetailView: View {
     @EnvironmentObject var router: Router
     @State private var notes: String = ""
-    @FocusState private var notesFocused: Bool
     
     var body: some View {
         ScrollView {
@@ -88,7 +87,6 @@ struct PatientDetailView: View {
                                     .padding(12)
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
-                                    .focused($notesFocused)
                             }
                         )
                         .frame(minHeight: 180)
@@ -97,10 +95,6 @@ struct PatientDetailView: View {
                 
                 Spacer(minLength: 24)
             }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            notesFocused = false
         }
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)

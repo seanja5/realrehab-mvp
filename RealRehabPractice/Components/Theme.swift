@@ -23,6 +23,13 @@ extension View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color(red: 0.95, green: 0.95, blue: 0.95).ignoresSafeArea())
     }
+    
+    /// Dismisses keyboard when tapping outside text fields/editors
+    func dismissKeyboardOnTap() -> some View {
+        self.onTapGesture {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+    }
 }
 // MARK: - Back-compat shim so Components can use Theme.*
 enum Theme {

@@ -99,11 +99,7 @@ struct CreateAccountView: View {
                             Divider()
                             
                             // Date & Gender Section
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("Date of Birth")
-                                    .font(.rrTitle)
-                                    .foregroundStyle(.primary)
-                                
+                            VStack(alignment: .leading, spacing: 12) {
                                 HStack(spacing: 12) {
                                     FormDateField(title: "Date of Birth", date: $dateOfBirth)
                                         .frame(maxWidth: .infinity)
@@ -111,11 +107,6 @@ struct CreateAccountView: View {
                                     FormMenuField(title: "Gender", selection: $gender, options: genderOptions)
                                         .frame(maxWidth: .infinity)
                                 }
-                                
-                                Text("Date of Surgery")
-                                    .font(.rrTitle)
-                                    .foregroundStyle(.primary)
-                                    .padding(.top, 8)
                                 
                                 HStack(spacing: 12) {
                                     FormDateField(title: "Date of Surgery", date: $dateOfSurgery)

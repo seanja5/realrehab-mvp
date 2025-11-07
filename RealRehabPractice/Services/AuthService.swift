@@ -1,0 +1,240 @@
+import Foundation
+import Supabase
+import PostgREST
+
+struct Profile: Codable, Equatable {
+  let user_id: UUID
+  var role: String
+  var full_name: String?
+  var email: String?
+  var created_at: Date?
+}
+
+enum AuthService {
+  private static let supabase = SupabaseService.shared.client
+
+  // MARK: - Auth
+  static func signUp(email: String, password: String) async throws {
+    _ = try await supabase.auth.signUp(email: email, password: password)
+  }
+
+  static func signIn(email: String, password: String) async throws {
+    _ = try await supabase.auth.signIn(email: email, password: password)
+  }
+
+  static func signOut() async throws {
+    try await supabase.auth.signOut()
+  }
+
+  static func currentUserId() throws -> UUID {
+    if let cached = supabase.auth.currentUser?.id {
+      return cached
+    }
+
+    throw NSError(
+      domain: "AuthService",
+      code: 401,
+      userInfo: [NSLocalizedDescriptionKey: "No authenticated user - please sign in."]
+    )
+  }
+
+  // MARK: - Profile bootstrap (if DB trigger wasn’t added)
+  static func ensureProfile(defaultRole: String = "patient", fullName: String? = nil) async throws {
+    let user = try await fetchCurrentUser()
+    let uid = user.id
+
+    let existing: [Profile] = try await supabase
+      .from("accounts.profiles")
+      .select()
+      .eq("user_id", value: uid.uuidString)
+      .limit(1)
+      .decoded(as: [Profile].self)
+
+    if existing.isEmpty {
+      let payload: [String: AnyEncodable] = [
+        "user_id": AnyEncodable(uid.uuidString),
+        "role": AnyEncodable(defaultRole),
+        "full_name": AnyEncodable(fullName ?? ""),
+        "email": AnyEncodable(user.email ?? "")
+      ]
+
+      _ = try await supabase
+        .from("accounts.profiles")
+        .insert(payload)
+        .execute()
+    }
+  }
+
+  // MARK: - Fetch my profile
+  static func myProfile() async throws -> Profile? {
+    let uid = try currentUserId()
+    let rows: [Profile] = try await supabase
+      .from("accounts.profiles")
+      .select()
+      .eq("user_id", value: uid.uuidString)
+      .limit(1)
+      .decoded(as: [Profile].self)
+
+    return rows.first
+  }
+
+  // MARK: - Helpers
+  private static func fetchCurrentUser() async throws -> User {
+    if let session = try? await supabase.auth.session {
+      return session.user
+    }
+
+    if let cached = supabase.auth.currentUser {
+      return cached
+    }
+
+    throw NSError(
+      domain: "AuthService",
+      code: 401,
+      userInfo: [NSLocalizedDescriptionKey: "No authenticated user - please sign in."]
+    )
+  }
+}
+
+// MARK: - Dynamic Encoding Helper
+
+struct AnyEncodable: Encodable {
+  private let value: Any?
+
+  init(_ value: Any?) {
+    self.value = value
+  }
+
+  func encode(to encoder: Encoder) throws {
+    guard let value else {
+      var container = encoder.singleValueContainer()
+      try container.encodeNil()
+      return
+    }
+
+    if Mirror(reflecting: value).displayStyle == .optional {
+      if let child = Mirror(reflecting: value).children.first {
+        try AnyEncodable(child.value).encode(to: encoder)
+      } else {
+        var container = encoder.singleValueContainer()
+        try container.encodeNil()
+      }
+      return
+    }
+
+    switch value {
+    case let encodableValue as JSONValue:
+      try encodableValue.encode(to: encoder)
+    case let string as String:
+      var container = encoder.singleValueContainer()
+      try container.encode(string)
+    case let bool as Bool:
+      var container = encoder.singleValueContainer()
+      try container.encode(bool)
+    case let int as Int:
+      var container = encoder.singleValueContainer()
+      try container.encode(int)
+    case let int8 as Int8:
+      var container = encoder.singleValueContainer()
+      try container.encode(int8)
+    case let int16 as Int16:
+      var container = encoder.singleValueContainer()
+      try container.encode(int16)
+    case let int32 as Int32:
+      var container = encoder.singleValueContainer()
+      try container.encode(int32)
+    case let int64 as Int64:
+      var container = encoder.singleValueContainer()
+      try container.encode(int64)
+    case let uint as UInt:
+      var container = encoder.singleValueContainer()
+      try container.encode(uint)
+    case let uint8 as UInt8:
+      var container = encoder.singleValueContainer()
+      try container.encode(uint8)
+    case let uint16 as UInt16:
+      var container = encoder.singleValueContainer()
+      try container.encode(uint16)
+    case let uint32 as UInt32:
+      var container = encoder.singleValueContainer()
+      try container.encode(uint32)
+    case let uint64 as UInt64:
+      var container = encoder.singleValueContainer()
+      try container.encode(uint64)
+    case let double as Double:
+      var container = encoder.singleValueContainer()
+      try container.encode(double)
+    case let float as Float:
+      var container = encoder.singleValueContainer()
+      try container.encode(float)
+    case let uuid as UUID:
+      var container = encoder.singleValueContainer()
+      try container.encode(uuid.uuidString)
+    case let date as Date:
+      var container = encoder.singleValueContainer()
+      try container.encode(date.iso8601String())
+    case let number as NSNumber:
+      if CFGetTypeID(number) == CFBooleanGetTypeID() {
+        var container = encoder.singleValueContainer()
+        try container.encode(number.boolValue)
+      } else {
+        var container = encoder.singleValueContainer()
+        try container.encode(number.doubleValue)
+      }
+    case let dict as [String: Any]:
+      var container = encoder.container(keyedBy: AnyCodingKey.self)
+      for (key, nestedValue) in dict {
+        try container.encode(AnyEncodable(nestedValue), forKey: AnyCodingKey(key))
+      }
+    case let array as [Any]:
+      var container = encoder.unkeyedContainer()
+      for element in array {
+        try container.encode(AnyEncodable(element))
+      }
+    case is NSNull:
+      var container = encoder.singleValueContainer()
+      try container.encodeNil()
+    default:
+      throw NSError(
+        domain: "AnyEncodable",
+        code: 422,
+        userInfo: [NSLocalizedDescriptionKey: "Unsupported value: \(value)"]
+      )
+    }
+  }
+}
+
+private struct AnyCodingKey: CodingKey {
+  var stringValue: String
+  var intValue: Int?
+
+  init(_ string: String) {
+    self.stringValue = string
+    self.intValue = nil
+  }
+
+  init?(stringValue: String) {
+    self.init(stringValue)
+  }
+
+  init?(intValue: Int) {
+    self.stringValue = "\(intValue)"
+    self.intValue = intValue
+  }
+}
+
+private extension Date {
+  func iso8601String() -> String {
+    ISO8601DateFormatter().string(from: self)
+  }
+}
+
+extension PostgrestBuilder {
+  func decoded<T: Decodable>(
+    as type: T.Type = T.self,
+    options: FetchOptions = FetchOptions()
+  ) async throws -> T {
+    try await execute(options: options).value
+  }
+}
+

@@ -8,11 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		C8003FA22EB42E72008DC812 /* SupabaseConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */; };
-		C8003FAA2EB44077008DC812 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8003FA92EB4406C008DC812 /* SupabaseService.swift */; };
 		C8003FAD2EB441F1008DC812 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = C8003FAC2EB441F1008DC812 /* Supabase */; };
 		C8003FB52EB7FD57008DC812 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8003FB42EB7FC39008DC812 /* Components.swift */; };
+		C82D700E2EBE91D3004D9347 /* RehabService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D700A2EBE91D3004D9347 /* RehabService.swift */; };
+		C82D700F2EBE91D3004D9347 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D700B2EBE91D3004D9347 /* SupabaseService.swift */; };
+		C82D70102EBE91D3004D9347 /* LessonEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70092EBE91D3004D9347 /* LessonEngine.swift */; };
+		C82D70112EBE91D3004D9347 /* TelemetryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D700C2EBE91D3004D9347 /* TelemetryService.swift */; };
+		C82D70122EBE91D3004D9347 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70082EBE91D3004D9347 /* AuthService.swift */; };
 		C8AEECB02EB2D7A200720184 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */; };
-		C8AEECB12EB2D7A200720184 /* LessonEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA72EB2D7A200720184 /* LessonEngine.swift */; };
 		C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */; };
 		C8AEECB32EB2D7A200720184 /* AllSetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */; };
 		C8AEECB42EB2D7A200720184 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */; };
@@ -60,8 +63,12 @@
 
 /* Begin PBXFileReference section */
 		C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SupabaseConfig.plist; sourceTree = "<group>"; };
-		C8003FA92EB4406C008DC812 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		C8003FB42EB7FC39008DC812 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		C82D70082EBE91D3004D9347 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		C82D70092EBE91D3004D9347 /* LessonEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonEngine.swift; sourceTree = "<group>"; };
+		C82D700A2EBE91D3004D9347 /* RehabService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RehabService.swift; sourceTree = "<group>"; };
+		C82D700B2EBE91D3004D9347 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		C82D700C2EBE91D3004D9347 /* TelemetryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryService.swift; sourceTree = "<group>"; };
 		C89A84B12EB138150074B855 /* RealRehabPractice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RealRehabPractice.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C89A84BE2EB138170074B855 /* RealRehabPracticeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C89A84C82EB138170074B855 /* RealRehabPracticeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,7 +82,6 @@
 		C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSubCategoryView.swift; sourceTree = "<group>"; };
 		C8AEECA52EB2D7A200720184 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyMapView.swift; sourceTree = "<group>"; };
-		C8AEECA72EB2D7A200720184 /* LessonEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonEngine.swift; sourceTree = "<group>"; };
 		C8AEECA82EB2D7A200720184 /* LessonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonView.swift; sourceTree = "<group>"; };
 		C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeSensorSimulator.swift; sourceTree = "<group>"; };
 		C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealRehabPracticeApp.swift; sourceTree = "<group>"; };
@@ -134,14 +140,26 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C82D700D2EBE91D3004D9347 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C82D70082EBE91D3004D9347 /* AuthService.swift */,
+				C82D70092EBE91D3004D9347 /* LessonEngine.swift */,
+				C82D700A2EBE91D3004D9347 /* RehabService.swift */,
+				C82D700B2EBE91D3004D9347 /* SupabaseService.swift */,
+				C82D700C2EBE91D3004D9347 /* TelemetryService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		C89A84A82EB138150074B855 = {
 			isa = PBXGroup;
 			children = (
+				C82D700D2EBE91D3004D9347 /* Services */,
 				C8D677C12EB831E500829144 /* Views */,
 				C8D677C42EB8321E00829144 /* Utilities */,
 				C8D677C32EB8321800829144 /* Resources */,
 				C8D677C22EB8321100829144 /* Models */,
-				C8D677C02EB831DD00829144 /* Services */,
 				C8D677BF2EB831D600829144 /* Components */,
 				C8D677BE2EB831BF00829144 /* App */,
 				C89A84C12EB138170074B855 /* RealRehabPracticeTests */,
@@ -176,15 +194,6 @@
 				C8003FB42EB7FC39008DC812 /* Components.swift */,
 			);
 			path = Components;
-			sourceTree = "<group>";
-		};
-		C8D677C02EB831DD00829144 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				C8003FA92EB4406C008DC812 /* SupabaseService.swift */,
-				C8AEECA72EB2D7A200720184 /* LessonEngine.swift */,
-			);
-			path = Services;
 			sourceTree = "<group>";
 		};
 		C8D677C12EB831E500829144 /* Views */ = {
@@ -420,7 +429,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C8AEECB12EB2D7A200720184 /* LessonEngine.swift in Sources */,
+				C82D700E2EBE91D3004D9347 /* RehabService.swift in Sources */,
+				C82D700F2EBE91D3004D9347 /* SupabaseService.swift in Sources */,
+				C82D70102EBE91D3004D9347 /* LessonEngine.swift in Sources */,
+				C82D70112EBE91D3004D9347 /* TelemetryService.swift in Sources */,
+				C82D70122EBE91D3004D9347 /* AuthService.swift in Sources */,
 				C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */,
 				C8AEECB32EB2D7A200720184 /* AllSetView.swift in Sources */,
 				C8AEECB42EB2D7A200720184 /* WelcomeView.swift in Sources */,
@@ -436,7 +449,6 @@
 				C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */,
 				C8D677BD2EB8285A00829144 /* PairDeviceView.swift in Sources */,
 				C8AEECBC2EB2D7A200720184 /* LessonView.swift in Sources */,
-				C8003FAA2EB44077008DC812 /* SupabaseService.swift in Sources */,
 				C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */,
 				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
 				C8003FB52EB7FD57008DC812 /* Components.swift in Sources */,

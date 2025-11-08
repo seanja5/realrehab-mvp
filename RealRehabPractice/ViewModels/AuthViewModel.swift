@@ -6,7 +6,8 @@ import Supabase
 final class AuthViewModel: ObservableObject {
   @Published var email: String = ""
   @Published var password: String = ""
-  @Published var fullName: String = ""
+  @Published var firstName: String = ""
+  @Published var lastName: String = ""
   @Published var isLoading: Bool = false
   @Published var errorMessage: String?
 
@@ -14,7 +15,11 @@ final class AuthViewModel: ObservableObject {
     await run {
       try await AuthService.signUp(email: self.email, password: self.password)
       try await AuthService.signIn(email: self.email, password: self.password)
-      try await AuthService.ensureProfile(defaultRole: "patient", fullName: self.fullName)
+      try await AuthService.ensureProfile(
+        defaultRole: "patient",
+        firstName: self.firstName,
+        lastName: self.lastName
+      )
       try self.logCurrentUser()
     }
   }

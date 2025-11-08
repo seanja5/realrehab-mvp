@@ -3,11 +3,15 @@ import Supabase
 import PostgREST
 
 struct Profile: Codable, Equatable {
+  let id: UUID
   let user_id: UUID
   var role: String
-  var full_name: String?
   var email: String?
+  var first_name: String?
+  var last_name: String?
+  var phone: String?
   var created_at: Date?
+  var updated_at: Date?
 }
 
 enum AuthService {
@@ -39,38 +43,36 @@ enum AuthService {
   }
 
   // MARK: - Profile bootstrap (if DB trigger wasn’t added)
-  static func ensureProfile(defaultRole: String = "patient", fullName: String? = nil) async throws {
+  static func ensureProfile(
+    defaultRole: String = "patient",
+    firstName: String,
+    lastName: String
+  ) async throws {
     let user = try await fetchCurrentUser()
     let uid = user.id
 
-    let existing: [Profile] = try await supabase
-      .from("accounts.profiles")
-      .select()
-      .eq("user_id", value: uid.uuidString)
-      .limit(1)
-      .decoded(as: [Profile].self)
+    let payload: [String: AnyEncodable] = [
+      "user_id": AnyEncodable(uid.uuidString),
+      "email": AnyEncodable(user.email ?? ""),
+      "role": AnyEncodable(defaultRole),
+      "first_name": AnyEncodable(firstName),
+      "last_name": AnyEncodable(lastName)
+    ]
 
-    if existing.isEmpty {
-      let payload: [String: AnyEncodable] = [
-        "user_id": AnyEncodable(uid.uuidString),
-        "role": AnyEncodable(defaultRole),
-        "full_name": AnyEncodable(fullName ?? ""),
-        "email": AnyEncodable(user.email ?? "")
-      ]
-
-      _ = try await supabase
-        .from("accounts.profiles")
-        .insert(payload)
-        .execute()
-    }
+    _ = try await supabase
+      .schema("accounts")
+      .from("profiles")
+      .upsert(payload, onConflict: "user_id")
+      .execute()
   }
 
   // MARK: - Fetch my profile
   static func myProfile() async throws -> Profile? {
     let uid = try currentUserId()
     let rows: [Profile] = try await supabase
-      .from("accounts.profiles")
-      .select()
+      .schema("accounts")
+      .from("profiles")
+      .select("id,user_id,email,role,first_name,last_name,phone,created_at,updated_at")
       .eq("user_id", value: uid.uuidString)
       .limit(1)
       .decoded(as: [Profile].self)

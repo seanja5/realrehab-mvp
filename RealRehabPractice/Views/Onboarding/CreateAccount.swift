@@ -9,6 +9,7 @@ private let fieldFill   = Color(uiColor: .secondarySystemFill)        // ← thi
 
 struct CreateAccountView: View {
     @EnvironmentObject var router: Router
+    @StateObject private var auth = AuthViewModel()
     
     // Color constants - matching WelcomeView
     private let darkBlue = Color(red: 0.1, green: 0.2, blue: 0.6)
@@ -75,6 +76,7 @@ struct CreateAccountView: View {
                                     .textInputAutocapitalization(.never)
                                     .textContentType(.emailAddress)
                                     .autocorrectionDisabled()
+                                    .onChange(of: email) { auth.email = $0 }
                                 
                                 FormTextField(title: "Phone Number", placeholder: "Phone Number", text: $phoneNumber)
                                     .keyboardType(.phonePad)
@@ -91,6 +93,7 @@ struct CreateAccountView: View {
                                 
                                 FormSecureField(title: "Password", placeholder: "Password", text: $password)
                                     .textContentType(.newPassword)
+                                    .onChange(of: password) { auth.password = $0 }
                                 
                                 FormSecureField(title: "Confirm Password", placeholder: "Confirm Password", text: $confirmPassword)
                                     .textContentType(.newPassword)
@@ -151,12 +154,19 @@ struct CreateAccountView: View {
                         
                         // Create Account button at the bottom of scroll content
                         PrimaryButton(
-                            title: "Create Account!",
-                            isDisabled: !isFormValid,
+                            title: auth.isLoading ? "Creating..." : "Create Account!",
+                            isDisabled: !isFormValid || auth.isLoading,
                             useLargeFont: true,
                             action: {
-                                if isFormValid {
-                                    router.go(.pairDevice)
+                                Task {
+                                    auth.firstName = firstName
+                                    auth.lastName = lastName
+                                    auth.email = email
+                                    auth.password = password
+                                    await auth.signUp()
+                                    if auth.errorMessage == nil {
+                                        router.go(.pairDevice)
+                                    }
                                 }
                             }
                         )
@@ -175,6 +185,15 @@ struct CreateAccountView: View {
                 BackButton()
             }
         }
+            .alert(isPresented: .constant(auth.errorMessage != nil), content: {
+                Alert(
+                    title: Text("Sign Up Failed"),
+                    message: Text(auth.errorMessage ?? ""),
+                    dismissButton: .default(Text("OK")) {
+                        auth.errorMessage = nil
+                    }
+                )
+            })
     }
     
     // Validation

@@ -8,7 +8,7 @@ struct SelectLoginView: View {
             Spacer()
             
             PrimaryButton(title: "Patient Login") {
-                router.go(.ptDetail)
+                router.go(.patientLogin)
             }
             .padding(.horizontal, 24)
             

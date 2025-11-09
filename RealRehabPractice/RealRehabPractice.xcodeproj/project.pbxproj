@@ -20,6 +20,7 @@
 		C82D70292EBEB10C004D9347 /* PTProgramEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70252EBEB10C004D9347 /* PTProgramEditorViewModel.swift */; };
 		C82D702A2EBEB10C004D9347 /* LessonSessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70232EBEB10C004D9347 /* LessonSessionViewModel.swift */; };
 		C82D70302ED0841A004D9347 /* PatientPTViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */; };
+		C82D70342ED09AC7004D9347 /* PatientLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70332ED09AC7004D9347 /* PatientLoginView.swift */; };
 		C82D702C2ED00153004D9347 /* PatientService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D702B2ED00153004D9347 /* PatientService.swift */; };
 		C8AEECB02EB2D7A200720184 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */; };
 		C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */; };
@@ -80,6 +81,7 @@
 		C82D70242EBEB10C004D9347 /* PatientDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDashboardViewModel.swift; sourceTree = "<group>"; };
 		C82D70252EBEB10C004D9347 /* PTProgramEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTProgramEditorViewModel.swift; sourceTree = "<group>"; };
 		C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientPTViewModel.swift; sourceTree = "<group>"; };
+		C82D70332ED09AC7004D9347 /* PatientLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientLoginView.swift; sourceTree = "<group>"; };
 		C82D702B2ED00153004D9347 /* PatientService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientService.swift; sourceTree = "<group>"; };
 		C89A84B12EB138150074B855 /* RealRehabPractice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RealRehabPractice.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C89A84BE2EB138170074B855 /* RealRehabPracticeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -268,6 +270,7 @@
 				C8D677BC2EB8285A00829144 /* PairDeviceView.swift */,
 				C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */,
 				C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */,
+				C82D70332ED09AC7004D9347 /* PatientLoginView.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -484,6 +487,7 @@
 				C82D70292EBEB10C004D9347 /* PTProgramEditorViewModel.swift in Sources */,
 				C82D702A2EBEB10C004D9347 /* LessonSessionViewModel.swift in Sources */,
 				C82D70302ED0841A004D9347 /* PatientPTViewModel.swift in Sources */,
+				C82D70342ED09AC7004D9347 /* PatientLoginView.swift in Sources */,
 				C82D702C2ED00153004D9347 /* PatientService.swift in Sources */,
 				C8D677F02EBA932000829144 /* InjurySelectView.swift in Sources */,
 				C8D677F12EBA932000829144 /* PatientListView.swift in Sources */,

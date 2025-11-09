@@ -10,6 +10,15 @@ final class AuthViewModel: ObservableObject {
   @Published var lastName: String = ""
   @Published var isLoading: Bool = false
   @Published var errorMessage: String?
+  @Published var phoneNumber: String = ""
+  @Published var dateOfBirth: Date = Date()
+  @Published var dateOfSurgery: Date = Date()
+  @Published var lastPTVisit: Date = Date()
+  @Published var gender: String = ""
+  @Published var ptFirstName: String = ""
+  @Published var ptLastName: String = ""
+  @Published var ptEmail: String = ""
+  @Published var ptPhoneNumber: String = ""
 
   func signUp() async {
     await run {
@@ -20,6 +29,35 @@ final class AuthViewModel: ObservableObject {
         firstName: self.firstName,
         lastName: self.lastName
       )
+      guard let profile = try await AuthService.myProfile() else {
+        throw NSError(domain: "AuthViewModel", code: 500, userInfo: [NSLocalizedDescriptionKey: "Failed to load profile after signup"])
+      }
+
+      let patientProfileId = try await PatientService.ensurePatientProfile(
+        profileId: profile.id,
+        dob: self.dateOfBirth,
+        surgeryDate: self.dateOfSurgery,
+        lastPtVisit: self.lastPTVisit,
+        gender: self.gender.isEmpty ? nil : self.gender
+      )
+
+      let emailTrim = self.ptEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+      if !emailTrim.isEmpty {
+        let pt = try await PatientService.upsertPTProfile(
+          email: emailTrim,
+          first: self.ptFirstName.isEmpty ? nil : self.ptFirstName,
+          last: self.ptLastName.isEmpty ? nil : self.ptLastName,
+          phone: self.ptPhoneNumber.isEmpty ? nil : self.ptPhoneNumber
+        )
+        try await PatientService.upsertPTMapping(
+          patientProfileId: patientProfileId,
+          ptProfileId: pt.id
+        )
+        let mappedEmail = pt.email ?? "<no email>"
+        print("🔗 Mapped patient_profile \(patientProfileId) to PT \(mappedEmail)")
+      } else {
+        print("ℹ️ No PT email provided; skipping mapping")
+      }
       try self.logCurrentUser()
     }
   }

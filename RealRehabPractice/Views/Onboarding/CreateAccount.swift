@@ -163,6 +163,10 @@ struct CreateAccountView: View {
                                     auth.lastName = lastName
                                     auth.email = email
                                     auth.password = password
+                                    auth.ptFirstName = ptFirstName
+                                    auth.ptLastName = ptLastName
+                                    auth.ptEmail = ptEmail
+                                    auth.ptPhoneNumber = ptPhoneNumber
                                     await auth.signUp()
                                     if auth.errorMessage == nil {
                                         router.go(.pairDevice)

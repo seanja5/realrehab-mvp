@@ -1,7 +1,9 @@
 import SwiftUI
+import Combine
 
 struct PTDetailView: View {
     @EnvironmentObject var router: Router
+    @StateObject private var vm = PatientPTViewModel()
     
     var body: some View {
         ScrollView {
@@ -12,14 +14,14 @@ struct PTDetailView: View {
                     .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                     .overlay(
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Derek Samuel")
+                            Text(vm.name.isEmpty ? "Your Physical Therapist" : vm.name)
                                 .font(.rrTitle)
                                 .foregroundStyle(.primary)
                             
-                            Text("Phone: (555) 123-4567")
+                            Text("Phone: \(vm.phone.isEmpty ? "—" : vm.phone)")
                                 .font(.rrBody)
                                 .foregroundStyle(.secondary)
-                            Text("Email: derek.samuel@example.com")
+                            Text("Email: \(vm.email.isEmpty ? "—" : vm.email)")
                                 .font(.rrBody)
                                 .foregroundStyle(.secondary)
                         }
@@ -80,6 +82,9 @@ struct PTDetailView: View {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()
             }
+        }
+        .task {
+            await vm.load()
         }
     }
 }

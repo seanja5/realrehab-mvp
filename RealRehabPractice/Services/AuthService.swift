@@ -80,6 +80,31 @@ enum AuthService {
     return rows.first
   }
 
+  // MARK: - Fetch profile ID and role
+  static func myProfileIdAndRole() async throws -> (UUID, String) {
+    let uid = try currentUserId()
+    struct ProfileRow: Decodable {
+      let id: UUID
+      let role: String
+    }
+    let rows: [ProfileRow] = try await supabase
+      .schema("accounts")
+      .from("profiles")
+      .select("id,role")
+      .eq("user_id", value: uid.uuidString)
+      .limit(1)
+      .decoded(as: [ProfileRow].self)
+
+    guard let row = rows.first else {
+      throw NSError(
+        domain: "AuthService",
+        code: 404,
+        userInfo: [NSLocalizedDescriptionKey: "Profile not found"]
+      )
+    }
+    return (row.id, row.role)
+  }
+
   // MARK: - Helpers
   private static func fetchCurrentUser() async throws -> User {
     if let session = try? await supabase.auth.session {

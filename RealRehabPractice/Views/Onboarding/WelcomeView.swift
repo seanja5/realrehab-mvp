@@ -27,7 +27,7 @@ struct WelcomeView: View {
                     })
                     
                     SecondaryButton(title: "Log In", action: {
-                        router.go(.selectLogin)
+                        router.go(.login)
                     })
                 }
                 .padding(.horizontal, 40)

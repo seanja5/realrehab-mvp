@@ -1,7 +1,7 @@
 import SwiftUI
 import Combine
 
-struct PatientLoginView: View {
+struct LoginView: View {
     @EnvironmentObject private var router: Router
     @StateObject private var auth = AuthViewModel()
     
@@ -46,14 +46,26 @@ struct PatientLoginView: View {
         .ignoresSafeArea(.keyboard)
         .safeAreaInset(edge: .bottom) {
             PrimaryButton(
-                title: auth.isLoading ? "Logging in..." : "Login",
+                title: auth.isLoading ? "Logging in..." : "Log In",
                 isDisabled: !isFormValid || auth.isLoading,
                 useLargeFont: true
             ) {
                 Task {
                     await auth.signIn()
                     if auth.errorMessage == nil {
-                        router.go(.ptDetail)
+                        do {
+                            let (profileId, role) = try await AuthService.myProfileIdAndRole()
+                            switch role {
+                            case "pt":
+                                router.go(.patientList)
+                            case "patient":
+                                router.go(.ptDetail)
+                            default:
+                                auth.errorMessage = "Account setup incomplete. Please finish your profile."
+                            }
+                        } catch {
+                            auth.errorMessage = error.localizedDescription
+                        }
                     }
                 }
             }

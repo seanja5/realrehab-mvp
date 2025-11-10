@@ -121,7 +121,7 @@ struct PTSettingsView: View {
             PrimaryButton(title: "Sign out") {
                 Task {
                     try? await AuthService.signOut()
-                    router.reset(to: .selectLogin)
+                    router.reset(to: .welcome)
                 }
             }
         }

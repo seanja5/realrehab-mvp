@@ -17,9 +17,7 @@ enum Route: Hashable {
     case patientSettings
     case lesson
     case completion
-    case selectLogin
-    case patientLogin
-    case ptLogin
+    case login
     case ptSettings
     case patientList
     case ptPatientDetail

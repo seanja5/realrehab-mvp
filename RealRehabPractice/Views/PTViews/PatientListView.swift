@@ -4,23 +4,34 @@ struct PatientListView: View {
     @EnvironmentObject var router: Router
     
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 24) {
-                // First card is tappable → routes to .ptPatientDetail
-                PatientCard(
-                    name: "Andrews, Sean",
-                    dob: "07/21/2003",
-                    gender: "M",
-                    onTap: { router.go(.ptPatientDetail) }
-                )
-                
-                // The rest are non-interactive placeholders for now
-                PatientCard(name: "Smith, Jane", dob: "03/15/1995", gender: "F")
-                PatientCard(name: "Johnson, John", dob: "11/08/1988", gender: "M")
-                PatientCard(name: "Williams, Sarah", dob: "05/22/1992", gender: "F")
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                LazyVStack(spacing: 24) {
+                    PatientCard(
+                        name: "Andrews, Sean",
+                        dob: "07/21/2003",
+                        gender: "M",
+                        onTap: { router.go(.ptPatientDetail) }
+                    )
+                    
+                    PatientCard(name: "Smith, Jane", dob: "03/15/1995", gender: "F")
+                    PatientCard(name: "Johnson, John", dob: "11/08/1988", gender: "M")
+                    PatientCard(name: "Williams, Sarah", dob: "05/22/1992", gender: "F")
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 120)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
+            
+            PTTabBar(selected: .dashboard) { tab in
+                switch tab {
+                case .dashboard:
+                    break
+                case .settings:
+                    router.go(.ptSettings)
+                }
+            }
+            .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .rrPageBackground()
         .navigationTitle("Patients")

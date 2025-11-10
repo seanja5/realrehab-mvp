@@ -22,19 +22,26 @@ struct CategorySelectView: View {
     ]
     
     var body: some View {
-        ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: 24) {
-                // Lower Extremity
-                section(title: "Lower Extremity", items: lower)
-                
-                // Upper Extremity
-                section(title: "Upper Extremity", items: upper)
-                
-                // Spine & Core
-                section(title: "Spine & Core", items: spine)
+        ZStack(alignment: .bottom) {
+            ScrollView(.vertical) {
+                VStack(alignment: .leading, spacing: 24) {
+                    section(title: "Lower Extremity", items: lower)
+                    section(title: "Upper Extremity", items: upper)
+                    section(title: "Spine & Core", items: spine)
+                }
+                .padding(.top, RRSpace.pageTop)
+                .padding(.bottom, 120)
             }
-            .padding(.top, RRSpace.pageTop)
-            .padding(.bottom, 24)
+            
+            PTTabBar(selected: .dashboard) { tab in
+                switch tab {
+                case .dashboard:
+                    router.go(.patientList)
+                case .settings:
+                    router.go(.ptSettings)
+                }
+            }
+            .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .rrPageBackground()
         .navigationTitle("Select Category")

@@ -32,6 +32,23 @@ struct PTJourneyMapView: View {
     private let exerciseTypes = ["Knee Extension (Advanced)", "Wall Sits", "Lunges"]
     
     var body: some View {
+        ZStack(alignment: .bottom) {
+            content
+            
+            PTTabBar(selected: .dashboard) { tab in
+                switch tab {
+                case .dashboard:
+                    router.go(.patientList)
+                case .settings:
+                    router.go(.ptSettings)
+                }
+            }
+            .ignoresSafeArea(.keyboard, edges: .bottom)
+        }
+        .rrPageBackground()
+    }
+    
+    private var content: some View {
         ScrollView {
             VStack(spacing: 0) {
                 // Top padding to push content below sticky header (matches JourneyMapView)
@@ -134,7 +151,7 @@ struct PTJourneyMapView: View {
                 
                 // Bottom padding
                 Spacer()
-                    .frame(height: 100)
+                    .frame(height: 0)
             }
         }
         .scrollDisabled(isDragging) // Disable scrolling while dragging
@@ -220,6 +237,7 @@ struct PTJourneyMapView: View {
         .onChange(of: nodes.count) {
             layoutNodesZigZag()
         }
+        .padding(.bottom, 60)
     }
     
     private var maxHeight: CGFloat {

@@ -21,19 +21,26 @@ struct InjurySelectView: View {
     ]
     
     var body: some View {
-        ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: 24) {
-                // Ligaments
-                section(title: "Ligaments", items: ligaments)
-                
-                // Tendons
-                section(title: "Tendons", items: tendons)
-                
-                // Knee Replacement Recovery
-                section(title: "Knee Replacement Recovery", items: kneeReplacement)
+        ZStack(alignment: .bottom) {
+            ScrollView(.vertical) {
+                VStack(alignment: .leading, spacing: 24) {
+                    section(title: "Ligaments", items: ligaments)
+                    section(title: "Tendons", items: tendons)
+                    section(title: "Knee Replacement Recovery", items: kneeReplacement)
+                }
+                .padding(.top, RRSpace.pageTop)
+                .padding(.bottom, 120)
             }
-            .padding(.top, RRSpace.pageTop)
-            .padding(.bottom, 24)
+            
+            PTTabBar(selected: .dashboard) { tab in
+                switch tab {
+                case .dashboard:
+                    router.go(.patientList)
+                case .settings:
+                    router.go(.ptSettings)
+                }
+            }
+            .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .rrPageBackground()
         .navigationTitle("Select Injury")

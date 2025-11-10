@@ -5,28 +5,19 @@ struct AllSetView: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(spacing: 0) {
-                    VStack(spacing: 8) {
-                        Text("Complete")
-                            .font(.rrTitle)
-                        StepIndicator(current: 3, total: 3, showLabel: false)
-                    }
-                    .padding(.top, 8)
-                    
-                    VStack(spacing: 24) {
-                        Spacer()
-                            .frame(minHeight: 40)
-                        Text("You're All Set!")
-                            .font(.rrHeadline)
-                        Spacer()
-                            .frame(minHeight: 40)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 40)
+                VStack(spacing: 24) {
+                    Spacer()
+                        .frame(minHeight: 40)
+                    Text("You're All Set!")
+                        .font(.rrHeadline)
+                    Spacer()
+                        .frame(minHeight: 40)
                 }
+                .padding(.horizontal, 24)
+                .padding(.top, RRSpace.pageTop)
+                .padding(.bottom, 40)
             }
-            
-            // Bottom button
+
             VStack {
                 PrimaryButton(title: "Get Started!", useLargeFont: true) {
                     router.go(.ptDetail)
@@ -38,6 +29,7 @@ struct AllSetView: View {
         }
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Complete")
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {

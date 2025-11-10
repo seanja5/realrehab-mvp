@@ -8,48 +8,43 @@ struct CalibrateDeviceView: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(spacing: 0) {
-                    StepIndicator(current: 3, total: 3, showLabel: true)
-                        .padding(.top, 8)
-                    
-                    VStack(spacing: RRSpace.section) {
-                        Text("Calibrate Device")
-                            .font(.rrHeadline)
-                        Text("Set your movement range so tracking is accurate.")
-                            .font(.rrCallout)
+                VStack(spacing: RRSpace.section) {
+                    Text("Calibrate Device")
+                        .font(.rrHeadline)
+                    Text("Set your movement range so tracking is accurate.")
+                        .font(.rrCallout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Divider()
+                        .padding(.vertical, 4)
+
+                    VStack(alignment: .leading, spacing: RRSpace.stack) {
+                        Text("Relax your leg until your knee is bent at roughly a 90-degree angle. When you're ready, tap Set Starting Position.")
+                            .font(.rrBody)
                             .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                        Divider()
-                            .padding(.vertical, 4)
-                        
-                        VStack(alignment: .leading, spacing: RRSpace.stack) {
-                            Text("Relax your leg until your knee is bent at roughly a 90-degree angle. When you're ready, tap Set Starting Position.")
-                                .font(.rrBody)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.leading)
-                            
-                            SecondaryButton(title: startSet ? "Starting Position ✓" : "Set Starting Position") {
-                                startSet = true
-                            }
-                            
-                            Text("Now slowly extend your leg as far as you comfortably can, then tap Set Maximum Position.")
-                                .font(.rrBody)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.leading)
-                            
-                            SecondaryButton(title: maxSet ? "Maximum Position ✓" : "Set Maximum Position") {
-                                maxSet = true
-                            }
+                            .multilineTextAlignment(.leading)
+
+                        SecondaryButton(title: startSet ? "Starting Position ✓" : "Set Starting Position") {
+                            startSet = true
                         }
-                        Spacer()
-                            .frame(minHeight: 40)
+
+                        Text("Now slowly extend your leg as far as you comfortably can, then tap Set Maximum Position.")
+                            .font(.rrBody)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+
+                        SecondaryButton(title: maxSet ? "Maximum Position ✓" : "Set Maximum Position") {
+                            maxSet = true
+                        }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 40)
+                    Spacer()
+                        .frame(minHeight: 40)
                 }
+                .padding(.horizontal, 24)
+                .padding(.top, RRSpace.pageTop)
+                .padding(.bottom, 40)
             }
-            
-            // Bottom button
+
             VStack {
                 PrimaryButton(
                     title: "Finish Calibration!",
@@ -66,6 +61,7 @@ struct CalibrateDeviceView: View {
         }
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Calibration")
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {

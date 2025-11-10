@@ -43,161 +43,144 @@ struct CreateAccountView: View {
     
     var body: some View {
         ZStack {
-            VStack(spacing: 0) {
-                // Step indicator
-                StepIndicator(current: 1, total: 3, showLabel: true)
-                    .padding(.top, RRSpace.pageTop)
-                    .padding(.bottom, 24)
-                
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Title
-                        Text("Create an Account")
-                            .font(.rrHeadline)
-                            .padding(.bottom, 8)
-                        
+            ScrollView {
+                VStack(spacing: 24) {
+                    VStack(spacing: 16) {
                         VStack(spacing: 16) {
-                            // Personal Information Section
-                            VStack(spacing: 16) {
-                                // First Name / Last Name
-                                HStack(spacing: 12) {
-                                    FormTextField(title: "First Name", placeholder: "First Name", text: $firstName)
-                                        .textContentType(.givenName)
-                                        .autocapitalization(.words)
-                                        .frame(maxWidth: .infinity)
-                                    FormTextField(title: "Last Name", placeholder: "Last Name", text: $lastName)
-                                        .textContentType(.familyName)
-                                        .autocapitalization(.words)
-                                        .frame(maxWidth: .infinity)
-                                }
-                                
-                                FormTextField(title: "Email", placeholder: "Email", text: $email)
-                                    .keyboardType(.emailAddress)
-                                    .textInputAutocapitalization(.never)
-                                    .textContentType(.emailAddress)
-                                    .autocorrectionDisabled()
-                                    .onChange(of: email) { auth.email = $0 }
-                                
-                                FormTextField(title: "Phone Number", placeholder: "Phone Number", text: $phoneNumber)
-                                    .keyboardType(.phonePad)
-                                    .textContentType(.telephoneNumber)
+                            HStack(spacing: 12) {
+                                FormTextField(title: "First Name", placeholder: "First Name", text: $firstName)
+                                    .textContentType(.givenName)
+                                    .autocapitalization(.words)
+                                    .frame(maxWidth: .infinity)
+                                FormTextField(title: "Last Name", placeholder: "Last Name", text: $lastName)
+                                    .textContentType(.familyName)
+                                    .autocapitalization(.words)
+                                    .frame(maxWidth: .infinity)
                             }
                             
-                            Divider()
+                            FormTextField(title: "Email", placeholder: "Email", text: $email)
+                                .keyboardType(.emailAddress)
+                                .textInputAutocapitalization(.never)
+                                .textContentType(.emailAddress)
+                                .autocorrectionDisabled()
+                                .onChange(of: email) { auth.email = $0 }
                             
-                            // Create a Password Section
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("Create a Password")
-                                    .font(.rrTitle)
-                                    .foregroundStyle(.primary)
+                            FormTextField(title: "Phone Number", placeholder: "Phone Number", text: $phoneNumber)
+                                .keyboardType(.phonePad)
+                                .textContentType(.telephoneNumber)
+                        }
+                        
+                        Divider()
+                        
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Create a Password")
+                                .font(.rrTitle)
+                                .foregroundStyle(.primary)
+                            
+                            FormSecureField(title: "Password", placeholder: "Password", text: $password)
+                                .textContentType(.newPassword)
+                                .onChange(of: password) { auth.password = $0 }
+                            
+                            FormSecureField(title: "Confirm Password", placeholder: "Confirm Password", text: $confirmPassword)
+                                .textContentType(.newPassword)
+                        }
+                        
+                        Divider()
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 12) {
+                                FormDateField(title: "Date of Birth", date: $dateOfBirth)
+                                    .frame(maxWidth: .infinity)
                                 
-                                FormSecureField(title: "Password", placeholder: "Password", text: $password)
-                                    .textContentType(.newPassword)
-                                    .onChange(of: password) { auth.password = $0 }
-                                
-                                FormSecureField(title: "Confirm Password", placeholder: "Confirm Password", text: $confirmPassword)
-                                    .textContentType(.newPassword)
+                                FormMenuField(title: "Gender", selection: $gender, options: genderOptions)
+                                    .frame(maxWidth: .infinity)
                             }
                             
-                            Divider()
-                            
-                            // Date & Gender Section
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack(spacing: 12) {
-                                    FormDateField(title: "Date of Birth", date: $dateOfBirth)
-                                        .frame(maxWidth: .infinity)
-                                    
-                                    FormMenuField(title: "Gender", selection: $gender, options: genderOptions)
-                                        .frame(maxWidth: .infinity)
-                                }
+                            HStack(spacing: 12) {
+                                FormDateField(title: "Date of Surgery", date: $dateOfSurgery)
+                                    .frame(maxWidth: .infinity)
                                 
-                                HStack(spacing: 12) {
-                                    FormDateField(title: "Date of Surgery", date: $dateOfSurgery)
-                                        .frame(maxWidth: .infinity)
-                                    
-                                    FormDateField(title: "Last PT Visit", date: $lastPTVisit)
-                                        .frame(maxWidth: .infinity)
-                                }
-                            }
-                            
-                            Divider()
-                            
-                            // Physical Therapist Info Section
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("Physical Therapist Info")
-                                    .font(.rrTitle)
-                                    .foregroundStyle(.primary)
-                                
-                                HStack(spacing: 12) {
-                                    FormTextField(title: "PT First Name", placeholder: "First Name", text: $ptFirstName)
-                                        .textContentType(.givenName)
-                                        .autocapitalization(.words)
-                                        .frame(maxWidth: .infinity)
-                                    FormTextField(title: "PT Last Name", placeholder: "Last Name", text: $ptLastName)
-                                        .textContentType(.familyName)
-                                        .autocapitalization(.words)
-                                        .frame(maxWidth: .infinity)
-                                }
-                                
-                                FormTextField(title: "PT Email", placeholder: "Email", text: $ptEmail)
-                                    .keyboardType(.emailAddress)
-                                    .textInputAutocapitalization(.never)
-                                    .textContentType(.emailAddress)
-                                    .autocorrectionDisabled()
-                                
-                                FormTextField(title: "PT Phone Number", placeholder: "Phone Number", text: $ptPhoneNumber)
-                                    .keyboardType(.phonePad)
-                                    .textContentType(.telephoneNumber)
+                                FormDateField(title: "Last PT Visit", date: $lastPTVisit)
+                                    .frame(maxWidth: .infinity)
                             }
                         }
-                        .padding(.horizontal, 20)
                         
-                        // Create Account button at the bottom of scroll content
-                        PrimaryButton(
-                            title: auth.isLoading ? "Creating..." : "Create Account!",
-                            isDisabled: !isFormValid || auth.isLoading,
-                            useLargeFont: true,
-                            action: {
-                                Task {
-                                    auth.firstName = firstName
-                                    auth.lastName = lastName
-                                    auth.email = email
-                                    auth.password = password
-                                    auth.ptFirstName = ptFirstName
-                                    auth.ptLastName = ptLastName
-                                    auth.ptEmail = ptEmail
-                                    auth.ptPhoneNumber = ptPhoneNumber
-                                    await auth.signUp()
-                                    if auth.errorMessage == nil {
-                                        router.go(.pairDevice)
-                                    }
+                        Divider()
+                        
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Physical Therapist Info")
+                                .font(.rrTitle)
+                                .foregroundStyle(.primary)
+                            
+                            HStack(spacing: 12) {
+                                FormTextField(title: "PT First Name", placeholder: "First Name", text: $ptFirstName)
+                                    .textContentType(.givenName)
+                                    .autocapitalization(.words)
+                                    .frame(maxWidth: .infinity)
+                                FormTextField(title: "PT Last Name", placeholder: "Last Name", text: $ptLastName)
+                                    .textContentType(.familyName)
+                                    .autocapitalization(.words)
+                                    .frame(maxWidth: .infinity)
+                            }
+                            
+                            FormTextField(title: "PT Email", placeholder: "Email", text: $ptEmail)
+                                .keyboardType(.emailAddress)
+                                .textInputAutocapitalization(.never)
+                                .textContentType(.emailAddress)
+                                .autocorrectionDisabled()
+                            
+                            FormTextField(title: "PT Phone Number", placeholder: "Phone Number", text: $ptPhoneNumber)
+                                .keyboardType(.phonePad)
+                                .textContentType(.telephoneNumber)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    
+                    PrimaryButton(
+                        title: auth.isLoading ? "Creating..." : "Create Account!",
+                        isDisabled: !isFormValid || auth.isLoading,
+                        useLargeFont: true,
+                        action: {
+                            Task {
+                                auth.firstName = firstName
+                                auth.lastName = lastName
+                                auth.email = email
+                                auth.password = password
+                                auth.ptFirstName = ptFirstName
+                                auth.ptLastName = ptLastName
+                                auth.ptEmail = ptEmail
+                                auth.ptPhoneNumber = ptPhoneNumber
+                                await auth.signUp()
+                                if auth.errorMessage == nil {
+                                    router.go(.ptDetail)
                                 }
                             }
-                        )
-                        .padding(.horizontal, 20)
-                    }
-                    .padding(.bottom, 40)
+                        }
+                    )
+                    .padding(.horizontal, 20)
                 }
-                .ignoresSafeArea(.keyboard)
+                .padding(.bottom, 40)
             }
+            .ignoresSafeArea(.keyboard)
         }
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Create an Account")
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()
             }
         }
-            .alert(isPresented: .constant(auth.errorMessage != nil), content: {
-                Alert(
-                    title: Text("Sign Up Failed"),
-                    message: Text(auth.errorMessage ?? ""),
-                    dismissButton: .default(Text("OK")) {
-                        auth.errorMessage = nil
-                    }
-                )
-            })
+        .alert(isPresented: .constant(auth.errorMessage != nil), content: {
+            Alert(
+                title: Text("Sign Up Failed"),
+                message: Text(auth.errorMessage ?? ""),
+                dismissButton: .default(Text("OK")) {
+                    auth.errorMessage = nil
+                }
+            )
+        })
     }
     
     // Validation

@@ -25,12 +25,8 @@ struct PairDeviceView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            StepIndicator(current: 2, total: 3, showLabel: true)
-                .padding(.top, 8)
-            
             ScrollView {
                 VStack(spacing: RRSpace.section) {
-                    // Header content (always visible)
                     Image(systemName: "bluetooth")
                         .font(.system(size: 72))
                         .foregroundStyle(Color.brandLightBlue)
@@ -43,7 +39,6 @@ struct PairDeviceView: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                     
-                    // Devices Found section
                     VStack(alignment: .leading, spacing: RRSpace.stack) {
                         Text("Devices Found:")
                             .font(.rrTitle)
@@ -52,14 +47,11 @@ struct PairDeviceView: View {
                         Divider()
                         
                         if case .scanning = state {
-                            // Empty area during scanning
                             Spacer()
                                 .frame(height: 100)
                         } else if case .found(let devices) = state {
-                            // Device list
                             ForEach(devices) { device in
                                 HStack(spacing: 16) {
-                                    // Left: Image placeholder
                                     RoundedRectangle(cornerRadius: 10)
                                         .fill(Color.gray.opacity(0.25))
                                         .frame(width: 72, height: 72)
@@ -68,7 +60,6 @@ struct PairDeviceView: View {
                                                 .foregroundStyle(.gray)
                                         )
                                     
-                                    // Right: Device info
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(device.name)
                                             .font(.rrTitle)
@@ -94,7 +85,6 @@ struct PairDeviceView: View {
                 .padding(.bottom, 40)
             }
             
-            // Bottom button
             VStack {
                 PrimaryButton(
                     title: "Pair Device!",
@@ -111,6 +101,7 @@ struct PairDeviceView: View {
         }
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Pair Device")
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -118,7 +109,6 @@ struct PairDeviceView: View {
             }
         }
         .onAppear {
-            // Simulate device discovery after 3.5 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
                 state = .found([
                     Device(name: "Knee Brace", kind: "Device", serial: "######")

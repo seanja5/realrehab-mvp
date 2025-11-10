@@ -20,8 +20,11 @@ enum RRSpace {
 extension View {
     func rrPageBackground() -> some View {
         self
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(Color(red: 0.95, green: 0.95, blue: 0.95).ignoresSafeArea())
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(
+                Color(red: 0.95, green: 0.95, blue: 0.95)
+                    .ignoresSafeArea()
+            )
     }
     
     /// Dismisses keyboard when tapping outside text fields/editors

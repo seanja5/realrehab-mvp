@@ -14,34 +14,39 @@ struct RealRehabPracticeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationStack(path: $router.path) {
-                WelcomeView()
-                    .navigationDestination(for: Route.self) { route in
-                        switch route {
-                        case .welcome: WelcomeView()
-                        case .createAccount: CreateAccountView()
-                        case .pairDevice: PairDeviceView()
-                        case .calibrateDevice: CalibrateDeviceView()
-                        case .allSet: AllSetView()
-                        case .ptDetail: PTDetailView()
-                        case .home: HomeView()
-                        case .homeSubCategory: HomeSubCategoryView()
-                        case .rehabOverview: RehabOverviewView()
-                        case .journeyMap: JourneyMapView()
-                        case .patientSettings: PatientSettingsView()
-                        case .lesson: LessonView()                // ← single lesson screen
-                        case .completion: CompletionView()
-                        case .selectLogin: SelectLoginView()
-                        case .patientLogin: PatientLoginView()
-                        case .ptLogin: PTLoginView()
-                        case .ptSettings: PTSettingsView()
-                        case .patientList: PatientListView()
-                        case .ptPatientDetail: PatientDetailView()
-                        case .ptCategorySelect: CategorySelectView()
-                        case .ptInjurySelect: InjurySelectView()
-                        case .ptJourneyMap: PTJourneyMapView()
+            ZStack {
+                Color(uiColor: .systemGroupedBackground)
+                    .ignoresSafeArea()
+
+                NavigationStack(path: $router.path) {
+                    WelcomeView()
+                        .navigationDestination(for: Route.self) { route in
+                            switch route {
+                            case .welcome: WelcomeView()
+                            case .createAccount: CreateAccountView()
+                            case .pairDevice: PairDeviceView()
+                            case .calibrateDevice: CalibrateDeviceView()
+                            case .allSet: AllSetView()
+                            case .ptDetail: PTDetailView()
+                            case .home: HomeView()
+                            case .homeSubCategory: HomeSubCategoryView()
+                            case .rehabOverview: RehabOverviewView()
+                            case .journeyMap: JourneyMapView()
+                            case .patientSettings: PatientSettingsView()
+                            case .lesson: LessonView()                // ← single lesson screen
+                            case .completion: CompletionView()
+                            case .selectLogin: SelectLoginView()
+                            case .patientLogin: PatientLoginView()
+                            case .ptLogin: PTLoginView()
+                            case .ptSettings: PTSettingsView()
+                            case .patientList: PatientListView()
+                            case .ptPatientDetail: PatientDetailView()
+                            case .ptCategorySelect: CategorySelectView()
+                            case .ptInjurySelect: InjurySelectView()
+                            case .ptJourneyMap: PTJourneyMapView()
+                            }
                         }
-                    }
+                }
             }
             .simultaneousGesture(
                 TapGesture()
@@ -51,6 +56,7 @@ struct RealRehabPracticeApp: App {
             )
             .environmentObject(router)
             .preferredColorScheme(.light)   // <- force Light mode app-wide
+            .rrDebugSafeArea()
         }
     }
 }

@@ -1,4 +1,6 @@
 import SwiftUI
+import CoreBluetooth
+import Combine
 
 enum ScanState {
     case scanning
@@ -15,14 +17,15 @@ struct Device: Identifiable, Equatable {
 struct PairDeviceView: View {
     @EnvironmentObject var router: Router
     @State private var state: ScanState = .scanning
-    
+    @StateObject private var ble = BluetoothManager.shared
+
     private var isPairButtonDisabled: Bool {
         if case .scanning = state {
             return true
         }
         return false
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
@@ -30,27 +33,35 @@ struct PairDeviceView: View {
                     Image(systemName: "bluetooth")
                         .font(.system(size: 72))
                         .foregroundStyle(Color.brandLightBlue)
-                    
-                    Text("Searching for device...")
+
+                    Text(ble.isScanning ? "Searching for devices…" : "Select a device to pair")
                         .font(.rrTitle)
-                    
+
                     Text("Make sure your device is powered on and within close proximity.")
                         .font(.rrCallout)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                    
+
                     VStack(alignment: .leading, spacing: RRSpace.stack) {
-                        Text("Devices Found:")
-                            .font(.rrTitle)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
+                        HStack {
+                            Text("Devices Found:")
+                                .font(.rrTitle)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            Button("Scan again") {
+                                ble.stopScan()
+                                ble.startScan(targetNamePrefix: "RealRehab")
+                            }
+                            .font(.rrCaption)
+                        }
+
                         Divider()
-                        
-                        if case .scanning = state {
+
+                        if ble.peripherals.isEmpty {
                             Spacer()
                                 .frame(height: 100)
-                        } else if case .found(let devices) = state {
-                            ForEach(devices) { device in
+                        } else {
+                            ForEach(ble.peripherals) { peripheral in
                                 HStack(spacing: 16) {
                                     RoundedRectangle(cornerRadius: 10)
                                         .fill(Color.gray.opacity(0.25))
@@ -59,32 +70,39 @@ struct PairDeviceView: View {
                                             Image(systemName: "photo")
                                                 .foregroundStyle(.gray)
                                         )
-                                    
+
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(device.name)
+                                        Text(peripheral.name)
                                             .font(.rrTitle)
-                                        Text(device.kind)
-                                            .font(.rrCallout)
-                                            .foregroundStyle(.secondary)
-                                        Text("S/N: \(device.serial)")
+                                        Text("RSSI: \(peripheral.rssi)")
                                             .font(.rrCallout)
                                             .foregroundStyle(.secondary)
                                     }
-                                    
+
                                     Spacer()
                                 }
                                 .padding(.vertical, 8)
+                                .onTapGesture {
+                                    ble.connect(peripheral)
+                                    presentPairing(for: peripheral)
+                                }
                             }
                         }
                     }
                     .padding(.top, 24)
-                    
+
+                    if let error = ble.lastError {
+                        Text(error)
+                            .font(.rrCaption)
+                            .foregroundStyle(.red)
+                    }
+
                     Spacer()
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 40)
             }
-            
+
             VStack {
                 PrimaryButton(
                     title: "Pair Device!",
@@ -108,13 +126,24 @@ struct PairDeviceView: View {
                 BackButton()
             }
         }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
-                state = .found([
-                    Device(name: "Knee Brace", kind: "Device", serial: "######")
-                ])
+        .task {
+            ble.startScan(targetNamePrefix: "RealRehab")
+        }
+        .onDisappear {
+            ble.stopScan()
+        }
+        .onChange(of: ble.peripherals) { peripherals in
+            if let match = peripherals.first {
+                presentPairing(for: match)
             }
         }
+    }
+
+    private func presentPairing(for peripheral: BluetoothManager.DiscoveredPeripheral) {
+        // Maintain compatibility with the existing pairing flow by updating local state
+        state = .found([
+            Device(name: peripheral.name, kind: "Device", serial: peripheral.id.uuidString)
+        ])
     }
 }
 

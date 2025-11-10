@@ -23,7 +23,7 @@ struct WelcomeView: View {
                 // Action Buttons - pinned to bottom
                 VStack(spacing: 20) {
                     PrimaryButton(title: "Get Started!", action: {
-                        router.go(.createAccount)
+                        router.go(.selectSignUp)
                     })
                     
                     SecondaryButton(title: "Log In", action: {

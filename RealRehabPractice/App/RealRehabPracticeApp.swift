@@ -23,7 +23,9 @@ struct RealRehabPracticeApp: App {
                         .navigationDestination(for: Route.self) { route in
                             switch route {
                             case .welcome: WelcomeView()
+                            case .selectSignUp: SelectSignUpView()
                             case .createAccount: CreateAccountView()
+                            case .ptCreateAccount: PTCreateAccountView()
                             case .pairDevice: PairDeviceView()
                             case .calibrateDevice: CalibrateDeviceView()
                             case .allSet: AllSetView()

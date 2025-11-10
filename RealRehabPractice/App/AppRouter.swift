@@ -3,7 +3,9 @@ import Combine   // ← needed for ObservableObject & @Published
 
 enum Route: Hashable {
     case welcome
+    case selectSignUp
     case createAccount
+    case ptCreateAccount
     case pairDevice
     case calibrateDevice
     case allSet

@@ -54,6 +54,9 @@
 		C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */; };
 		C8D678002EBB095E00829144 /* PTDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FF2EBB095E00829144 /* PTDetailView.swift */; };
 		C8F4A7002ED2C79A00BADF02 /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A7012ED2C79A00BADF02 /* BluetoothManager.swift */; };
+		C8F4A8202ED2F3B500BADF02 /* PTService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8212ED2F3B500BADF02 /* PTService.swift */; };
+		C8F4A8222ED2F3B500BADF02 /* SelectSignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8232ED2F3B500BADF02 /* SelectSignUpView.swift */; };
+		C8F4A8242ED2F3B500BADF02 /* PTCreateAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8252ED2F3B500BADF02 /* PTCreateAccountView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -124,6 +127,9 @@
 		C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDetailView.swift; sourceTree = "<group>"; };
 		C8D677FF2EBB095E00829144 /* PTDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDetailView.swift; sourceTree = "<group>"; };
 		C8F4A7012ED2C79A00BADF02 /* BluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
+		C8F4A8212ED2F3B500BADF02 /* PTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTService.swift; sourceTree = "<group>"; };
+		C8F4A8232ED2F3B500BADF02 /* SelectSignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectSignUpView.swift; sourceTree = "<group>"; };
+		C8F4A8252ED2F3B500BADF02 /* PTCreateAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCreateAccountView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -175,6 +181,7 @@
 				C82D700B2EBE91D3004D9347 /* SupabaseService.swift */,
 				C82D700C2EBE91D3004D9347 /* TelemetryService.swift */,
 				C82D702B2ED00153004D9347 /* PatientService.swift */,
+				C8F4A8212ED2F3B500BADF02 /* PTService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -339,6 +346,8 @@
 				C8D677EC2EBA932000829144 /* PatientListView.swift */,
 				C8D677ED2EBA932000829144 /* PTLoginView.swift */,
 				C8D677EE2EBA932000829144 /* SelectLoginView.swift */,
+				C8F4A8232ED2F3B500BADF02 /* SelectSignUpView.swift */,
+				C8F4A8252ED2F3B500BADF02 /* PTCreateAccountView.swift */,
 			);
 			path = PTViews;
 			sourceTree = "<group>";
@@ -535,6 +544,9 @@
 				C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */,
 				C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */,
 				C8D678002EBB095E00829144 /* PTDetailView.swift in Sources */,
+				C8F4A8202ED2F3B500BADF02 /* PTService.swift in Sources */,
+				C8F4A8222ED2F3B500BADF02 /* SelectSignUpView.swift in Sources */,
+				C8F4A8242ED2F3B500BADF02 /* PTCreateAccountView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

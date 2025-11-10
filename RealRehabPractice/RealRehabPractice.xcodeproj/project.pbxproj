@@ -23,6 +23,7 @@
 		C82D70302ED0841A004D9347 /* PatientPTViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */; };
 		C82D70342ED09AC7004D9347 /* PatientLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70332ED09AC7004D9347 /* PatientLoginView.swift */; };
 		C82D70382ED0AB17004D9347 /* PTSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70372ED0AB17004D9347 /* PTSettingsView.swift */; };
+		C82D703C2ED0B4BE004D9347 /* PatientSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D703B2ED0B4BE004D9347 /* PatientSettingsView.swift */; };
 		C82D70572EC15F90004D9347 /* PatientTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70552EC15F90004D9347 /* PatientTabBar.swift */; };
 		C82D70582EC15F90004D9347 /* PTTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70562EC15F90004D9347 /* PTTabBar.swift */; };
 		C8AEECB02EB2D7A200720184 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8AEEC9F2EB2D7A200720184 /* Assets.xcassets */; };
@@ -87,6 +88,7 @@
 		C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientPTViewModel.swift; sourceTree = "<group>"; };
 		C82D70332ED09AC7004D9347 /* PatientLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientLoginView.swift; sourceTree = "<group>"; };
 		C82D70372ED0AB17004D9347 /* PTSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSettingsView.swift; sourceTree = "<group>"; };
+		C82D703B2ED0B4BE004D9347 /* PatientSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientSettingsView.swift; sourceTree = "<group>"; };
 		C82D70552EC15F90004D9347 /* PatientTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientTabBar.swift; sourceTree = "<group>"; };
 		C82D70562EC15F90004D9347 /* PTTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTabBar.swift; sourceTree = "<group>"; };
 		C89A84B12EB138150074B855 /* RealRehabPractice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RealRehabPractice.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -248,6 +250,7 @@
 			isa = PBXGroup;
 			children = (
 				C82D70372ED0AB17004D9347 /* PTSettingsView.swift */,
+				C82D703B2ED0B4BE004D9347 /* PatientSettingsView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -506,6 +509,7 @@
 				C82D70302ED0841A004D9347 /* PatientPTViewModel.swift in Sources */,
 				C82D70342ED09AC7004D9347 /* PatientLoginView.swift in Sources */,
 				C82D70382ED0AB17004D9347 /* PTSettingsView.swift in Sources */,
+				C82D703C2ED0B4BE004D9347 /* PatientSettingsView.swift in Sources */,
 				C82D702C2ED00153004D9347 /* PatientService.swift in Sources */,
 				C8D677F02EBA932000829144 /* InjurySelectView.swift in Sources */,
 				C82D70572EC15F90004D9347 /* PatientTabBar.swift in Sources */,

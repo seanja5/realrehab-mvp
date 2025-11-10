@@ -12,6 +12,7 @@ enum Route: Hashable {
     case homeSubCategory
     case rehabOverview
     case journeyMap
+    case patientSettings
     case lesson
     case completion
     case selectLogin

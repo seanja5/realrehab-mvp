@@ -12,59 +12,40 @@ struct PatientTabBar: View {
     var onAddTapped: () -> Void
 
     private let tabHeight: CGFloat = 72
-    private let circleSize: CGFloat = 64
     private let rrDarkBlue = Color.brandDarkBlue
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            VStack(spacing: 0) {
-                Divider()
-                    .background(Color.black.opacity(0.08))
+        VStack(spacing: 0) {
+            Divider()
+                .background(Color.black.opacity(0.08))
 
-                HStack(spacing: 0) {
-                    tabItem(
-                        icon: "doc.on.clipboard",
-                        label: "Dashboard",
-                        selected: selected == .dashboard
-                    ) {
-                        onSelect(.dashboard)
-                    }
+            HStack(spacing: 0) {
+                tabItem(
+                    icon: "doc.on.clipboard",
+                    label: "Dashboard",
+                    selected: selected == .dashboard,
+                    action: { onSelect(.dashboard) }
+                )
 
-                    tabItem(
-                        icon: "map",
-                        label: "Journey",
-                        selected: selected == .journey
-                    ) {
-                        onSelect(.journey)
-                    }
+                tabItem(
+                    icon: "map",
+                    label: "Journey",
+                    selected: selected == .journey,
+                    action: { onSelect(.journey) }
+                )
 
-                    tabItem(
-                        icon: "gearshape",
-                        label: "Settings",
-                        selected: selected == .settings
-                    ) {
-                        onSelect(.settings)
-                    }
-                }
-                .frame(height: tabHeight)
-                .frame(maxWidth: .infinity)
-                .background(Color.white.ignoresSafeArea(edges: .bottom))
+                tabItem(
+                    icon: "gearshape",
+                    label: "Settings",
+                    selected: selected == .settings,
+                    action: { onSelect(.settings) }
+                )
+
+                addItem(action: onAddTapped)
             }
-
-            Button(action: onAddTapped) {
-                Image(systemName: "plus")
-                    .font(.system(size: 28, weight: .medium, design: .rounded))
-                    .foregroundStyle(Color.white)
-                    .frame(width: circleSize, height: circleSize)
-                    .background(
-                        Circle()
-                            .fill(rrDarkBlue)
-                    )
-                    .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
-            }
-            .buttonStyle(ScaleButtonStyle())
-            .padding(.trailing, 12)
-            .padding(.bottom, 12)
+            .frame(height: tabHeight)
+            .frame(maxWidth: .infinity)
+            .background(Color.white.ignoresSafeArea(edges: .bottom))
         }
     }
 
@@ -83,6 +64,25 @@ struct PatientTabBar: View {
         }
         .buttonStyle(ScaleButtonStyle())
         .accessibilityLabel(label)
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private func addItem(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(rrDarkBlue)
+                    .frame(width: 44, height: 44)
+                Image(systemName: "plus")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(Color.white)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 12)
+            .frame(height: tabHeight)
+        }
+        .buttonStyle(ScaleButtonStyle())
+        .accessibilityLabel("Add Device")
         .accessibilityAddTraits(.isButton)
     }
 }

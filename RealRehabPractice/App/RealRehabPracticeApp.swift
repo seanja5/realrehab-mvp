@@ -28,6 +28,7 @@ struct RealRehabPracticeApp: App {
                         case .homeSubCategory: HomeSubCategoryView()
                         case .rehabOverview: RehabOverviewView()
                         case .journeyMap: JourneyMapView()
+                        case .patientSettings: PatientSettingsView()
                         case .lesson: LessonView()                // ← single lesson screen
                         case .completion: CompletionView()
                         case .selectLogin: SelectLoginView()

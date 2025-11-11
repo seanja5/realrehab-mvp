@@ -1,12 +1,10 @@
 import SwiftUI
 
 struct PTJourneyMapView: View {
+    let patientProfileId: UUID
     @EnvironmentObject var router: Router
     @State private var isLoading = false
     @State private var errorMessage: String?
-    
-    // TODO: Receive patient_profile_id from route
-    private var patientProfileId: UUID? = nil
     
     // MARK: - State
     @State private var nodes: [LessonNode] = [
@@ -72,19 +70,10 @@ struct PTJourneyMapView: View {
         errorMessage = nil
         
         do {
-            // TODO: Use actual patient_profile_id from route
-            // For now, get first patient as placeholder
-            let patients = try await PTService.listMyPatients()
-            guard let firstPatient = patients.first else {
-                errorMessage = "No patient selected"
-                isLoading = false
-                return
-            }
+            try await RehabService.saveACLPlan(patientProfileId: patientProfileId)
             
-            try await RehabService.saveACLPlan(patientProfileId: firstPatient.patient_profile_id)
-            
-            // Navigate back to PatientDetailView
-            router.go(.ptPatientDetail)
+            // Navigate back to PatientDetailView with the patientProfileId
+            router.go(.ptPatientDetail(patientProfileId: patientProfileId))
         } catch {
             errorMessage = error.localizedDescription
             print("PTJourneyMapView.confirmJourney error: \(error)")

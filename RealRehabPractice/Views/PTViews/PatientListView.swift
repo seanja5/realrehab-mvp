@@ -44,7 +44,7 @@ struct PatientListView: View {
                         .frame(maxWidth: .infinity)
                     } else {
                         LazyVStack(spacing: 24) {
-                            ForEach(vm.patients, id: \.patient_profile_id) { patient in
+                            ForEach(vm.patients) { patient in
                                 PatientCard(
                                     name: "\(patient.last_name), \(patient.first_name)",
                                     dob: formatDate(patient.date_of_birth),
@@ -52,8 +52,7 @@ struct PatientListView: View {
                                     email: patient.email,
                                     phone: patient.phone,
                                     onTap: {
-                                        // TODO: Pass patient_profile_id to PatientDetailView
-                                        router.go(.ptPatientDetail)
+                                        router.go(.ptPatientDetail(patientProfileId: patient.patient_profile_id))
                                     }
                                 )
                             }

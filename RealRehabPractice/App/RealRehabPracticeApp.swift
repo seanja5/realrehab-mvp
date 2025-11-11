@@ -40,10 +40,10 @@ struct RealRehabPracticeApp: App {
                             case .login: LoginView()
                             case .ptSettings: PTSettingsView()
                             case .patientList: PatientListView()
-                            case .ptPatientDetail: PatientDetailView()
-                            case .ptCategorySelect: CategorySelectView()
-                            case .ptInjurySelect: InjurySelectView()
-                            case .ptJourneyMap: PTJourneyMapView()
+                            case .ptPatientDetail(let patientProfileId): PatientDetailView(patientProfileId: patientProfileId)
+                            case .ptCategorySelect(let patientProfileId): CategorySelectView(patientProfileId: patientProfileId)
+                            case .ptInjurySelect(let patientProfileId): InjurySelectView(patientProfileId: patientProfileId)
+                            case .ptJourneyMap(let patientProfileId): PTJourneyMapView(patientProfileId: patientProfileId)
                             }
                         }
                 }

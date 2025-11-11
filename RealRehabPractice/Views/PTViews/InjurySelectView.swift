@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct InjurySelectView: View {
+    let patientProfileId: UUID
     @EnvironmentObject var router: Router
     
     private let ligaments: [(String, String)] = [
@@ -69,7 +70,7 @@ struct InjurySelectView: View {
                             imageName: imageName,
                             tappable: name == "ACL",
                             action: name == "ACL" ? {
-                                router.go(.ptJourneyMap)
+                                router.go(.ptJourneyMap(patientProfileId: patientProfileId))
                             } : nil
                         )
                         .frame(width: 110)

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CategorySelectView: View {
+    let patientProfileId: UUID
     @EnvironmentObject var router: Router
     
     private let lower: [(String, String)] = [
@@ -70,7 +71,7 @@ struct CategorySelectView: View {
                             imageName: imageName,
                             tappable: name == "Knee",
                             action: name == "Knee" ? {
-                                router.go(.ptInjurySelect)
+                                router.go(.ptInjurySelect(patientProfileId: patientProfileId))
                             } : nil
                         )
                         .frame(width: 110)

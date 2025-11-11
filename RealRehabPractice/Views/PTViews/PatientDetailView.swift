@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PatientDetailView: View {
+    let patientProfileId: UUID
     @EnvironmentObject var router: Router
     @StateObject private var vm = PTPatientsViewModel()
     @State private var notes: String = ""
@@ -8,9 +9,7 @@ struct PatientDetailView: View {
     @State private var patient: PTService.SimplePatient? = nil
     @State private var isLoading = false
     @State private var showDeleteConfirmation = false
-    
-    // TODO: Receive patient_profile_id from PatientListView navigation
-    private var patientProfileId: UUID? = nil
+    @State private var errorMessage: String? = nil
     
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -86,11 +85,11 @@ struct PatientDetailView: View {
                                 .padding(.bottom, 8)
                             
                             SecondaryButton(title: "Change Rehab Plan") {
-                                router.go(.ptCategorySelect)
+                                router.go(.ptCategorySelect(patientProfileId: patientProfileId))
                             }
                         } else {
                             SecondaryButton(title: "Select Rehab Plan") {
-                                router.go(.ptCategorySelect)
+                                router.go(.ptCategorySelect(patientProfileId: patientProfileId))
                             }
                         }
                     }
@@ -177,22 +176,25 @@ struct PatientDetailView: View {
             }
         }
         .task {
-            // TODO: Load patient by patient_profile_id from route
-            // For now, load first patient as placeholder
-            await loadPatientData()
+            await loadPatientData(patientProfileId: patientProfileId)
         }
         .alert("Delete Patient", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
                 Task {
-                    if let patientId = patient?.patient_profile_id {
-                        await vm.delete(patientProfileId: patientId)
-                        router.go(.patientList)
-                    }
+                    await vm.delete(patientProfileId: patientProfileId)
+                    router.go(.patientList)
                 }
             }
         } message: {
             Text("This will remove this patient from your list. This action cannot be undone.")
+        }
+        .alert("Error", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") {
+                errorMessage = nil
+            }
+        } message: {
+            Text(errorMessage ?? "")
         }
     }
     
@@ -224,18 +226,16 @@ struct PatientDetailView: View {
         return "DOB: 07/21/03   •   Gender: M" // Placeholder
     }
     
-    private func loadPatientData() async {
+    private func loadPatientData(patientProfileId: UUID) async {
         isLoading = true
         do {
-            // TODO: Load specific patient by patient_profile_id
-            // For now, load first patient as placeholder
-            let patients = try await PTService.listMyPatients()
-            if let firstPatient = patients.first {
-                self.patient = firstPatient
-                self.currentPlan = try await RehabService.currentPlan(patientProfileId: firstPatient.patient_profile_id)
-            }
+            // Load specific patient by patient_profile_id
+            let loadedPatient = try await PTService.getPatient(patientProfileId: patientProfileId)
+            self.patient = loadedPatient
+            self.currentPlan = try await RehabService.currentPlan(patientProfileId: patientProfileId)
         } catch {
             print("PatientDetailView.loadPatientData error: \(error)")
+            errorMessage = error.localizedDescription
         }
         isLoading = false
     }

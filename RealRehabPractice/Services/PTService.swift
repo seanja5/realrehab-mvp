@@ -10,7 +10,7 @@ enum PTService {
         let profile_id: UUID
     }
     
-    struct SimplePatient: Decodable {
+    struct SimplePatient: Decodable, Identifiable {
         let patient_profile_id: UUID
         let first_name: String
         let last_name: String
@@ -19,6 +19,9 @@ enum PTService {
         let email: String?
         let phone: String?
         let profile_id: UUID?        // Can be NULL for placeholder patients
+        
+        // Identifiable conformance - use patient_profile_id as id
+        var id: UUID { patient_profile_id }
     }
     
     struct UUIDWrapper: Decodable {
@@ -256,6 +259,68 @@ enum PTService {
                 profile_id: $0.profile_id
             )
         }
+    }
+    
+    @MainActor
+    static func getPatient(patientProfileId: UUID) async throws -> SimplePatient {
+        // DTO that matches database exactly
+        struct PatientCardDTO: Decodable {
+            let id: UUID
+            let first_name: String
+            let last_name: String
+            let date_of_birth: String?
+            let gender: String?
+            let phone: String?
+            let profile_id: UUID?
+        }
+        
+        // Fetch the specific patient
+        let patients: [PatientCardDTO] = try await client
+            .schema("accounts")
+            .from("patient_profiles")
+            .select("id,first_name,last_name,date_of_birth,gender,phone,profile_id")
+            .eq("id", value: patientProfileId.uuidString)
+            .limit(1)
+            .decoded()
+        
+        guard let patient = patients.first else {
+            throw NSError(
+                domain: "PTService",
+                code: 404,
+                userInfo: [NSLocalizedDescriptionKey: "Patient not found"]
+            )
+        }
+        
+        // Fetch email if profile_id exists
+        var email: String? = nil
+        if let profileId = patient.profile_id {
+            struct PRow: Decodable {
+                let id: UUID
+                let email: String?
+            }
+            let profiles: [PRow] = try await client
+                .schema("accounts")
+                .from("profiles")
+                .select("id,email")
+                .eq("id", value: profileId.uuidString)
+                .limit(1)
+                .decoded()
+            
+            if let profile = profiles.first, let profileEmail = profile.email, !profileEmail.isEmpty {
+                email = profileEmail
+            }
+        }
+        
+        return SimplePatient(
+            patient_profile_id: patient.id,
+            first_name: patient.first_name,
+            last_name: patient.last_name,
+            date_of_birth: patient.date_of_birth,
+            gender: patient.gender,
+            email: email,
+            phone: patient.phone,
+            profile_id: patient.profile_id
+        )
     }
     
     @MainActor

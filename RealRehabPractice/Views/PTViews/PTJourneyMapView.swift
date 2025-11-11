@@ -2,6 +2,11 @@ import SwiftUI
 
 struct PTJourneyMapView: View {
     @EnvironmentObject var router: Router
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    
+    // TODO: Receive patient_profile_id from route
+    private var patientProfileId: UUID? = nil
     
     // MARK: - State
     @State private var nodes: [LessonNode] = [
@@ -35,17 +40,57 @@ struct PTJourneyMapView: View {
         ZStack(alignment: .bottom) {
             content
             
-            PTTabBar(selected: .dashboard) { tab in
-                switch tab {
-                case .dashboard:
-                    router.go(.patientList)
-                case .settings:
-                    router.go(.ptSettings)
+            // Confirm Journey button fixed at bottom
+            VStack {
+                Spacer()
+                PrimaryButton(
+                    title: isLoading ? "Saving..." : "Confirm Journey",
+                    isDisabled: isLoading
+                ) {
+                    Task {
+                        await confirmJourney()
+                    }
                 }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
+                .background(Color.white)
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .rrPageBackground()
+        .alert("Error", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") {
+                errorMessage = nil
+            }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+    
+    private func confirmJourney() async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            // TODO: Use actual patient_profile_id from route
+            // For now, get first patient as placeholder
+            let patients = try await PTService.listMyPatients()
+            guard let firstPatient = patients.first else {
+                errorMessage = "No patient selected"
+                isLoading = false
+                return
+            }
+            
+            try await RehabService.saveACLPlan(patientProfileId: firstPatient.patient_profile_id)
+            
+            // Navigate back to PatientDetailView
+            router.go(.ptPatientDetail)
+        } catch {
+            errorMessage = error.localizedDescription
+            print("PTJourneyMapView.confirmJourney error: \(error)")
+        }
+        
+        isLoading = false
     }
     
     private var content: some View {
@@ -237,7 +282,7 @@ struct PTJourneyMapView: View {
         .onChange(of: nodes.count) {
             layoutNodesZigZag()
         }
-        .padding(.bottom, 60)
+        .padding(.bottom, 100) // Extra padding for Confirm Journey button
     }
     
     private var maxHeight: CGFloat {

@@ -28,6 +28,15 @@ struct ProgramRow: Decodable {
 
 enum RehabService {
   private static let supabase = SupabaseService.shared.client
+  
+  struct PlanRow: Decodable {
+    let id: UUID
+    let patient_profile_id: UUID
+    let category: String
+    let injury: String
+    let status: String
+    let created_at: Date?
+  }
 
   // Active assignment for current (patient) user
   static func myActiveAssignment() async throws -> AssignmentRow {
@@ -96,6 +105,47 @@ enum RehabService {
       .from("rehab.lessons")
       .update(payload)
       .eq("id", value: lessonId.uuidString)
+      .execute()
+  }
+  
+  // MARK: - Rehab Plans (MVP)
+  
+  static func currentPlan(patientProfileId: UUID) async throws -> PlanRow? {
+    let rows: [PlanRow] = try await supabase
+      .schema("accounts")
+      .from("rehab_plans")
+      .select()
+      .eq("patient_profile_id", value: patientProfileId.uuidString)
+      .eq("status", value: "active")
+      .limit(1)
+      .decoded(as: [PlanRow].self)
+    
+    return rows.first
+  }
+  
+  static func saveACLPlan(patientProfileId: UUID) async throws {
+    let pt = try await PTService.myPTProfile()
+    
+    // Set any existing active plans for this patient to archived
+    _ = try await supabase
+      .schema("accounts")
+      .from("rehab_plans")
+      .update(AnyEncodable(["status": "archived"]))
+      .eq("patient_profile_id", value: patientProfileId.uuidString)
+      .eq("status", value: "active")
+      .execute()
+    
+    // Insert new active plan
+    _ = try await supabase
+      .schema("accounts")
+      .from("rehab_plans")
+      .insert(AnyEncodable([
+        "pt_profile_id": pt.id.uuidString,
+        "patient_profile_id": patientProfileId.uuidString,
+        "category": "Knee",
+        "injury": "ACL",
+        "status": "active"
+      ]))
       .execute()
   }
 

@@ -2,13 +2,27 @@ import SwiftUI
 
 struct PatientDetailView: View {
     @EnvironmentObject var router: Router
+    @StateObject private var vm = PTPatientsViewModel()
     @State private var notes: String = ""
+    @State private var currentPlan: RehabService.PlanRow? = nil
+    @State private var patient: PTService.SimplePatient? = nil
+    @State private var isLoading = false
+    @State private var showDeleteConfirmation = false
+    
+    // TODO: Receive patient_profile_id from PatientListView navigation
+    private var patientProfileId: UUID? = nil
+    
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        return formatter
+    }
     
     var body: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
                 VStack(alignment: .leading, spacing: RRSpace.section) {
-                    Text("Sean Andrews")
+                    Text(patientName)
                         .font(.rrHeadline)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.top, RRSpace.pageTop)
@@ -18,7 +32,7 @@ struct PatientDetailView: View {
                         .frame(height: 1)
                         .padding(.horizontal, 16)
                     
-                    Text("DOB: 07/21/03   •   Gender: M")
+                    Text(patientInfo)
                         .font(.rrBody)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 16)
@@ -50,8 +64,34 @@ struct PatientDetailView: View {
                         Text("Current Rehab Plan")
                             .font(.rrTitle)
                         
-                        SecondaryButton(title: "Select Rehab Plan") {
-                            router.go(.ptCategorySelect)
+                        if let plan = currentPlan {
+                            // Show gray card with plan info
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 120)
+                                .overlay(
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("\(plan.category) - \(plan.injury)")
+                                            .font(.rrTitle)
+                                            .foregroundStyle(.primary)
+                                    }
+                                    .padding(16)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                )
+                                .padding(.bottom, 8)
+                            
+                            Text("\(plan.injury) Rehab")
+                                .font(.rrBody)
+                                .foregroundStyle(.secondary)
+                                .padding(.bottom, 8)
+                            
+                            SecondaryButton(title: "Change Rehab Plan") {
+                                router.go(.ptCategorySelect)
+                            }
+                        } else {
+                            SecondaryButton(title: "Select Rehab Plan") {
+                                router.go(.ptCategorySelect)
+                            }
                         }
                     }
                     .padding(.horizontal, 16)
@@ -88,6 +128,31 @@ struct PatientDetailView: View {
                     }
                     .padding(.horizontal, 16)
                     
+                    Rectangle()
+                        .fill(Color.black.opacity(0.12))
+                        .frame(height: 1)
+                        .padding(.horizontal, 16)
+                    
+                    // Danger Zone
+                    VStack(alignment: .leading, spacing: RRSpace.stack) {
+                        Text("Danger Zone")
+                            .font(.rrTitle)
+                            .foregroundStyle(.red)
+                        
+                        Button {
+                            showDeleteConfirmation = true
+                        } label: {
+                            Text("Delete Patient")
+                                .font(.rrBody)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color.red)
+                                .clipShape(RoundedRectangle(cornerRadius: 20))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    
                     Spacer(minLength: 24)
                 }
                 .padding(.bottom, 120)
@@ -111,6 +176,68 @@ struct PatientDetailView: View {
                 BackButton()
             }
         }
+        .task {
+            // TODO: Load patient by patient_profile_id from route
+            // For now, load first patient as placeholder
+            await loadPatientData()
+        }
+        .alert("Delete Patient", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                Task {
+                    if let patientId = patient?.patient_profile_id {
+                        await vm.delete(patientProfileId: patientId)
+                        router.go(.patientList)
+                    }
+                }
+            }
+        } message: {
+            Text("This will remove this patient from your list. This action cannot be undone.")
+        }
+    }
+    
+    private var patientName: String {
+        if let patient = patient {
+            return "\(patient.first_name) \(patient.last_name)"
+        }
+        return "Sean Andrews" // Placeholder
+    }
+    
+    private var patientInfo: String {
+        if let patient = patient {
+            let dobString: String
+            if let dateStr = patient.date_of_birth {
+                // Parse ISO8601 date string (YYYY-MM-DD)
+                let isoFormatter = ISO8601DateFormatter()
+                isoFormatter.formatOptions = [.withFullDate]
+                if let date = isoFormatter.date(from: dateStr) {
+                    dobString = dateFormatter.string(from: date)
+                } else {
+                    dobString = dateStr
+                }
+            } else {
+                dobString = "—"
+            }
+            let genderStr = patient.gender?.capitalized ?? "—"
+            return "DOB: \(dobString)   •   Gender: \(genderStr)"
+        }
+        return "DOB: 07/21/03   •   Gender: M" // Placeholder
+    }
+    
+    private func loadPatientData() async {
+        isLoading = true
+        do {
+            // TODO: Load specific patient by patient_profile_id
+            // For now, load first patient as placeholder
+            let patients = try await PTService.listMyPatients()
+            if let firstPatient = patients.first {
+                self.patient = firstPatient
+                self.currentPlan = try await RehabService.currentPlan(patientProfileId: firstPatient.patient_profile_id)
+            }
+        } catch {
+            print("PatientDetailView.loadPatientData error: \(error)")
+        }
+        isLoading = false
     }
 }
 

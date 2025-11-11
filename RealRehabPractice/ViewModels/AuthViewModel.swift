@@ -33,12 +33,13 @@ final class AuthViewModel: ObservableObject {
         throw NSError(domain: "AuthViewModel", code: 500, userInfo: [NSLocalizedDescriptionKey: "Failed to load profile after signup"])
       }
 
+      let apiGender = self.gender.isEmpty ? nil : GenderMapper.apiValue(from: self.gender)
       let patientProfileId = try await PatientService.ensurePatientProfile(
         profileId: profile.id,
         dob: self.dateOfBirth,
         surgeryDate: self.dateOfSurgery,
         lastPtVisit: self.lastPTVisit,
-        gender: self.gender.isEmpty ? nil : self.gender
+        gender: apiGender
       )
 
       let emailTrim = self.ptEmail.trimmingCharacters(in: .whitespacesAndNewlines)

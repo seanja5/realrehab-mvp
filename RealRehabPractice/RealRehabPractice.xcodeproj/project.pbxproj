@@ -21,6 +21,7 @@
 		C82D702A2EBEB10C004D9347 /* LessonSessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70232EBEB10C004D9347 /* LessonSessionViewModel.swift */; };
 		C82D702C2ED00153004D9347 /* PatientService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D702B2ED00153004D9347 /* PatientService.swift */; };
 		C82D70302ED0841A004D9347 /* PatientPTViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */; };
+		C82D70372ED09AC7004D9349 /* PTPatientsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70362ED09AC7004D9349 /* PTPatientsViewModel.swift */; };
 		C82D70362ED09AC7004D9348 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70352ED09AC7004D9348 /* LoginView.swift */; };
 		C82D70382ED0AB17004D9347 /* PTSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70372ED0AB17004D9347 /* PTSettingsView.swift */; };
 		C82D703C2ED0B4BE004D9347 /* PatientSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D703B2ED0B4BE004D9347 /* PatientSettingsView.swift */; };
@@ -32,6 +33,7 @@
 		C8AEECB42EB2D7A200720184 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */; };
 		C8AEECB52EB2D7A200720184 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA22EB2D7A200720184 /* ContentView.swift */; };
 		C8AEECB62EB2D7A200720184 /* SensorSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAE2EB2D7A200720184 /* SensorSample.swift */; };
+		C82D70382ED09AC7004D9350 /* GenderMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70372ED09AC7004D9350 /* GenderMapper.swift */; };
 		C8AEECB72EB2D7A200720184 /* CreateAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA32EB2D7A200720184 /* CreateAccount.swift */; };
 		C8AEECB82EB2D7A200720184 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */; };
 		C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */; };
@@ -88,6 +90,7 @@
 		C82D70252EBEB10C004D9347 /* PTProgramEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTProgramEditorViewModel.swift; sourceTree = "<group>"; };
 		C82D702B2ED00153004D9347 /* PatientService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientService.swift; sourceTree = "<group>"; };
 		C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientPTViewModel.swift; sourceTree = "<group>"; };
+		C82D70362ED09AC7004D9349 /* PTPatientsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPatientsViewModel.swift; sourceTree = "<group>"; };
 		C82D70352ED09AC7004D9348 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C82D70372ED0AB17004D9347 /* PTSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSettingsView.swift; sourceTree = "<group>"; };
 		C82D703B2ED0B4BE004D9347 /* PatientSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientSettingsView.swift; sourceTree = "<group>"; };
@@ -103,6 +106,7 @@
 		C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrateDeviceView.swift; sourceTree = "<group>"; };
 		C8AEECA12EB2D7A200720184 /* CompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionView.swift; sourceTree = "<group>"; };
 		C8AEECA22EB2D7A200720184 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		C82D70372ED09AC7004D9350 /* GenderMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenderMapper.swift; sourceTree = "<group>"; };
 		C8AEECA32EB2D7A200720184 /* CreateAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateAccount.swift; sourceTree = "<group>"; };
 		C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSubCategoryView.swift; sourceTree = "<group>"; };
 		C8AEECA52EB2D7A200720184 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -198,6 +202,7 @@
 				C82D70242EBEB10C004D9347 /* PatientDashboardViewModel.swift */,
 				C82D70252EBEB10C004D9347 /* PTProgramEditorViewModel.swift */,
 				C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */,
+				C82D70362ED09AC7004D9349 /* PTPatientsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -294,6 +299,7 @@
 				C8AEECA22EB2D7A200720184 /* ContentView.swift */,
 				C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */,
 				C8AEECAE2EB2D7A200720184 /* SensorSample.swift */,
+				C82D70372ED09AC7004D9350 /* GenderMapper.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -505,6 +511,7 @@
 				C8AEECB42EB2D7A200720184 /* WelcomeView.swift in Sources */,
 				C8AEECB52EB2D7A200720184 /* ContentView.swift in Sources */,
 				C8AEECB62EB2D7A200720184 /* SensorSample.swift in Sources */,
+				C82D70382ED09AC7004D9350 /* GenderMapper.swift in Sources */,
 				C8AEECB72EB2D7A200720184 /* CreateAccount.swift in Sources */,
 				C8AEECB82EB2D7A200720184 /* AppRouter.swift in Sources */,
 				C8D677D12EB97B4700829144 /* SchedulingModels.swift in Sources */,
@@ -524,6 +531,7 @@
 				C82D70292EBEB10C004D9347 /* PTProgramEditorViewModel.swift in Sources */,
 				C82D702A2EBEB10C004D9347 /* LessonSessionViewModel.swift in Sources */,
 				C82D70302ED0841A004D9347 /* PatientPTViewModel.swift in Sources */,
+				C82D70372ED09AC7004D9349 /* PTPatientsViewModel.swift in Sources */,
 				C82D70362ED09AC7004D9348 /* LoginView.swift in Sources */,
 				C82D70382ED0AB17004D9347 /* PTSettingsView.swift in Sources */,
 				C82D703C2ED0B4BE004D9347 /* PatientSettingsView.swift in Sources */,

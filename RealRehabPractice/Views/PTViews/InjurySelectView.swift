@@ -70,7 +70,7 @@ struct InjurySelectView: View {
                             imageName: imageName,
                             tappable: name == "ACL",
                             action: name == "ACL" ? {
-                                router.go(.ptJourneyMap(patientProfileId: patientProfileId))
+                                router.go(.ptJourneyMap(patientProfileId: patientProfileId, planId: nil))
                             } : nil
                         )
                         .frame(width: 110)

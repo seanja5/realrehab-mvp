@@ -194,6 +194,7 @@ struct AnyEncodable: Encodable {
     switch value {
     case let encodableValue as JSONValue:
       try encodableValue.encode(to: encoder)
+    // Note: JSONValue from RehabService.swift is accessible at module level
     case let string as String:
       var container = encoder.singleValueContainer()
       try container.encode(string)

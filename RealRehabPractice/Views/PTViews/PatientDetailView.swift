@@ -65,20 +65,26 @@ struct PatientDetailView: View {
                             .font(.rrTitle)
                         
                         if let plan = currentPlan {
-                            // Show gray card with plan info
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.gray.opacity(0.2))
-                                .frame(height: 120)
-                                .overlay(
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text("\(plan.category) - \(plan.injury)")
-                                            .font(.rrTitle)
-                                            .foregroundStyle(.primary)
-                                    }
-                                    .padding(16)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                )
-                                .padding(.bottom, 8)
+                            // Show gray card with plan info - make it tappable
+                            Button {
+                                // Navigate to PTJourneyMapView with planId to edit existing plan
+                                router.go(.ptJourneyMap(patientProfileId: patientProfileId, planId: plan.id))
+                            } label: {
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(height: 120)
+                                    .overlay(
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("\(plan.category) - \(plan.injury)")
+                                                .font(.rrTitle)
+                                                .foregroundStyle(.primary)
+                                        }
+                                        .padding(16)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.bottom, 8)
                             
                             Text("\(plan.injury) Rehab")
                                 .font(.rrBody)

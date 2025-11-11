@@ -29,6 +29,16 @@ struct ProgramRow: Decodable {
 enum RehabService {
   private static let supabase = SupabaseService.shared.client
   
+  // MARK: - Plan Node DTO for JSONB storage
+  struct PlanNodeDTO: Codable {
+    let id: String  // UUID as string
+    let title: String
+    let icon: String  // "person" or "video"
+    let isLocked: Bool
+    let reps: Int
+    let restSec: Int
+  }
+  
   struct PlanRow: Decodable {
     let id: UUID
     let pt_profile_id: UUID
@@ -37,6 +47,7 @@ enum RehabService {
     let injury: String
     let status: String
     let created_at: Date?
+    let nodes: [PlanNodeDTO]?  // Optional for backward compatibility
   }
 
   // Active assignment for current (patient) user
@@ -118,7 +129,7 @@ enum RehabService {
       let rows: [PlanRow] = try await supabase
         .schema("accounts")
         .from("rehab_plans")
-        .select("id,pt_profile_id,patient_profile_id,category,injury,status,created_at")
+        .select("id,pt_profile_id,patient_profile_id,category,injury,status,created_at,nodes")
         .eq("pt_profile_id", value: ptProfileId.uuidString)
         .eq("patient_profile_id", value: patientProfileId.uuidString)
         .eq("status", value: "active")
@@ -149,8 +160,8 @@ enum RehabService {
     }
   }
   
-  static func saveACLPlan(ptProfileId: UUID, patientProfileId: UUID) async throws {
-    print("💾 RehabService.saveACLPlan: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
+  static func saveACLPlan(ptProfileId: UUID, patientProfileId: UUID, nodes: [LessonNode]) async throws {
+    print("💾 RehabService.saveACLPlan: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString), nodes=\(nodes.count)")
     
     do {
       // Set any existing active plans for this patient to archived
@@ -163,6 +174,23 @@ enum RehabService {
         .eq("status", value: "active")
         .execute()
       
+      // Convert LessonNode array to PlanNodeDTO array
+      let nodeDTOs = nodes.map { node in
+        PlanNodeDTO(
+          id: node.id.uuidString,
+          title: node.title,
+          icon: node.icon.systemName == "figure.stand" ? "person" : "video",
+          isLocked: node.isLocked,
+          reps: node.reps,
+          restSec: node.restSec
+        )
+      }
+      
+      // Encode nodes to JSONValue for JSONB storage
+      let encoder = JSONEncoder()
+      let nodesJSONData = try encoder.encode(nodeDTOs)
+      let nodesJSONValue = try JSONDecoder().decode(JSONValue.self, from: nodesJSONData)
+      
       // Insert new active plan
       print("➕ RehabService.saveACLPlan: inserting new active plan...")
       let payload: [String: Any] = [
@@ -170,7 +198,8 @@ enum RehabService {
         "patient_profile_id": patientProfileId.uuidString,
         "category": "Knee",
         "injury": "ACL",
-        "status": "active"
+        "status": "active",
+        "nodes": nodesJSONValue
       ]
       
       _ = try await supabase
@@ -179,7 +208,7 @@ enum RehabService {
         .insert(AnyEncodable(payload))
         .execute()
       
-      print("✅ RehabService.saveACLPlan: successfully saved plan")
+      print("✅ RehabService.saveACLPlan: successfully saved plan with \(nodes.count) nodes")
     } catch {
       // Handle permission errors with user-friendly message
       if let postgrestError = error as? PostgrestError {
@@ -196,7 +225,42 @@ enum RehabService {
       throw error
     }
   }
-
+  
+  // MARK: - Fetch plan by ID (for loading saved plans)
+  static func fetchPlan(planId: UUID) async throws -> PlanRow? {
+    print("🔍 RehabService.fetchPlan: planId=\(planId.uuidString)")
+    
+    do {
+      let rows: [PlanRow] = try await supabase
+        .schema("accounts")
+        .from("rehab_plans")
+        .select("id,pt_profile_id,patient_profile_id,category,injury,status,created_at,nodes")
+        .eq("id", value: planId.uuidString)
+        .limit(1)
+        .decoded(as: [PlanRow].self)
+      
+      if let plan = rows.first {
+        print("✅ RehabService.fetchPlan: found plan id=\(plan.id.uuidString), nodes=\(plan.nodes?.count ?? 0)")
+      } else {
+        print("ℹ️ RehabService.fetchPlan: no plan found for planId=\(planId.uuidString)")
+      }
+      
+      return rows.first
+    } catch {
+      if let postgrestError = error as? PostgrestError {
+        if postgrestError.code == "42501" || postgrestError.code == "PGRST301" {
+          print("❌ RehabService.fetchPlan: permission denied (403/42501) for planId=\(planId.uuidString)")
+          throw NSError(
+            domain: "RehabService",
+            code: 403,
+            userInfo: [NSLocalizedDescriptionKey: "Your account doesn't have permission to view this rehab plan."]
+          )
+        }
+      }
+      print("❌ RehabService.fetchPlan error: \(error)")
+      throw error
+    }
+  }
 }
 
 // MARK: - JSON value helpers

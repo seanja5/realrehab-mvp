@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PTJourneyMapView: View {
     let patientProfileId: UUID
+    let planId: UUID?  // Optional: nil for new plans, non-nil for editing existing
     @EnvironmentObject var router: Router
     @EnvironmentObject var session: SessionContext
     @State private var isLoading = false
@@ -77,13 +78,51 @@ struct PTJourneyMapView: View {
         errorMessage = nil
         
         do {
-            try await RehabService.saveACLPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
+            try await RehabService.saveACLPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId, nodes: nodes)
             
             // Navigate back to PatientDetailView with the patientProfileId
             router.go(.ptPatientDetail(patientProfileId: patientProfileId))
         } catch {
             errorMessage = error.localizedDescription
             print("❌ PTJourneyMapView.confirmJourney error: \(error)")
+        }
+        
+        isLoading = false
+    }
+    
+    // MARK: - Load Plan
+    private func loadPlan() async {
+        guard let planId = planId else {
+            // No planId means creating new plan - use default nodes
+            return
+        }
+        
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            guard let plan = try await RehabService.fetchPlan(planId: planId) else {
+                errorMessage = "Plan not found"
+                isLoading = false
+                return
+            }
+            
+            // Convert PlanNodeDTO array to LessonNode array
+            if let savedNodes = plan.nodes {
+                nodes = savedNodes.map { dto in
+                    let iconType: LessonNode.IconType = dto.icon == "person" ? .person : .video
+                    // Create new LessonNode (id will be auto-generated UUID)
+                    let node = LessonNode(title: dto.title, icon: iconType, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec)
+                    // Note: We create new UUIDs since LessonNode.id is let and auto-generated
+                    // The stored id in DTO is for reference but we generate new ones for UI
+                    return node
+                }
+                layoutNodesZigZag()
+                print("✅ PTJourneyMapView: loaded \(nodes.count) nodes from plan")
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            print("❌ PTJourneyMapView.loadPlan error: \(error)")
         }
         
         isLoading = false
@@ -271,6 +310,10 @@ struct PTJourneyMapView: View {
                         showingRehabOverview = false
                     }
             }
+        }
+        .task {
+            await loadPlan()
+            layoutNodesZigZag()
         }
         .onAppear {
             layoutNodesZigZag()

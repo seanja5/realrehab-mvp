@@ -44,7 +44,7 @@ struct RealRehabPracticeApp: App {
                             case .ptPatientDetail(let patientProfileId): PatientDetailView(patientProfileId: patientProfileId)
                             case .ptCategorySelect(let patientProfileId): CategorySelectView(patientProfileId: patientProfileId)
                             case .ptInjurySelect(let patientProfileId): InjurySelectView(patientProfileId: patientProfileId)
-                            case .ptJourneyMap(let patientProfileId): PTJourneyMapView(patientProfileId: patientProfileId)
+                            case .ptJourneyMap(let patientProfileId, let planId): PTJourneyMapView(patientProfileId: patientProfileId, planId: planId)
                             }
                         }
                 }

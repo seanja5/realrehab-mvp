@@ -48,6 +48,7 @@ enum RehabService {
     let status: String
     let created_at: Date?
     let nodes: [PlanNodeDTO]?  // Optional for backward compatibility
+    let notes: String?  // Optional notes for the patient
   }
 
   // Active assignment for current (patient) user
@@ -129,7 +130,7 @@ enum RehabService {
       let rows: [PlanRow] = try await supabase
         .schema("accounts")
         .from("rehab_plans")
-        .select("id,pt_profile_id,patient_profile_id,category,injury,status,created_at,nodes")
+        .select("id,pt_profile_id,patient_profile_id,category,injury,status,created_at,nodes,notes")
         .eq("pt_profile_id", value: ptProfileId.uuidString)
         .eq("patient_profile_id", value: patientProfileId.uuidString)
         .eq("status", value: "active")
@@ -160,7 +161,7 @@ enum RehabService {
     }
   }
   
-  static func saveACLPlan(ptProfileId: UUID, patientProfileId: UUID, nodes: [LessonNode]) async throws {
+  static func saveACLPlan(ptProfileId: UUID, patientProfileId: UUID, nodes: [LessonNode], notes: String? = nil) async throws {
     print("💾 RehabService.saveACLPlan: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString), nodes=\(nodes.count)")
     
     do {
@@ -193,7 +194,7 @@ enum RehabService {
       
       // Insert new active plan
       print("➕ RehabService.saveACLPlan: inserting new active plan...")
-      let payload: [String: Any] = [
+      var payload: [String: Any] = [
         "pt_profile_id": ptProfileId.uuidString,
         "patient_profile_id": patientProfileId.uuidString,
         "category": "Knee",
@@ -201,6 +202,11 @@ enum RehabService {
         "status": "active",
         "nodes": nodesJSONValue
       ]
+      
+      // Add notes if provided
+      if let notes = notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        payload["notes"] = notes
+      }
       
       _ = try await supabase
         .schema("accounts")
@@ -234,7 +240,7 @@ enum RehabService {
       let rows: [PlanRow] = try await supabase
         .schema("accounts")
         .from("rehab_plans")
-        .select("id,pt_profile_id,patient_profile_id,category,injury,status,created_at,nodes")
+        .select("id,pt_profile_id,patient_profile_id,category,injury,status,created_at,nodes,notes")
         .eq("id", value: planId.uuidString)
         .limit(1)
         .decoded(as: [PlanRow].self)
@@ -258,6 +264,59 @@ enum RehabService {
         }
       }
       print("❌ RehabService.fetchPlan error: \(error)")
+      throw error
+    }
+  }
+  
+  // MARK: - Update notes for a plan
+  static func updatePlanNotes(ptProfileId: UUID, patientProfileId: UUID, notes: String?) async throws {
+    print("📝 RehabService.updatePlanNotes: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
+    
+    do {
+      // Find the active plan for this patient
+      struct PlanIdRow: Decodable {
+        let id: UUID
+      }
+      let rows: [PlanIdRow] = try await supabase
+        .schema("accounts")
+        .from("rehab_plans")
+        .select("id")
+        .eq("pt_profile_id", value: ptProfileId.uuidString)
+        .eq("patient_profile_id", value: patientProfileId.uuidString)
+        .eq("status", value: "active")
+        .limit(1)
+        .decoded(as: [PlanIdRow].self)
+      
+      guard let plan = rows.first else {
+        // If no plan exists, create one with just notes
+        print("ℹ️ RehabService.updatePlanNotes: no active plan found, creating one with notes")
+        try await saveACLPlan(
+          ptProfileId: ptProfileId,
+          patientProfileId: patientProfileId,
+          nodes: [],  // Empty nodes for notes-only plan
+          notes: notes
+        )
+        return
+      }
+      
+      // Update the existing plan's notes
+      var updatePayload: [String: Any] = [:]
+      if let notes = notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        updatePayload["notes"] = notes
+      } else {
+        updatePayload["notes"] = NSNull()  // Set to NULL if empty
+      }
+      
+      _ = try await supabase
+        .schema("accounts")
+        .from("rehab_plans")
+        .update(AnyEncodable(updatePayload))
+        .eq("id", value: plan.id.uuidString)
+        .execute()
+      
+      print("✅ RehabService.updatePlanNotes: successfully updated notes")
+    } catch {
+      print("❌ RehabService.updatePlanNotes error: \(error)")
       throw error
     }
   }

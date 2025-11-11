@@ -11,6 +11,7 @@ struct PatientDetailView: View {
     @State private var isLoading = false
     @State private var showDeleteConfirmation = false
     @State private var errorMessage: String? = nil
+    @State private var notesSaveTask: Task<Void, Never>? = nil
     
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -185,6 +186,16 @@ struct PatientDetailView: View {
         .task {
             await loadPatientData(patientProfileId: patientProfileId)
         }
+        .onChange(of: notes) { oldValue, newValue in
+            // Auto-save notes after user stops typing (debounce)
+            notesSaveTask?.cancel()
+            notesSaveTask = Task {
+                try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+                if !Task.isCancelled {
+                    await saveNotes()
+                }
+            }
+        }
         .alert("Delete Patient", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
@@ -245,12 +256,34 @@ struct PatientDetailView: View {
             // Load specific patient by patient_profile_id
             let loadedPatient = try await PTService.getPatient(patientProfileId: patientProfileId)
             self.patient = loadedPatient
-            self.currentPlan = try await RehabService.currentPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
+            let plan = try await RehabService.currentPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
+            self.currentPlan = plan
+            // Load notes from plan
+            self.notes = plan?.notes ?? ""
         } catch {
             print("❌ PatientDetailView.loadPatientData error: \(error)")
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+    
+    private func saveNotes() async {
+        guard let ptProfileId = session.ptProfileId else {
+            print("❌ PatientDetailView.saveNotes: ptProfileId is nil")
+            return
+        }
+        
+        do {
+            try await RehabService.updatePlanNotes(
+                ptProfileId: ptProfileId,
+                patientProfileId: patientProfileId,
+                notes: notes.isEmpty ? nil : notes
+            )
+            print("✅ PatientDetailView: saved notes")
+        } catch {
+            print("❌ PatientDetailView.saveNotes error: \(error)")
+            errorMessage = "Failed to save notes: \(error.localizedDescription)"
+        }
     }
 }
 

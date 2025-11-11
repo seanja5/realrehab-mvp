@@ -8,6 +8,15 @@ enum PTService {
     struct PTProfileRow: Decodable {
         let id: UUID
         let profile_id: UUID
+        let email: String?
+        let first_name: String?
+        let last_name: String?
+        let phone: String?
+        let license_number: String?
+        let npi_number: String?
+        let practice_name: String?
+        let practice_address: String?
+        let specialization: String?
     }
     
     struct SimplePatient: Decodable, Identifiable {
@@ -126,7 +135,7 @@ enum PTService {
         let rows: [PTProfileRow] = try await client
             .schema("accounts")
             .from("pt_profiles")
-            .select("id,profile_id")
+            .select("id,profile_id,email,first_name,last_name,phone,license_number,npi_number,practice_name,practice_address,specialization")
             .eq("profile_id", value: profile.id.uuidString)
             .limit(1)
             .decoded()
@@ -329,6 +338,60 @@ enum PTService {
             .eq("patient_profile_id", value: patientProfileId.uuidString)
             .eq("pt_profile_id", value: ptProfileId.uuidString)
             .execute()
+    }
+    
+    // MARK: - Update PT Profile
+    @MainActor
+    static func updatePTProfile(
+        ptProfileId: UUID,
+        email: String?,
+        firstName: String?,
+        lastName: String?,
+        phone: String?,
+        licenseNumber: String?,
+        npiNumber: String?,
+        practiceName: String?,
+        practiceAddress: String?,
+        specialization: String?
+    ) async throws {
+        var payload: [String: AnyEncodable] = [:]
+        
+        if let email = email, !email.isEmpty {
+            payload["email"] = AnyEncodable(email)
+        }
+        if let firstName = firstName, !firstName.isEmpty {
+            payload["first_name"] = AnyEncodable(firstName)
+        }
+        if let lastName = lastName, !lastName.isEmpty {
+            payload["last_name"] = AnyEncodable(lastName)
+        }
+        if let phone = phone, !phone.isEmpty {
+            payload["phone"] = AnyEncodable(phone)
+        }
+        if let licenseNumber = licenseNumber, !licenseNumber.isEmpty {
+            payload["license_number"] = AnyEncodable(licenseNumber)
+        }
+        if let npiNumber = npiNumber, !npiNumber.isEmpty {
+            payload["npi_number"] = AnyEncodable(npiNumber)
+        }
+        if let practiceName = practiceName, !practiceName.isEmpty {
+            payload["practice_name"] = AnyEncodable(practiceName)
+        }
+        if let practiceAddress = practiceAddress, !practiceAddress.isEmpty {
+            payload["practice_address"] = AnyEncodable(practiceAddress)
+        }
+        if let specialization = specialization, !specialization.isEmpty {
+            payload["specialization"] = AnyEncodable(specialization)
+        }
+        
+        _ = try await client
+            .schema("accounts")
+            .from("pt_profiles")
+            .update(AnyEncodable(payload))
+            .eq("id", value: ptProfileId.uuidString)
+            .execute()
+        
+        print("✅ PTService.updatePTProfile: successfully updated profile")
     }
 }
 

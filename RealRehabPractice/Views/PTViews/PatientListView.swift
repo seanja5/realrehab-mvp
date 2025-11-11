@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PatientListView: View {
     @EnvironmentObject var router: Router
+    @EnvironmentObject var session: SessionContext
     @StateObject private var vm = PTPatientsViewModel()
     
     private func formatDate(_ dateString: String?) -> String {
@@ -52,6 +53,7 @@ struct PatientListView: View {
                                     email: patient.email,
                                     phone: patient.phone,
                                     onTap: {
+                                        print("📋 Opening patient \(patient.patient_profile_id.uuidString) with pt_profile_id=\(session.ptProfileId?.uuidString ?? "nil")")
                                         router.go(.ptPatientDetail(patientProfileId: patient.patient_profile_id))
                                     }
                                 )
@@ -95,7 +97,11 @@ struct PatientListView: View {
             }
         }
         .task {
+            vm.setPTProfileId(session.ptProfileId)
             await vm.load()
+        }
+        .onChange(of: session.ptProfileId) { newValue in
+            vm.setPTProfileId(newValue)
         }
         .alert("Error", isPresented: .constant(vm.errorMessage != nil)) {
             Button("OK") {

@@ -13,20 +13,37 @@ final class PTPatientsViewModel: ObservableObject {
     @Published var errorMessage: String?
     
     private let genderOptions = ["Male", "Female", "Non-binary", "Prefer not to say"]
+    private var ptProfileId: UUID?
+    
+    func setPTProfileId(_ id: UUID?) {
+        self.ptProfileId = id
+    }
     
     func load() async {
+        guard let ptProfileId = ptProfileId else {
+            errorMessage = "PT profile not available"
+            print("❌ PTPatientsViewModel.load: ptProfileId is nil")
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
         do {
-            self.patients = try await PTService.listMyPatients()
+            self.patients = try await PTService.listMyPatients(ptProfileId: ptProfileId)
+            print("✅ PTPatientsViewModel.load: loaded \(self.patients.count) patients for pt_profile_id=\(ptProfileId.uuidString)")
         } catch {
             errorMessage = error.localizedDescription
-            print("PTPatientsViewModel.load error: \(error)")
+            print("❌ PTPatientsViewModel.load error: \(error)")
         }
         isLoading = false
     }
     
     func addPatient() async {
+        guard let ptProfileId = ptProfileId else {
+            errorMessage = "PT profile not available"
+            return
+        }
+        
         guard !firstName.trimmingCharacters(in: .whitespaces).isEmpty,
               !lastName.trimmingCharacters(in: .whitespaces).isEmpty else {
             errorMessage = "First name and last name are required"
@@ -38,6 +55,7 @@ final class PTPatientsViewModel: ObservableObject {
         do {
             let apiGender = GenderMapper.apiValue(from: gender)
             try await PTService.addPatient(
+                ptProfileId: ptProfileId,
                 firstName: firstName.trimmingCharacters(in: .whitespaces),
                 lastName: lastName.trimmingCharacters(in: .whitespaces),
                 dob: dateOfBirth,
@@ -53,20 +71,25 @@ final class PTPatientsViewModel: ObservableObject {
             await load()
         } catch {
             errorMessage = error.localizedDescription
-            print("PTPatientsViewModel.addPatient error: \(error)")
+            print("❌ PTPatientsViewModel.addPatient error: \(error)")
         }
         isLoading = false
     }
     
     func delete(patientProfileId: UUID) async {
+        guard let ptProfileId = ptProfileId else {
+            errorMessage = "PT profile not available"
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
         do {
-            try await PTService.deletePatientMapping(patientProfileId: patientProfileId)
+            try await PTService.deletePatientMapping(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
             await load()
         } catch {
             errorMessage = error.localizedDescription
-            print("PTPatientsViewModel.delete error: \(error)")
+            print("❌ PTPatientsViewModel.delete error: \(error)")
         }
         isLoading = false
     }

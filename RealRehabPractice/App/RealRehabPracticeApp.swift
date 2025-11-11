@@ -11,6 +11,7 @@ import UIKit
 @main
 struct RealRehabPracticeApp: App {
     @StateObject var router = Router()
+    @StateObject private var session = SessionContext()
 
     var body: some Scene {
         WindowGroup {
@@ -55,6 +56,17 @@ struct RealRehabPracticeApp: App {
                     }
             )
             .environmentObject(router)
+            .environmentObject(session)
+            .task {
+                do {
+                    let ids = try await AuthService.resolveIdsForCurrentUser()
+                    session.profileId = ids.profileId
+                    session.ptProfileId = ids.ptProfileId
+                    print("✅ Resolved IDs: profile=\(ids.profileId?.uuidString ?? "nil"), pt_profile=\(ids.ptProfileId?.uuidString ?? "nil")")
+                } catch {
+                    print("❌ Resolve IDs error: \(error)")
+                }
+            }
             .preferredColorScheme(.light)   // <- force Light mode app-wide
         }
     }

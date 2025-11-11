@@ -105,6 +105,48 @@ enum AuthService {
     return (row.id, row.role)
   }
 
+  // MARK: - Identity resolution
+  struct RRProfileRow: Decodable { let id: UUID }
+  struct RRPTProfileRow: Decodable { let id: UUID }
+  
+  /// Resolve the app's base profile id and PT profile id for the current session.
+  static func resolveIdsForCurrentUser() async throws -> (profileId: UUID?, ptProfileId: UUID?) {
+    let user: User?
+    if let session = try? await supabase.auth.session {
+      user = session.user
+    } else {
+      user = supabase.auth.currentUser
+    }
+    
+    guard let user = user else {
+      return (nil, nil)
+    }
+    
+    // 1) accounts.profiles.id by auth user_id
+    let profileRows: [RRProfileRow] = try await supabase
+      .schema("accounts")
+      .from("profiles")
+      .select("id")
+      .eq("user_id", value: user.id.uuidString)
+      .limit(1)
+      .decoded(as: [RRProfileRow].self)
+    
+    guard let profile = profileRows.first else {
+      return (nil, nil)
+    }
+    
+    // 2) accounts.pt_profiles.id by profile_id
+    let ptRows: [RRPTProfileRow]? = try? await supabase
+      .schema("accounts")
+      .from("pt_profiles")
+      .select("id")
+      .eq("profile_id", value: profile.id.uuidString)
+      .limit(1)
+      .decoded(as: [RRPTProfileRow].self)
+    
+    return (profile.id, ptRows?.first?.id)
+  }
+
   // MARK: - Helpers
   private static func fetchCurrentUser() async throws -> User {
     if let session = try? await supabase.auth.session {

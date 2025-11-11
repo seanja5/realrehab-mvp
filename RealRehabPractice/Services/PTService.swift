@@ -146,13 +146,12 @@ enum PTService {
     
     @MainActor
     static func addPatient(
+        ptProfileId: UUID,
         firstName: String,
         lastName: String,
         dob: Date,
         gender: String
     ) async throws {
-        let pt = try await myPTProfile()
-        
         let df = ISO8601DateFormatter()
         df.formatOptions = [.withFullDate]
         
@@ -184,15 +183,13 @@ enum PTService {
             .from("pt_patient_map")
             .upsert(AnyEncodable([
                 "patient_profile_id": pid.uuidString,
-                "pt_profile_id": pt.id.uuidString
+                "pt_profile_id": ptProfileId.uuidString
             ]), onConflict: "patient_profile_id")
             .execute()
     }
     
     @MainActor
-    static func listMyPatients() async throws -> [SimplePatient] {
-        let pt = try await myPTProfile()
-        
+    static func listMyPatients(ptProfileId: UUID) async throws -> [SimplePatient] {
         // Find all patient_profile_id for my map
         struct MapRow: Decodable {
             let patient_profile_id: UUID
@@ -201,7 +198,7 @@ enum PTService {
             .schema("accounts")
             .from("pt_patient_map")
             .select("patient_profile_id")
-            .eq("pt_profile_id", value: pt.id.uuidString)
+            .eq("pt_profile_id", value: ptProfileId.uuidString)
             .decoded()
         
         if map.isEmpty { return [] }
@@ -324,14 +321,13 @@ enum PTService {
     }
     
     @MainActor
-    static func deletePatientMapping(patientProfileId: UUID) async throws {
-        let pt = try await myPTProfile()
+    static func deletePatientMapping(ptProfileId: UUID, patientProfileId: UUID) async throws {
         _ = try await client
             .schema("accounts")
             .from("pt_patient_map")
             .delete()
             .eq("patient_profile_id", value: patientProfileId.uuidString)
-            .eq("pt_profile_id", value: pt.id.uuidString)
+            .eq("pt_profile_id", value: ptProfileId.uuidString)
             .execute()
     }
 }

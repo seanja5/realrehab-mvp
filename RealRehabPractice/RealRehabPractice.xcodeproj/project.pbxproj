@@ -47,6 +47,7 @@
 		C8D677BD2EB8285A00829144 /* PairDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677BC2EB8285A00829144 /* PairDeviceView.swift */; };
 		C8D677C92EB839FC00829144 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677C82EB839FC00829144 /* Theme.swift */; };
 		C8D677D12EB97B4700829144 /* SchedulingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677D02EB97B4700829144 /* SchedulingModels.swift */; };
+		C82D70402ED2F3B6004D9347 /* SessionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D703F2ED2F3B6004D9347 /* SessionContext.swift */; };
 		C8D677F02EBA932000829144 /* InjurySelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EB2EBA932000829144 /* InjurySelectView.swift */; };
 		C8D677F12EBA932000829144 /* PatientListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EC2EBA932000829144 /* PatientListView.swift */; };
 		C8D677F32EBA932000829144 /* CategorySelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EA2EBA932000829144 /* CategorySelectView.swift */; };
@@ -120,6 +121,7 @@
 		C8D677BC2EB8285A00829144 /* PairDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceView.swift; sourceTree = "<group>"; };
 		C8D677C82EB839FC00829144 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		C8D677D02EB97B4700829144 /* SchedulingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulingModels.swift; sourceTree = "<group>"; };
+		C82D703F2ED2F3B6004D9347 /* SessionContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionContext.swift; sourceTree = "<group>"; };
 		C8D677EA2EBA932000829144 /* CategorySelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySelectView.swift; sourceTree = "<group>"; };
 		C8D677EB2EBA932000829144 /* InjurySelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjurySelectView.swift; sourceTree = "<group>"; };
 		C8D677EC2EBA932000829144 /* PatientListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientListView.swift; sourceTree = "<group>"; };
@@ -280,6 +282,7 @@
 			isa = PBXGroup;
 			children = (
 				C8D677D02EB97B4700829144 /* SchedulingModels.swift */,
+				C82D703F2ED2F3B6004D9347 /* SessionContext.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -515,6 +518,7 @@
 				C8AEECB72EB2D7A200720184 /* CreateAccount.swift in Sources */,
 				C8AEECB82EB2D7A200720184 /* AppRouter.swift in Sources */,
 				C8D677D12EB97B4700829144 /* SchedulingModels.swift in Sources */,
+				C82D70402ED2F3B6004D9347 /* SessionContext.swift in Sources */,
 				C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */,
 				C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */,
 				C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */,

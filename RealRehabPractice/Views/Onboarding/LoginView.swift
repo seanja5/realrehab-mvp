@@ -3,6 +3,7 @@ import Combine
 
 struct LoginView: View {
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var session: SessionContext
     @StateObject private var auth = AuthViewModel()
     
     private let fieldFill = Color(uiColor: .secondarySystemFill)
@@ -54,6 +55,12 @@ struct LoginView: View {
                     await auth.signIn()
                     if auth.errorMessage == nil {
                         do {
+                            // Resolve IDs after login
+                            let ids = try await AuthService.resolveIdsForCurrentUser()
+                            session.profileId = ids.profileId
+                            session.ptProfileId = ids.ptProfileId
+                            print("✅ Login resolved IDs: profile=\(ids.profileId?.uuidString ?? "nil"), pt_profile=\(ids.ptProfileId?.uuidString ?? "nil")")
+                            
                             let (profileId, role) = try await AuthService.myProfileIdAndRole()
                             switch role {
                             case "pt":

@@ -3,6 +3,7 @@ import SwiftUI
 struct PatientDetailView: View {
     let patientProfileId: UUID
     @EnvironmentObject var router: Router
+    @EnvironmentObject var session: SessionContext
     @StateObject private var vm = PTPatientsViewModel()
     @State private var notes: String = ""
     @State private var currentPlan: RehabService.PlanRow? = nil
@@ -227,14 +228,20 @@ struct PatientDetailView: View {
     }
     
     private func loadPatientData(patientProfileId: UUID) async {
+        guard let ptProfileId = session.ptProfileId else {
+            errorMessage = "PT profile not available"
+            print("❌ PatientDetailView.loadPatientData: ptProfileId is nil")
+            return
+        }
+        
         isLoading = true
         do {
             // Load specific patient by patient_profile_id
             let loadedPatient = try await PTService.getPatient(patientProfileId: patientProfileId)
             self.patient = loadedPatient
-            self.currentPlan = try await RehabService.currentPlan(patientProfileId: patientProfileId)
+            self.currentPlan = try await RehabService.currentPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
         } catch {
-            print("PatientDetailView.loadPatientData error: \(error)")
+            print("❌ PatientDetailView.loadPatientData error: \(error)")
             errorMessage = error.localizedDescription
         }
         isLoading = false

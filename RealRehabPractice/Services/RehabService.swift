@@ -31,6 +31,7 @@ enum RehabService {
   
   struct PlanRow: Decodable {
     let id: UUID
+    let pt_profile_id: UUID
     let patient_profile_id: UUID
     let category: String
     let injury: String
@@ -110,43 +111,90 @@ enum RehabService {
   
   // MARK: - Rehab Plans (MVP)
   
-  static func currentPlan(patientProfileId: UUID) async throws -> PlanRow? {
-    let rows: [PlanRow] = try await supabase
-      .schema("accounts")
-      .from("rehab_plans")
-      .select()
-      .eq("patient_profile_id", value: patientProfileId.uuidString)
-      .eq("status", value: "active")
-      .limit(1)
-      .decoded(as: [PlanRow].self)
+  static func currentPlan(ptProfileId: UUID, patientProfileId: UUID) async throws -> PlanRow? {
+    print("🔍 RehabService.currentPlan: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
     
-    return rows.first
+    do {
+      let rows: [PlanRow] = try await supabase
+        .schema("accounts")
+        .from("rehab_plans")
+        .select("id,pt_profile_id,patient_profile_id,category,injury,status,created_at")
+        .eq("pt_profile_id", value: ptProfileId.uuidString)
+        .eq("patient_profile_id", value: patientProfileId.uuidString)
+        .eq("status", value: "active")
+        .limit(1)
+        .decoded(as: [PlanRow].self)
+      
+      if let plan = rows.first {
+        print("✅ RehabService.currentPlan: found plan id=\(plan.id.uuidString), category=\(plan.category), injury=\(plan.injury)")
+      } else {
+        print("ℹ️ RehabService.currentPlan: no active plan found for pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
+      }
+      
+      return rows.first
+    } catch {
+      // Handle permission errors with user-friendly message
+      if let postgrestError = error as? PostgrestError {
+        if postgrestError.code == "42501" || postgrestError.code == "PGRST301" {
+          print("❌ RehabService.currentPlan: permission denied (403/42501) for pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
+          throw NSError(
+            domain: "RehabService",
+            code: 403,
+            userInfo: [NSLocalizedDescriptionKey: "Your account doesn't have permission to view this rehab plan."]
+          )
+        }
+      }
+      print("❌ RehabService.currentPlan error: \(error)")
+      throw error
+    }
   }
   
-  static func saveACLPlan(patientProfileId: UUID) async throws {
-    let pt = try await PTService.myPTProfile()
+  static func saveACLPlan(ptProfileId: UUID, patientProfileId: UUID) async throws {
+    print("💾 RehabService.saveACLPlan: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
     
-    // Set any existing active plans for this patient to archived
-    _ = try await supabase
-      .schema("accounts")
-      .from("rehab_plans")
-      .update(AnyEncodable(["status": "archived"]))
-      .eq("patient_profile_id", value: patientProfileId.uuidString)
-      .eq("status", value: "active")
-      .execute()
-    
-    // Insert new active plan
-    _ = try await supabase
-      .schema("accounts")
-      .from("rehab_plans")
-      .insert(AnyEncodable([
-        "pt_profile_id": pt.id.uuidString,
-        "patient_profile_id": patientProfileId.uuidString,
-        "category": "Knee",
-        "injury": "ACL",
-        "status": "active"
-      ]))
-      .execute()
+    do {
+      // Set any existing active plans for this patient to archived
+      print("📝 RehabService.saveACLPlan: archiving existing active plans...")
+      _ = try await supabase
+        .schema("accounts")
+        .from("rehab_plans")
+        .update(AnyEncodable(["status": "archived"]))
+        .eq("patient_profile_id", value: patientProfileId.uuidString)
+        .eq("status", value: "active")
+        .execute()
+      
+      // Insert new active plan
+      print("➕ RehabService.saveACLPlan: inserting new active plan...")
+      let payload: [String: AnyEncodable] = [
+        "pt_profile_id": AnyEncodable(ptProfileId.uuidString),
+        "patient_profile_id": AnyEncodable(patientProfileId.uuidString),
+        "category": AnyEncodable("Knee"),
+        "injury": AnyEncodable("ACL"),
+        "status": AnyEncodable("active")
+      ]
+      
+      _ = try await supabase
+        .schema("accounts")
+        .from("rehab_plans")
+        .insert(AnyEncodable(payload))
+        .execute()
+      
+      print("✅ RehabService.saveACLPlan: successfully saved plan")
+    } catch {
+      // Handle permission errors with user-friendly message
+      if let postgrestError = error as? PostgrestError {
+        if postgrestError.code == "42501" || postgrestError.code == "PGRST301" {
+          print("❌ RehabService.saveACLPlan: permission denied (403/42501) for pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
+          throw NSError(
+            domain: "RehabService",
+            code: 403,
+            userInfo: [NSLocalizedDescriptionKey: "Your account doesn't have permission to create this rehab plan."]
+          )
+        }
+      }
+      print("❌ RehabService.saveACLPlan error: \(error)")
+      throw error
+    }
   }
 
 }

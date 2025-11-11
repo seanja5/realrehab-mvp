@@ -3,6 +3,7 @@ import SwiftUI
 struct PTJourneyMapView: View {
     let patientProfileId: UUID
     @EnvironmentObject var router: Router
+    @EnvironmentObject var session: SessionContext
     @State private var isLoading = false
     @State private var errorMessage: String?
     
@@ -66,17 +67,23 @@ struct PTJourneyMapView: View {
     }
     
     private func confirmJourney() async {
+        guard let ptProfileId = session.ptProfileId else {
+            errorMessage = "PT profile not available"
+            print("❌ PTJourneyMapView.confirmJourney: ptProfileId is nil")
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
         
         do {
-            try await RehabService.saveACLPlan(patientProfileId: patientProfileId)
+            try await RehabService.saveACLPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
             
             // Navigate back to PatientDetailView with the patientProfileId
             router.go(.ptPatientDetail(patientProfileId: patientProfileId))
         } catch {
             errorMessage = error.localizedDescription
-            print("PTJourneyMapView.confirmJourney error: \(error)")
+            print("❌ PTJourneyMapView.confirmJourney error: \(error)")
         }
         
         isLoading = false

@@ -165,12 +165,12 @@ enum RehabService {
       
       // Insert new active plan
       print("➕ RehabService.saveACLPlan: inserting new active plan...")
-      let payload: [String: AnyEncodable] = [
-        "pt_profile_id": AnyEncodable(ptProfileId.uuidString),
-        "patient_profile_id": AnyEncodable(patientProfileId.uuidString),
-        "category": AnyEncodable("Knee"),
-        "injury": AnyEncodable("ACL"),
-        "status": AnyEncodable("active")
+      let payload: [String: Any] = [
+        "pt_profile_id": ptProfileId.uuidString,
+        "patient_profile_id": patientProfileId.uuidString,
+        "category": "Knee",
+        "injury": "ACL",
+        "status": "active"
       ]
       
       _ = try await supabase

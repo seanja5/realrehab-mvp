@@ -8,6 +8,7 @@ public final class PatientPTViewModel: ObservableObject {
   @Published public var phone: String = ""
   @Published public var isLoading: Bool = false
   @Published public var errorMessage: String?
+  @Published public var hasRehabPlan: Bool = false
 
   private var injectedPatientProfileId: UUID?
 
@@ -61,6 +62,26 @@ public final class PatientPTViewModel: ObservableObject {
         .decoded()
       let pt = rows.first
       self.apply(ptEmail: pt?.email, first: pt?.first_name, last: pt?.last_name, phone: pt?.phone)
+      
+      // Check for active rehab plan
+      if let ptId = pt?.id {
+        struct PlanRow: Decodable {
+          let id: UUID
+        }
+        let planRows: [PlanRow] = try await SupabaseService.shared.client
+          .schema("accounts")
+          .from("rehab_plans")
+          .select("id")
+          .eq("pt_profile_id", value: ptId.uuidString)
+          .eq("patient_profile_id", value: pid.uuidString)
+          .eq("status", value: "active")
+          .limit(1)
+          .decoded()
+        self.hasRehabPlan = planRows.first != nil
+        print("✅ PatientPTViewModel: hasRehabPlan = \(self.hasRehabPlan)")
+      } else {
+        self.hasRehabPlan = false
+      }
 
       isLoading = false
     } catch {

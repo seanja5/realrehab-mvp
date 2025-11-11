@@ -42,28 +42,36 @@ struct PTDetailView: View {
                             .font(.rrTitle)
                             .padding(.horizontal, 16)
                         
-                        Button {
-                            router.go(.journeyMap)
-                        } label: {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.gray.opacity(0.15))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 190)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, 16)
-                        
-                        Text("ACL Rehab")
-                            .font(.rrBody)
-                            .foregroundStyle(.primary)
-                            .padding(.top, 10)
+                        if vm.hasRehabPlan {
+                            Button {
+                                router.go(.journeyMap)
+                            } label: {
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.gray.opacity(0.15))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 190)
+                            }
+                            .buttonStyle(.plain)
                             .padding(.horizontal, 16)
-                        
-                        SecondaryButton(title: "Edit Schedule") {
-                            router.go(.rehabOverview)
+                            
+                            Text("ACL Rehab")
+                                .font(.rrBody)
+                                .foregroundStyle(.primary)
+                                .padding(.top, 10)
+                                .padding(.horizontal, 16)
+                            
+                            SecondaryButton(title: "Edit Schedule") {
+                                router.go(.rehabOverview)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 4)
+                        } else {
+                            Text("No rehab plan assigned")
+                                .font(.rrBody)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 4)
                     }
                     .padding(.top, 4)
                     

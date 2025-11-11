@@ -33,12 +33,6 @@ struct CreateAccountView: View {
     @State private var dateOfSurgery = Date()
     @State private var lastPTVisit = Date()
     
-    // PT Info State
-    @State private var ptFirstName = ""
-    @State private var ptLastName = ""
-    @State private var ptEmail = ""
-    @State private var ptPhoneNumber = ""
-    
     let genderOptions = ["Male", "Female", "Non-binary", "Prefer not to say"]
     
     var body: some View {
@@ -105,34 +99,6 @@ struct CreateAccountView: View {
                             }
                         }
                         
-                        Divider()
-                        
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Physical Therapist Info")
-                                .font(.rrTitle)
-                                .foregroundStyle(.primary)
-                            
-                            HStack(spacing: 12) {
-                                FormTextField(title: "PT First Name", placeholder: "First Name", text: $ptFirstName)
-                                    .textContentType(.givenName)
-                                    .autocapitalization(.words)
-                                    .frame(maxWidth: .infinity)
-                                FormTextField(title: "PT Last Name", placeholder: "Last Name", text: $ptLastName)
-                                    .textContentType(.familyName)
-                                    .autocapitalization(.words)
-                                    .frame(maxWidth: .infinity)
-                            }
-                            
-                            FormTextField(title: "PT Email", placeholder: "Email", text: $ptEmail)
-                                .keyboardType(.emailAddress)
-                                .textInputAutocapitalization(.never)
-                                .textContentType(.emailAddress)
-                                .autocorrectionDisabled()
-                            
-                            FormTextField(title: "PT Phone Number", placeholder: "Phone Number", text: $ptPhoneNumber)
-                                .keyboardType(.phonePad)
-                                .textContentType(.telephoneNumber)
-                        }
                     }
                     .padding(.horizontal, 20)
                     
@@ -146,10 +112,6 @@ struct CreateAccountView: View {
                                 auth.lastName = lastName
                                 auth.email = email
                                 auth.password = password
-                                auth.ptFirstName = ptFirstName
-                                auth.ptLastName = ptLastName
-                                auth.ptEmail = ptEmail
-                                auth.ptPhoneNumber = ptPhoneNumber
                                 await auth.signUp()
                                 if auth.errorMessage == nil {
                                     router.go(.ptDetail)

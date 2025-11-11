@@ -165,10 +165,12 @@ enum PTService {
         df.formatOptions = [.withFullDate]
         
         // 1) Insert into accounts.patient_profiles (profile_id null, but include demographics)
+        // Explicitly set profile_id to NULL to satisfy RLS policy
         let inserted: [UUIDWrapper] = try await client
             .schema("accounts")
             .from("patient_profiles")
             .insert(AnyEncodable([
+                "profile_id": NSNull(),
                 "first_name": firstName,
                 "last_name": lastName,
                 "date_of_birth": df.string(from: dob),

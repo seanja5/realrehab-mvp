@@ -15,10 +15,6 @@ final class AuthViewModel: ObservableObject {
   @Published var dateOfSurgery: Date = Date()
   @Published var lastPTVisit: Date = Date()
   @Published var gender: String = ""
-  @Published var ptFirstName: String = ""
-  @Published var ptLastName: String = ""
-  @Published var ptEmail: String = ""
-  @Published var ptPhoneNumber: String = ""
 
   func signUp() async {
     await run {
@@ -36,29 +32,17 @@ final class AuthViewModel: ObservableObject {
       let apiGender = self.gender.isEmpty ? nil : GenderMapper.apiValue(from: self.gender)
       let patientProfileId = try await PatientService.ensurePatientProfile(
         profileId: profile.id,
+        firstName: self.firstName,
+        lastName: self.lastName,
         dob: self.dateOfBirth,
         surgeryDate: self.dateOfSurgery,
         lastPtVisit: self.lastPTVisit,
         gender: apiGender
       )
 
-      let emailTrim = self.ptEmail.trimmingCharacters(in: .whitespacesAndNewlines)
-      if !emailTrim.isEmpty {
-        let pt = try await PatientService.upsertPTProfile(
-          email: emailTrim,
-          first: self.ptFirstName.isEmpty ? nil : self.ptFirstName,
-          last: self.ptLastName.isEmpty ? nil : self.ptLastName,
-          phone: self.ptPhoneNumber.isEmpty ? nil : self.ptPhoneNumber
-        )
-        try await PatientService.upsertPTMapping(
-          patientProfileId: patientProfileId,
-          ptProfileId: pt.id
-        )
-        let mappedEmail = pt.email ?? "<no email>"
-        print("🔗 Mapped patient_profile \(patientProfileId) to PT \(mappedEmail)")
-      } else {
-        print("ℹ️ No PT email provided; skipping mapping")
-      }
+      // Note: PT linking happens automatically if a matching placeholder was found and linked
+      // PTs add patients first, then patients sign up with matching info to link
+      print("✅ PatientService.ensurePatientProfile: created/linked patient_profile \(patientProfileId)")
       try self.logCurrentUser()
     }
   }

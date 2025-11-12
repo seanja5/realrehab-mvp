@@ -148,6 +148,9 @@ enum PatientService {
       .decoded()
     
     // Find matching placeholder by comparing normalized values
+    print("🔍 PatientService.ensurePatientProfile: searching for placeholder matching firstName=\(normalizedFirstName), lastName=\(normalizedLastName), dob=\(dobString ?? "nil"), gender=\(apiGender ?? "nil")")
+    print("🔍 Found \(allPlaceholders.count) placeholder(s) with profile_id IS NULL")
+    
     let matchingPlaceholder = allPlaceholders.first { placeholder in
       let placeholderFirstName = (placeholder.first_name ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
       let placeholderLastName = (placeholder.last_name ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -173,6 +176,12 @@ enum PatientService {
       return true
     }
     
+    if matchingPlaceholder != nil {
+      print("✅ PatientService.ensurePatientProfile: found matching placeholder!")
+    } else {
+      print("ℹ️ PatientService.ensurePatientProfile: no matching placeholder found")
+    }
+    
     // STEP 2: If matching placeholder found, UPDATE it to link to this profile
     if let placeholder = matchingPlaceholder {
       print("🔗 PatientService.ensurePatientProfile: found matching placeholder \(placeholder.id), linking to profile \(profileId)")
@@ -196,12 +205,37 @@ enum PatientService {
         
         print("✅ PatientService.ensurePatientProfile: linked placeholder \(placeholder.id) to profile \(profileId)")
         
-        // Note: pt_patient_map link should already exist from when PT created the placeholder
-        // The link is preserved because we're only updating the patient_profiles row, not deleting it
+        // Verify pt_patient_map link exists after update
+        // The link should already exist from when PT created the placeholder
+        struct MapRow: Decodable {
+          let pt_profile_id: UUID
+        }
+        
+        do {
+          let mapRows: [MapRow] = try await client
+            .schema("accounts")
+            .from("pt_patient_map")
+            .select("pt_profile_id")
+            .eq("patient_profile_id", value: placeholder.id.uuidString)
+            .limit(1)
+            .decoded()
+          
+          if let map = mapRows.first {
+            print("✅ PatientService.ensurePatientProfile: verified pt_patient_map link exists to PT \(map.pt_profile_id)")
+          } else {
+            print("⚠️ PatientService.ensurePatientProfile: WARNING - no pt_patient_map link found for placeholder \(placeholder.id)")
+          }
+        } catch {
+          print("⚠️ PatientService.ensurePatientProfile: could not verify pt_patient_map link: \(error)")
+          // Don't throw - the link might still exist, we just can't verify it due to RLS
+        }
         
         return placeholder.id
       } catch {
         print("❌ PatientService.ensurePatientProfile: failed to update placeholder \(placeholder.id): \(error)")
+        if let postgrestError = error as? PostgrestError {
+          print("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
+        }
         throw error
       }
     }

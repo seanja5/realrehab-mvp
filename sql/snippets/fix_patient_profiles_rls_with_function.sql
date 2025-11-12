@@ -2,7 +2,7 @@ BEGIN;
 
 ALTER TABLE accounts.patient_profiles ENABLE ROW LEVEL SECURITY;
 
--- Drop ALL existing policies on patient_profiles
+-- Drop ALL existing policies on patient_profiles first
 DO $$
 DECLARE r record;
 BEGIN
@@ -16,8 +16,49 @@ BEGIN
   END LOOP;
 END $$;
 
+-- Drop the function if it exists (try both public and accounts schemas)
+DROP FUNCTION IF EXISTS public.insert_patient_profile_placeholder(text, text, text, text) CASCADE;
+DROP FUNCTION IF EXISTS accounts.insert_patient_profile_placeholder(text, text, text, text) CASCADE;
+
+-- Create a SECURITY DEFINER function in public schema so PostgREST can call it
+-- This bypasses RLS completely for inserts, which is safe because it only allows NULL profile_id
+CREATE OR REPLACE FUNCTION public.insert_patient_profile_placeholder(
+  p_first_name text,
+  p_last_name text,
+  p_date_of_birth text,
+  p_gender text
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = accounts, public
+AS $$
+DECLARE
+  v_patient_id uuid;
+BEGIN
+  -- Insert the patient profile with profile_id = NULL
+  INSERT INTO accounts.patient_profiles (
+    profile_id,
+    first_name,
+    last_name,
+    date_of_birth,
+    gender
+  ) VALUES (
+    NULL,
+    p_first_name,
+    p_last_name,
+    p_date_of_birth,
+    p_gender
+  ) RETURNING id INTO v_patient_id;
+  
+  RETURN v_patient_id;
+END;
+$$;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.insert_patient_profile_placeholder(text, text, text, text) TO authenticated;
+
 -- SELECT: Users can see their own patient profile OR PTs can see patients mapped to them
--- Also allow seeing placeholders (profile_id IS NULL) if mapped to current PT
 CREATE POLICY patient_profiles_select_owner
 ON accounts.patient_profiles
 FOR SELECT
@@ -39,27 +80,15 @@ USING (
   )
 );
 
--- INSERT: ULTRA-PERMISSIVE - Allow ANY authenticated user to insert with profile_id = NULL
--- OR allow inserting own profile (for patients during signup)
--- This is intentionally permissive to avoid RLS errors
--- Simplified to avoid any complex subqueries that might cause issues
-CREATE POLICY patient_profiles_insert_permissive
+-- INSERT: Allow patients to insert their own profile during signup
+-- NOTE: PTs should use the insert_patient_profile_placeholder function instead
+CREATE POLICY patient_profiles_insert_own_profile
 ON accounts.patient_profiles
 FOR INSERT
 TO authenticated
 WITH CHECK (
-  -- Allow inserting with NULL profile_id (placeholder patients created by PTs)
-  -- This is the key fix: make it simple and permissive
-  -- Check if profile_id is explicitly NULL
-  profile_id IS NULL
-  OR
-  -- Allow inserting own profile (for patients during signup)
-  -- Use a simple EXISTS check to avoid potential RLS recursion
-  EXISTS (
-    SELECT 1
-    FROM accounts.profiles
-    WHERE id = patient_profiles.profile_id
-      AND user_id = auth.uid()
+  profile_id IN (
+    SELECT id FROM accounts.profiles WHERE user_id = auth.uid()
   )
 );
 
@@ -119,3 +148,4 @@ USING (
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
+

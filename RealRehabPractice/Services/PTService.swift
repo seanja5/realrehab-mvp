@@ -153,7 +153,6 @@ enum PTService {
     
     // MARK: - Patient Management
     
-    @MainActor
     static func addPatient(
         ptProfileId: UUID,
         firstName: String,
@@ -164,39 +163,64 @@ enum PTService {
         let df = ISO8601DateFormatter()
         df.formatOptions = [.withFullDate]
         
-        // 1) Insert into accounts.patient_profiles (profile_id null, but include demographics)
-        // Explicitly set profile_id to NULL to satisfy RLS policy
-        let inserted: [UUIDWrapper] = try await client
-            .schema("accounts")
-            .from("patient_profiles")
-            .insert(AnyEncodable([
-                "profile_id": NSNull(),
-                "first_name": firstName,
-                "last_name": lastName,
-                "date_of_birth": df.string(from: dob),
-                "gender": gender
-            ]), returning: .representation)
-            .select("id")
-            .limit(1)
-            .decoded()
+        print("🔍 PTService.addPatient: calling RPC function with firstName=\(firstName), lastName=\(lastName), gender=\(gender)")
         
-        guard let pid = inserted.first?.id else {
-            throw NSError(
-                domain: "PTService",
-                code: 500,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to create patient profile"]
-            )
+        do {
+            // 1) Call RPC function to insert patient profile with NULL profile_id
+            // This bypasses RLS by using a SECURITY DEFINER function
+            // Create params in a nonisolated context to avoid Sendable issues
+            let uuidString: String = try await Task { @Sendable in
+                struct RPCParams: Encodable {
+                    let p_first_name: String
+                    let p_last_name: String
+                    let p_date_of_birth: String
+                    let p_gender: String
+                }
+                
+                let params = RPCParams(
+                    p_first_name: firstName,
+                    p_last_name: lastName,
+                    p_date_of_birth: df.string(from: dob),
+                    p_gender: gender
+                )
+                
+                // Call RPC function - PostgREST returns UUID as a string directly
+                // The function returns uuid type, which PostgREST serializes as a string
+                return try await client.database
+                    .rpc("insert_patient_profile_placeholder", params: params)
+                    .single()
+                    .execute()
+                    .value
+            }.value
+            
+            guard let pid = UUID(uuidString: uuidString) else {
+                throw NSError(
+                    domain: "PTService",
+                    code: 500,
+                    userInfo: [NSLocalizedDescriptionKey: "Failed to parse UUID from RPC response: \(uuidString)"]
+                )
+            }
+            
+            print("✅ PTService.addPatient: successfully created patient_profile \(pid) via RPC")
+            
+            // 2) Map to this PT
+            _ = try await client
+                .schema("accounts")
+                .from("pt_patient_map")
+                .upsert(AnyEncodable([
+                    "patient_profile_id": pid.uuidString,
+                    "pt_profile_id": ptProfileId.uuidString
+                ]), onConflict: "patient_profile_id")
+                .execute()
+            
+            print("✅ PTService.addPatient: successfully mapped patient \(pid) to PT \(ptProfileId)")
+        } catch {
+            print("❌ PTService.addPatient: RLS error or other failure: \(error)")
+            if let postgrestError = error as? PostgrestError {
+                print("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
+            }
+            throw error
         }
-        
-        // 2) Map to this PT
-        _ = try await client
-            .schema("accounts")
-            .from("pt_patient_map")
-            .upsert(AnyEncodable([
-                "patient_profile_id": pid.uuidString,
-                "pt_profile_id": ptProfileId.uuidString
-            ]), onConflict: "patient_profile_id")
-            .execute()
     }
     
     @MainActor

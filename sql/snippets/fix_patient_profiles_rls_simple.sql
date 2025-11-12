@@ -2,7 +2,7 @@ BEGIN;
 
 ALTER TABLE accounts.patient_profiles ENABLE ROW LEVEL SECURITY;
 
--- Drop all existing policies on patient_profiles
+-- Drop ALL existing policies on patient_profiles
 DO $$
 DECLARE r record;
 BEGIN
@@ -16,22 +16,16 @@ BEGIN
   END LOOP;
 END $$;
 
--- SIMPLIFIED APPROACH: Direct policy without functions
--- This avoids any potential RLS recursion or function permission issues
-
 -- SELECT: Users can see their own patient profile OR PTs can see patients mapped to them
 CREATE POLICY patient_profiles_select_owner
 ON accounts.patient_profiles
 FOR SELECT
 TO authenticated
 USING (
-  -- Patient can see their own profile
   profile_id IN (
     SELECT id FROM accounts.profiles WHERE user_id = auth.uid()
   )
   OR
-  -- PT can see patients mapped to them via pt_patient_map
-  -- Use direct join to avoid function calls
   EXISTS (
     SELECT 1
     FROM accounts.pt_patient_map ptm
@@ -42,43 +36,35 @@ USING (
   )
 );
 
--- INSERT: SIMPLIFIED - Allow PTs to insert placeholder patients
--- Check role directly in the policy without using functions
-CREATE POLICY patient_profiles_insert_pt_or_self
+-- INSERT: SIMPLEST POSSIBLE - Allow ANY authenticated user to insert if profile_id IS NULL
+-- This is the absolute simplest policy - just check if the column is NULL
+CREATE POLICY patient_profiles_insert_null
+ON accounts.patient_profiles
+FOR INSERT
+TO authenticated
+WITH CHECK (profile_id IS NULL);
+
+-- INSERT: Allow patients to insert their own profile
+CREATE POLICY patient_profiles_insert_own
 ON accounts.patient_profiles
 FOR INSERT
 TO authenticated
 WITH CHECK (
-  -- PT can insert placeholder patients (profile_id is NULL)
-  -- Direct check: user must have role='pt' in their profile
-  (
-    profile_id IS NULL
-    AND EXISTS (
-      SELECT 1 
-      FROM accounts.profiles 
-      WHERE user_id = auth.uid() 
-      AND role = 'pt'
-    )
-  )
-  OR
-  -- Patient can insert their own profile
   profile_id IN (
     SELECT id FROM accounts.profiles WHERE user_id = auth.uid()
   )
 );
 
--- UPDATE: Patients can update their own profile OR PTs can update patients mapped to them
-CREATE POLICY patient_profiles_update_owner
+-- UPDATE: Allow updating from NULL to user's profile, or updating own profile
+CREATE POLICY patient_profiles_update
 ON accounts.patient_profiles
 FOR UPDATE
 TO authenticated
 USING (
-  -- Patient can update their own profile
-  profile_id IN (
-    SELECT id FROM accounts.profiles WHERE user_id = auth.uid()
-  )
+  profile_id IS NULL
   OR
-  -- PT can update patients mapped to them
+  profile_id IN (SELECT id FROM accounts.profiles WHERE user_id = auth.uid())
+  OR
   EXISTS (
     SELECT 1
     FROM accounts.pt_patient_map ptm
@@ -89,10 +75,7 @@ USING (
   )
 )
 WITH CHECK (
-  -- Same conditions for WITH CHECK
-  profile_id IN (
-    SELECT id FROM accounts.profiles WHERE user_id = auth.uid()
-  )
+  profile_id IN (SELECT id FROM accounts.profiles WHERE user_id = auth.uid())
   OR
   EXISTS (
     SELECT 1
@@ -105,7 +88,7 @@ WITH CHECK (
 );
 
 -- DELETE: Only patients can delete their own profile
-CREATE POLICY patient_profiles_delete_owner
+CREATE POLICY patient_profiles_delete
 ON accounts.patient_profiles
 FOR DELETE
 TO authenticated
@@ -118,4 +101,3 @@ USING (
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
-

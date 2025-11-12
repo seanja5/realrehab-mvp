@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import Supabase
+import PostgREST
 
 public final class PatientPTViewModel: ObservableObject {
   @Published public var name: String = ""
@@ -53,6 +54,9 @@ public final class PatientPTViewModel: ObservableObject {
         let last_name: String?
         let phone: String?
       }
+      
+      print("🔍 PatientPTViewModel: querying PT for patient_profile_id \(pid)")
+      
       let rows: [PTRow] = try await SupabaseService.shared.client
         .schema("accounts")
         .from("pt_profiles")
@@ -60,8 +64,16 @@ public final class PatientPTViewModel: ObservableObject {
         .eq("pt_patient_map.patient_profile_id", value: pid.uuidString)
         .limit(1)
         .decoded()
+      
       let pt = rows.first
-      self.apply(ptEmail: pt?.email, first: pt?.first_name, last: pt?.last_name, phone: pt?.phone)
+      
+      if let pt = pt {
+        print("✅ PatientPTViewModel: found PT \(pt.id) for patient \(pid)")
+        self.apply(ptEmail: pt.email, first: pt.first_name, last: pt.last_name, phone: pt.phone)
+      } else {
+        print("⚠️ PatientPTViewModel: no PT found for patient \(pid) - patient may not be mapped to a PT")
+        self.apply(ptEmail: nil, first: nil, last: nil, phone: nil)
+      }
       
       // Check for active rehab plan
       if let ptId = pt?.id {
@@ -87,7 +99,13 @@ public final class PatientPTViewModel: ObservableObject {
     } catch {
       isLoading = false
       errorMessage = (error as NSError).localizedDescription
-      print("PatientPTViewModel load error:", error)
+      print("❌ PatientPTViewModel load error: \(error)")
+      if let postgrestError = error as? PostgrestError {
+        print("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
+      }
+      // Set empty values on error so UI shows "Your Physical Therapist" with no info
+      self.apply(ptEmail: nil, first: nil, last: nil, phone: nil)
+      self.hasRehabPlan = false
     }
   }
 

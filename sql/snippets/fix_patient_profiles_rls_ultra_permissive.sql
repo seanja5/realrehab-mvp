@@ -2,7 +2,7 @@ BEGIN;
 
 ALTER TABLE accounts.patient_profiles ENABLE ROW LEVEL SECURITY;
 
--- Drop ALL existing policies on patient_profiles
+-- Drop ALL existing policies on patient_profiles first
 DO $$
 DECLARE r record;
 BEGIN
@@ -17,7 +17,6 @@ BEGIN
 END $$;
 
 -- SELECT: Users can see their own patient profile OR PTs can see patients mapped to them
--- Also allow seeing placeholders (profile_id IS NULL) if mapped to current PT
 CREATE POLICY patient_profiles_select_owner
 ON accounts.patient_profiles
 FOR SELECT
@@ -40,26 +39,21 @@ USING (
 );
 
 -- INSERT: ULTRA-PERMISSIVE - Allow ANY authenticated user to insert with profile_id = NULL
--- OR allow inserting own profile (for patients during signup)
--- This is intentionally permissive to avoid RLS errors
--- Simplified to avoid any complex subqueries that might cause issues
-CREATE POLICY patient_profiles_insert_permissive
+-- Split into two separate policies for clarity and to ensure NULL check works
+CREATE POLICY patient_profiles_insert_null_profile_id
+ON accounts.patient_profiles
+FOR INSERT
+TO authenticated
+WITH CHECK (profile_id IS NULL);
+
+-- INSERT: Allow patients to insert their own profile during signup
+CREATE POLICY patient_profiles_insert_own_profile
 ON accounts.patient_profiles
 FOR INSERT
 TO authenticated
 WITH CHECK (
-  -- Allow inserting with NULL profile_id (placeholder patients created by PTs)
-  -- This is the key fix: make it simple and permissive
-  -- Check if profile_id is explicitly NULL
-  profile_id IS NULL
-  OR
-  -- Allow inserting own profile (for patients during signup)
-  -- Use a simple EXISTS check to avoid potential RLS recursion
-  EXISTS (
-    SELECT 1
-    FROM accounts.profiles
-    WHERE id = patient_profiles.profile_id
-      AND user_id = auth.uid()
+  profile_id IN (
+    SELECT id FROM accounts.profiles WHERE user_id = auth.uid()
   )
 );
 
@@ -119,3 +113,4 @@ USING (
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
+

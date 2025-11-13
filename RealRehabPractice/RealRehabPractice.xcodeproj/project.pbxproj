@@ -22,6 +22,7 @@
 		C82D702C2ED00153004D9347 /* PatientService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D702B2ED00153004D9347 /* PatientService.swift */; };
 		C82D70302ED0841A004D9347 /* PatientPTViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */; };
 		C82D70372ED09AC7004D9349 /* PTPatientsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70362ED09AC7004D9349 /* PTPatientsViewModel.swift */; };
+		C82D703A2ED09AC7004D9351 /* JourneyMapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70392ED09AC7004D9351 /* JourneyMapViewModel.swift */; };
 		C82D70362ED09AC7004D9348 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70352ED09AC7004D9348 /* LoginView.swift */; };
 		C82D70382ED0AB17004D9347 /* PTSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70372ED0AB17004D9347 /* PTSettingsView.swift */; };
 		C82D703C2ED0B4BE004D9347 /* PatientSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D703B2ED0B4BE004D9347 /* PatientSettingsView.swift */; };
@@ -92,6 +93,7 @@
 		C82D702B2ED00153004D9347 /* PatientService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientService.swift; sourceTree = "<group>"; };
 		C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientPTViewModel.swift; sourceTree = "<group>"; };
 		C82D70362ED09AC7004D9349 /* PTPatientsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPatientsViewModel.swift; sourceTree = "<group>"; };
+		C82D70392ED09AC7004D9351 /* JourneyMapViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyMapViewModel.swift; sourceTree = "<group>"; };
 		C82D70352ED09AC7004D9348 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C82D70372ED0AB17004D9347 /* PTSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSettingsView.swift; sourceTree = "<group>"; };
 		C82D703B2ED0B4BE004D9347 /* PatientSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientSettingsView.swift; sourceTree = "<group>"; };
@@ -205,6 +207,7 @@
 				C82D70252EBEB10C004D9347 /* PTProgramEditorViewModel.swift */,
 				C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */,
 				C82D70362ED09AC7004D9349 /* PTPatientsViewModel.swift */,
+				C82D70392ED09AC7004D9351 /* JourneyMapViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -536,6 +539,7 @@
 				C82D702A2EBEB10C004D9347 /* LessonSessionViewModel.swift in Sources */,
 				C82D70302ED0841A004D9347 /* PatientPTViewModel.swift in Sources */,
 				C82D70372ED09AC7004D9349 /* PTPatientsViewModel.swift in Sources */,
+				C82D703A2ED09AC7004D9351 /* JourneyMapViewModel.swift in Sources */,
 				C82D70362ED09AC7004D9348 /* LoginView.swift in Sources */,
 				C82D70382ED0AB17004D9347 /* PTSettingsView.swift in Sources */,
 				C82D703C2ED0B4BE004D9347 /* PatientSettingsView.swift in Sources */,

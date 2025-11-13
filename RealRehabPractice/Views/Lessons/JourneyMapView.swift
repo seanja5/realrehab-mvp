@@ -1,15 +1,11 @@
 import SwiftUI
-import Supabase
-import PostgREST
 
 struct JourneyMapView: View {
     @EnvironmentObject var router: Router
+    @StateObject private var vm = JourneyMapViewModel()
     
     @State private var showCallout = false
     @State private var showSchedulePopover = false
-    @State private var nodes: [JourneyNode] = []
-    @State private var isLoading = false
-    @State private var errorMessage: String?
     @State private var selectedNodeIndex: Int?
     @State private var showLockedPopup = false
     
@@ -43,91 +39,27 @@ struct JourneyMapView: View {
     
     // Computed property for dynamic height
     private var maxHeight: CGFloat {
-        CGFloat(max(nodes.count * 120 + 40, 400))
+        CGFloat(max(vm.nodes.count * 120 + 40, 400))
     }
     
     // Get selected node title for popup
     private var selectedNodeTitle: String {
-        guard let index = selectedNodeIndex, index < nodes.count else {
+        guard let index = selectedNodeIndex, index < vm.nodes.count else {
             return "Lesson"
         }
-        return nodes[index].title.isEmpty ? "Lesson" : nodes[index].title
+        return vm.nodes[index].title.isEmpty ? "Lesson" : vm.nodes[index].title
     }
     
     // Check if selected node is first unlocked lesson
     private var isFirstUnlockedLesson: Bool {
-        guard let index = selectedNodeIndex, index < nodes.count, !nodes[index].isLocked else {
+        guard let index = selectedNodeIndex, index < vm.nodes.count, !vm.nodes[index].isLocked else {
             return false
         }
         // Find first unlocked lesson index
-        if let firstUnlockedIndex = nodes.firstIndex(where: { !$0.isLocked }) {
+        if let firstUnlockedIndex = vm.nodes.firstIndex(where: { !$0.isLocked }) {
             return index == firstUnlockedIndex
         }
         return false
-    }
-    
-    // MARK: - Load Plan
-    private func loadPlan() async {
-        isLoading = true
-        errorMessage = nil
-        
-        do {
-            // Get current user's profile
-            guard let profile = try await AuthService.myProfile() else {
-                throw NSError(domain: "JourneyMapView", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profile not found"])
-            }
-            
-            // Get patient profile ID
-            let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
-            print("🔍 JourneyMapView: patient_profile_id=\(patientProfileId.uuidString)")
-            
-            // Get PT profile ID from pt_patient_map
-            struct MapRow: Decodable {
-                let pt_profile_id: UUID
-            }
-            let mapRows: [MapRow] = try await SupabaseService.shared.client
-                .schema("accounts")
-                .from("pt_patient_map")
-                .select("pt_profile_id")
-                .eq("patient_profile_id", value: patientProfileId.uuidString)
-                .limit(1)
-                .decoded()
-            
-            guard let mapRow = mapRows.first else {
-                print("⚠️ JourneyMapView: no pt_patient_map found for patient")
-                isLoading = false
-                return
-            }
-            
-            let ptProfileId = mapRow.pt_profile_id
-            print("🔍 JourneyMapView: pt_profile_id=\(ptProfileId.uuidString)")
-            
-            // Fetch the active rehab plan
-            guard let plan = try await RehabService.currentPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId) else {
-                print("ℹ️ JourneyMapView: no active plan found")
-                isLoading = false
-                return
-            }
-            
-            // Convert PlanNodeDTO to JourneyNode
-            if let planNodes = plan.nodes, !planNodes.isEmpty {
-                nodes = planNodes.enumerated().map { index, dto in
-                    // Map icon: "person" -> "figure.stand", "video" -> "video.fill"
-                    let iconName = dto.icon == "person" ? "figure.stand" : "video.fill"
-                    // Calculate yOffset using 120pt intervals
-                    let yOffset = CGFloat(index) * 120
-                    return JourneyNode(icon: iconName, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset)
-                }
-                print("✅ JourneyMapView: loaded \(nodes.count) nodes from plan")
-            } else {
-                print("ℹ️ JourneyMapView: plan has no nodes")
-            }
-        } catch {
-            errorMessage = error.localizedDescription
-            print("❌ JourneyMapView.loadPlan error: \(error)")
-        }
-        
-        isLoading = false
     }
     
     var body: some View {
@@ -147,7 +79,7 @@ struct JourneyMapView: View {
                                 
                                 path.move(to: CGPoint(x: currentX, y: currentY))
                                 
-                                for (index, node) in nodes.enumerated() {
+                                for (index, node) in vm.nodes.enumerated() {
                                     if index > 0 {
                                         currentX = (index % 2 == 0) ? width * 0.3 : width * 0.7
                                     }
@@ -157,7 +89,7 @@ struct JourneyMapView: View {
                             }
                             .stroke(Color.brandLightBlue.opacity(0.4), lineWidth: 2)
                             
-                            ForEach(Array(nodes.enumerated()), id: \.element.id) { index, node in
+                            ForEach(Array(vm.nodes.enumerated()), id: \.element.id) { index, node in
                                 let nodeX = (index % 2 == 0) ? geometry.size.width * 0.3 : geometry.size.width * 0.7
                                 
                                 NodeView(node: node)
@@ -297,7 +229,7 @@ struct JourneyMapView: View {
                 }
             }
             .task {
-                await loadPlan()
+                await vm.load()
             }
             
             PatientTabBar(
@@ -369,13 +301,6 @@ struct JourneyMapView: View {
         }
     }
     
-    private struct JourneyNode: Identifiable {
-        let id = UUID()
-        let icon: String
-        let isLocked: Bool
-        let title: String
-        let yOffset: CGFloat
-    }
 }
 
 struct ScheduleSummaryPopover: View {

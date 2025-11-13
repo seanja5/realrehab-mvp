@@ -1,10 +1,17 @@
 import SwiftUI
+import Supabase
+import PostgREST
 
 struct JourneyMapView: View {
     @EnvironmentObject var router: Router
     
     @State private var showCallout = false
     @State private var showSchedulePopover = false
+    @State private var nodes: [JourneyNode] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    @State private var selectedNodeIndex: Int?
+    @State private var showLockedPopup = false
     
     // Load schedule data from UserDefaults
     private var scheduleStartDate: Date? {
@@ -34,19 +41,94 @@ struct JourneyMapView: View {
         }
     }
     
-    // Sample nodes - first is active, rest are locked
-    private let nodes: [JourneyNode] = [
-        JourneyNode(icon: "figure.stand", isLocked: false, title: "Lesson 1 – Knee Extension", yOffset: 0),
-        JourneyNode(icon: "video.fill", isLocked: true, title: "", yOffset: 120),
-        JourneyNode(icon: "video.fill", isLocked: true, title: "", yOffset: 240),
-        JourneyNode(icon: "lock.fill", isLocked: true, title: "", yOffset: 360),
-        JourneyNode(icon: "flag.fill", isLocked: true, title: "", yOffset: 480),
-        JourneyNode(icon: "lock.fill", isLocked: true, title: "", yOffset: 600),
-        JourneyNode(icon: "lock.fill", isLocked: true, title: "", yOffset: 720),
-        JourneyNode(icon: "lock.fill", isLocked: true, title: "", yOffset: 840),
-        JourneyNode(icon: "lock.fill", isLocked: true, title: "", yOffset: 960),
-        JourneyNode(icon: "lock.fill", isLocked: true, title: "", yOffset: 1080)
-    ]
+    // Computed property for dynamic height
+    private var maxHeight: CGFloat {
+        CGFloat(max(nodes.count * 120 + 40, 400))
+    }
+    
+    // Get selected node title for popup
+    private var selectedNodeTitle: String {
+        guard let index = selectedNodeIndex, index < nodes.count else {
+            return "Lesson"
+        }
+        return nodes[index].title.isEmpty ? "Lesson" : nodes[index].title
+    }
+    
+    // Check if selected node is first unlocked lesson
+    private var isFirstUnlockedLesson: Bool {
+        guard let index = selectedNodeIndex, index < nodes.count, !nodes[index].isLocked else {
+            return false
+        }
+        // Find first unlocked lesson index
+        if let firstUnlockedIndex = nodes.firstIndex(where: { !$0.isLocked }) {
+            return index == firstUnlockedIndex
+        }
+        return false
+    }
+    
+    // MARK: - Load Plan
+    private func loadPlan() async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            // Get current user's profile
+            guard let profile = try await AuthService.myProfile() else {
+                throw NSError(domain: "JourneyMapView", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profile not found"])
+            }
+            
+            // Get patient profile ID
+            let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
+            print("🔍 JourneyMapView: patient_profile_id=\(patientProfileId.uuidString)")
+            
+            // Get PT profile ID from pt_patient_map
+            struct MapRow: Decodable {
+                let pt_profile_id: UUID
+            }
+            let mapRows: [MapRow] = try await SupabaseService.shared.client
+                .schema("accounts")
+                .from("pt_patient_map")
+                .select("pt_profile_id")
+                .eq("patient_profile_id", value: patientProfileId.uuidString)
+                .limit(1)
+                .decoded()
+            
+            guard let mapRow = mapRows.first else {
+                print("⚠️ JourneyMapView: no pt_patient_map found for patient")
+                isLoading = false
+                return
+            }
+            
+            let ptProfileId = mapRow.pt_profile_id
+            print("🔍 JourneyMapView: pt_profile_id=\(ptProfileId.uuidString)")
+            
+            // Fetch the active rehab plan
+            guard let plan = try await RehabService.currentPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId) else {
+                print("ℹ️ JourneyMapView: no active plan found")
+                isLoading = false
+                return
+            }
+            
+            // Convert PlanNodeDTO to JourneyNode
+            if let planNodes = plan.nodes, !planNodes.isEmpty {
+                nodes = planNodes.enumerated().map { index, dto in
+                    // Map icon: "person" -> "figure.stand", "video" -> "video.fill"
+                    let iconName = dto.icon == "person" ? "figure.stand" : "video.fill"
+                    // Calculate yOffset using 120pt intervals
+                    let yOffset = CGFloat(index) * 120
+                    return JourneyNode(icon: iconName, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset)
+                }
+                print("✅ JourneyMapView: loaded \(nodes.count) nodes from plan")
+            } else {
+                print("ℹ️ JourneyMapView: plan has no nodes")
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            print("❌ JourneyMapView.loadPlan error: \(error)")
+        }
+        
+        isLoading = false
+    }
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -81,15 +163,18 @@ struct JourneyMapView: View {
                                 NodeView(node: node)
                                     .position(x: nodeX, y: node.yOffset + 40)
                                     .onTapGesture {
-                                        if !node.isLocked {
+                                        selectedNodeIndex = index
+                                        if node.isLocked {
+                                            showLockedPopup = true
+                                        } else {
                                             showCallout = true
                                         }
                                     }
                             }
                         }
-                        .frame(height: 1240)
+                        .frame(height: maxHeight)
                     }
-                    .frame(height: 1240)
+                    .frame(height: maxHeight)
                     .padding(.horizontal, 16)
                     
                     Spacer()
@@ -140,21 +225,26 @@ struct JourneyMapView: View {
                 if showCallout {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
-                        .onTapGesture { showCallout = false }
+                        .onTapGesture { 
+                            showCallout = false
+                            selectedNodeIndex = nil
+                        }
                         .overlay(alignment: .top) {
                             VStack(spacing: 16) {
-                                Text("Lesson 1 – Knee Extension")
+                                Text(selectedNodeTitle)
                                     .font(.rrTitle)
                                     .foregroundStyle(.primary)
                                 
                                 PrimaryButton(title: "Go!") {
                                     router.go(.lesson)
                                     showCallout = false
+                                    selectedNodeIndex = nil
                                 }
                                 .padding(.horizontal, 24)
                                 
                                 SecondaryButton(title: "Close") {
                                     showCallout = false
+                                    selectedNodeIndex = nil
                                 }
                                 .padding(.horizontal, 24)
                             }
@@ -167,6 +257,47 @@ struct JourneyMapView: View {
                             .padding(.top, 140)
                         }
                 }
+                
+                if showLockedPopup {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .onTapGesture { 
+                            showLockedPopup = false
+                            selectedNodeIndex = nil
+                        }
+                        .overlay(alignment: .top) {
+                            VStack(spacing: 16) {
+                                Text(selectedNodeTitle)
+                                    .font(.rrTitle)
+                                    .foregroundStyle(.primary)
+                                
+                                Text("Locked")
+                                    .font(.rrBody)
+                                    .foregroundStyle(.secondary)
+                                
+                                Text("You haven't yet reached this level")
+                                    .font(.rrCaption)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                                
+                                SecondaryButton(title: "Close") {
+                                    showLockedPopup = false
+                                    selectedNodeIndex = nil
+                                }
+                                .padding(.horizontal, 24)
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
+                            )
+                            .padding(.top, 140)
+                        }
+                }
+            }
+            .task {
+                await loadPlan()
             }
             
             PatientTabBar(
@@ -231,7 +362,8 @@ struct JourneyMapView: View {
                 .frame(width: 60, height: 60)
                 .shadow(color: node.isLocked ? Color.gray.opacity(0.2) : Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
             
-            Image(systemName: node.icon)
+            // Show lock icon for locked lessons, video icon for unlocked
+            Image(systemName: node.isLocked ? "lock.fill" : "video.fill")
                 .font(.system(size: 24, weight: .medium))
                 .foregroundStyle(.white)
         }

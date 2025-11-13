@@ -176,6 +176,7 @@ enum PatientService {
     // STEP 2: If matching placeholder found, UPDATE it to link to this profile
     if let placeholderId = matchingPlaceholderId {
       print("🔗 PatientService.ensurePatientProfile: found placeholder \(placeholderId), linking to profile \(profileId)")
+      print("🔍 PatientService.ensurePatientProfile: attempting to update patient_profiles.id=\(placeholderId) to set profile_id=\(profileId)")
       
       // Update the placeholder to set profile_id and other fields
       let updatePayload = PatientProfileUpsert(
@@ -187,6 +188,7 @@ enum PatientService {
       )
       
       do {
+        print("📝 PatientService.ensurePatientProfile: executing UPDATE on patient_profiles...")
         _ = try await client
           .schema("accounts")
           .from("patient_profiles")
@@ -194,7 +196,35 @@ enum PatientService {
           .eq("id", value: placeholderId.uuidString)
           .execute()
         
-        print("✅ PatientService.ensurePatientProfile: linked placeholder \(placeholderId) to profile \(profileId)")
+        print("✅ PatientService.ensurePatientProfile: UPDATE executed successfully")
+        
+        // Verify the update actually worked by querying the row
+        struct VerifyRow: Decodable {
+          let id: UUID
+          let profile_id: UUID?
+        }
+        
+        do {
+          let verifyRows: [VerifyRow] = try await client
+            .schema("accounts")
+            .from("patient_profiles")
+            .select("id,profile_id")
+            .eq("id", value: placeholderId.uuidString)
+            .limit(1)
+            .decoded()
+          
+          if let row = verifyRows.first {
+            if row.profile_id == profileId {
+              print("✅ PatientService.ensurePatientProfile: verified profile_id was updated correctly to \(profileId)")
+            } else {
+              print("⚠️ PatientService.ensurePatientProfile: WARNING - profile_id is \(row.profile_id?.uuidString ?? "NULL"), expected \(profileId)")
+            }
+          } else {
+            print("⚠️ PatientService.ensurePatientProfile: WARNING - could not find row after update")
+          }
+        } catch {
+          print("⚠️ PatientService.ensurePatientProfile: could not verify update: \(error)")
+        }
         
         // Verify pt_patient_map link exists after update
         // The link should already exist from when PT created the placeholder
@@ -203,6 +233,7 @@ enum PatientService {
         }
         
         do {
+          print("🔍 PatientService.ensurePatientProfile: verifying pt_patient_map link for patient_profile_id=\(placeholderId)")
           let mapRows: [MapRow] = try await client
             .schema("accounts")
             .from("pt_patient_map")
@@ -215,9 +246,13 @@ enum PatientService {
             print("✅ PatientService.ensurePatientProfile: verified pt_patient_map link exists to PT \(map.pt_profile_id)")
           } else {
             print("⚠️ PatientService.ensurePatientProfile: WARNING - no pt_patient_map link found for placeholder \(placeholderId)")
+            print("⚠️ This means the patient will not be able to see their PT in PTDetailView")
           }
         } catch {
           print("⚠️ PatientService.ensurePatientProfile: could not verify pt_patient_map link: \(error)")
+          if let postgrestError = error as? PostgrestError {
+            print("⚠️ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
+          }
           // Don't throw - the link might still exist, we just can't verify it due to RLS
         }
         
@@ -226,6 +261,7 @@ enum PatientService {
         print("❌ PatientService.ensurePatientProfile: failed to update placeholder \(placeholderId): \(error)")
         if let postgrestError = error as? PostgrestError {
           print("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
+          print("❌ This is likely an RLS policy issue preventing the UPDATE")
         }
         throw error
       }

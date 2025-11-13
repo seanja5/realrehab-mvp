@@ -205,16 +205,54 @@ enum PTService {
             print("✅ PTService.addPatient: successfully created patient_profile \(pid) via RPC")
             
             // 2) Map to this PT
-            _ = try await client
-                .schema("accounts")
-                .from("pt_patient_map")
-                .upsert(AnyEncodable([
-                    "patient_profile_id": pid.uuidString,
-                    "pt_profile_id": ptProfileId.uuidString
-                ]), onConflict: "patient_profile_id")
-                .execute()
-            
-            print("✅ PTService.addPatient: successfully mapped patient \(pid) to PT \(ptProfileId)")
+            print("📝 PTService.addPatient: attempting to create pt_patient_map row (patient_profile_id=\(pid), pt_profile_id=\(ptProfileId))")
+            do {
+                _ = try await client
+                    .schema("accounts")
+                    .from("pt_patient_map")
+                    .upsert(AnyEncodable([
+                        "patient_profile_id": pid.uuidString,
+                        "pt_profile_id": ptProfileId.uuidString
+                    ]), onConflict: "patient_profile_id")
+                    .execute()
+                
+                print("✅ PTService.addPatient: upsert executed successfully")
+                
+                // Verify the mapping was actually created
+                struct MapVerifyRow: Decodable {
+                    let id: UUID
+                    let patient_profile_id: UUID
+                    let pt_profile_id: UUID
+                }
+                
+                let verifyRows: [MapVerifyRow] = try await client
+                    .schema("accounts")
+                    .from("pt_patient_map")
+                    .select("id,patient_profile_id,pt_profile_id")
+                    .eq("patient_profile_id", value: pid.uuidString)
+                    .eq("pt_profile_id", value: ptProfileId.uuidString)
+                    .limit(1)
+                    .decoded()
+                
+                if let verify = verifyRows.first {
+                    print("✅ PTService.addPatient: verified pt_patient_map row exists:")
+                    print("   - id: \(verify.id)")
+                    print("   - patient_profile_id: \(verify.patient_profile_id)")
+                    print("   - pt_profile_id: \(verify.pt_profile_id)")
+                } else {
+                    print("⚠️ PTService.addPatient: WARNING - upsert succeeded but verification query found no row!")
+                    print("⚠️ This suggests RLS is blocking the verification query, or the row wasn't actually created")
+                }
+                
+                print("✅ PTService.addPatient: successfully mapped patient \(pid) to PT \(ptProfileId)")
+            } catch {
+                print("❌ PTService.addPatient: failed to create pt_patient_map row: \(error)")
+                if let postgrestError = error as? PostgrestError {
+                    print("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
+                    print("❌ This is likely an RLS policy issue preventing the INSERT")
+                }
+                throw error
+            }
         } catch {
             print("❌ PTService.addPatient: RLS error or other failure: \(error)")
             if let postgrestError = error as? PostgrestError {

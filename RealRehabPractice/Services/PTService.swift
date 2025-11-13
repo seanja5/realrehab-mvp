@@ -28,6 +28,7 @@ enum PTService {
         let email: String?
         let phone: String?
         let profile_id: UUID?        // Can be NULL for placeholder patients
+        let access_code: String?     // 8-digit access code for linking
         
         // Identifiable conformance - use patient_profile_id as id
         var id: UUID { patient_profile_id }
@@ -249,13 +250,14 @@ enum PTService {
             let gender: String?            // Can be NULL
             let phone: String?
             let profile_id: UUID?          // Can be NULL for placeholder patients
+            let access_code: String?       // 8-digit access code
         }
         
         // Select only the columns we need, explicitly
         let patients: [PatientCardDTO] = try await client
             .schema("accounts")
             .from("patient_profiles")
-            .select("id,first_name,last_name,date_of_birth,gender,phone,profile_id")
+            .select("id,first_name,last_name,date_of_birth,gender,phone,profile_id,access_code")
             .in("id", values: ids)
             .decoded()
         
@@ -288,7 +290,8 @@ enum PTService {
                 gender: $0.gender,                 // Can be nil
                 email: $0.profile_id.flatMap { emailByProfile[$0] },
                 phone: $0.phone,
-                profile_id: $0.profile_id
+                profile_id: $0.profile_id,
+                access_code: $0.access_code
             )
         }
     }
@@ -304,13 +307,14 @@ enum PTService {
             let gender: String?
             let phone: String?
             let profile_id: UUID?
+            let access_code: String?
         }
         
         // Fetch the specific patient
         let patients: [PatientCardDTO] = try await client
             .schema("accounts")
             .from("patient_profiles")
-            .select("id,first_name,last_name,date_of_birth,gender,phone,profile_id")
+            .select("id,first_name,last_name,date_of_birth,gender,phone,profile_id,access_code")
             .eq("id", value: patientProfileId.uuidString)
             .limit(1)
             .decoded()
@@ -351,7 +355,8 @@ enum PTService {
             gender: patient.gender,
             email: email,
             phone: patient.phone,
-            profile_id: patient.profile_id
+            profile_id: patient.profile_id,
+            access_code: patient.access_code
         )
     }
     

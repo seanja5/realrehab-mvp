@@ -25,13 +25,15 @@ BEGIN
     first_name,
     last_name,
     date_of_birth,
-    gender
+    gender,
+    access_code
   ) VALUES (
     NULL,  -- Explicitly NULL
     p_first_name,
     p_last_name,
-    p_date_of_birth,
-    p_gender
+    p_date_of_birth::date,  -- Cast text to date (ISO8601 format YYYY-MM-DD)
+    p_gender::accounts.gender,  -- Cast text to accounts.gender enum
+    accounts.generate_unique_access_code()  -- Generate unique 8-digit access code
   ) RETURNING id INTO v_patient_id;
   
   RETURN v_patient_id;

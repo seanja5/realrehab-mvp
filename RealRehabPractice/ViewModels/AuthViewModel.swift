@@ -15,6 +15,7 @@ final class AuthViewModel: ObservableObject {
   @Published var dateOfSurgery: Date = Date()
   @Published var lastPTVisit: Date = Date()
   @Published var gender: String = ""
+  @Published var accessCode: String = ""
 
   func signUp() async {
     await run {
@@ -30,6 +31,9 @@ final class AuthViewModel: ObservableObject {
       }
 
       let apiGender = self.gender.isEmpty ? nil : GenderMapper.apiValue(from: self.gender)
+      let trimmedAccessCode = self.accessCode.trimmingCharacters(in: .whitespacesAndNewlines)
+      let accessCodeToUse = trimmedAccessCode.isEmpty ? nil : trimmedAccessCode
+      
       let patientProfileId = try await PatientService.ensurePatientProfile(
         profileId: profile.id,
         firstName: self.firstName,
@@ -37,7 +41,8 @@ final class AuthViewModel: ObservableObject {
         dob: self.dateOfBirth,
         surgeryDate: self.dateOfSurgery,
         lastPtVisit: self.lastPTVisit,
-        gender: apiGender
+        gender: apiGender,
+        accessCode: accessCodeToUse
       )
 
       // Note: PT linking happens automatically if a matching placeholder was found and linked

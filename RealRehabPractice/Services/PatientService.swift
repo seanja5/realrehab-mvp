@@ -103,6 +103,40 @@ enum PatientService {
     print("PatientService.upsertPTMapping: linked patient_profile \(patientProfileId) to pt_profile \(ptProfileId)")
   }
 
+  // Find patient profile by access code
+  // Returns patient_profile_id if found, nil otherwise
+  static func findPatientByAccessCode(_ code: String) async throws -> UUID? {
+    struct AccessCodeRow: Decodable {
+      let id: UUID
+    }
+    
+    // Normalize the code (trim whitespace)
+    let normalizedCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
+    
+    guard !normalizedCode.isEmpty else {
+      return nil
+    }
+    
+    print("🔍 PatientService.findPatientByAccessCode: searching for code '\(normalizedCode)'")
+    
+    let rows: [AccessCodeRow] = try await client
+      .schema("accounts")
+      .from("patient_profiles")
+      .select("id")
+      .eq("access_code", value: normalizedCode)
+      .is("profile_id", value: nil)  // Only find placeholders (not yet linked)
+      .limit(1)
+      .decoded()
+    
+    if let row = rows.first {
+      print("✅ PatientService.findPatientByAccessCode: found placeholder \(row.id) for code '\(normalizedCode)'")
+      return row.id
+    } else {
+      print("ℹ️ PatientService.findPatientByAccessCode: no placeholder found for code '\(normalizedCode)'")
+      return nil
+    }
+  }
+
   static func ensurePatientProfile(
     profileId: UUID,
     firstName: String,
@@ -110,7 +144,8 @@ enum PatientService {
     dob: Date?,
     surgeryDate: Date?,
     lastPtVisit: Date?,
-    gender: String?
+    gender: String?,
+    accessCode: String?
   ) async throws -> UUID {
     let df = ISO8601DateFormatter()
     df.formatOptions = [.withFullDate]
@@ -122,69 +157,25 @@ enum PatientService {
     let dobString = iso(dob)
     let apiGender = gender
     
-    // Normalize name inputs for matching (trim whitespace, lowercase)
-    let normalizedFirstName = firstName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    let normalizedLastName = lastName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-
-    // STEP 1: Check for matching placeholder (profile_id IS NULL) with matching name, DOB, gender
-    struct PlaceholderRow: Decodable {
-      let id: UUID
-      let first_name: String?
-      let last_name: String?
-      let date_of_birth: String?
-      let gender: String?
-    }
+    // STEP 1: If access code provided, look up placeholder by access code
+    var matchingPlaceholderId: UUID? = nil
     
-    // Query for placeholders with NULL profile_id
-    var placeholderQuery = client
-      .schema("accounts")
-      .from("patient_profiles")
-      .select("id,first_name,last_name,date_of_birth,gender")
-      .is("profile_id", value: nil)
-    
-    // Match on normalized names (case-insensitive comparison via Postgres)
-    // Note: We'll filter in Swift for exact matching after fetching
-    let allPlaceholders: [PlaceholderRow] = try await placeholderQuery
-      .decoded()
-    
-    // Find matching placeholder by comparing normalized values
-    print("🔍 PatientService.ensurePatientProfile: searching for placeholder matching firstName=\(normalizedFirstName), lastName=\(normalizedLastName), dob=\(dobString ?? "nil"), gender=\(apiGender ?? "nil")")
-    print("🔍 Found \(allPlaceholders.count) placeholder(s) with profile_id IS NULL")
-    
-    let matchingPlaceholder = allPlaceholders.first { placeholder in
-      let placeholderFirstName = (placeholder.first_name ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-      let placeholderLastName = (placeholder.last_name ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    if let accessCode = accessCode, !accessCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      print("🔍 PatientService.ensurePatientProfile: looking up placeholder by access code")
+      matchingPlaceholderId = try await findPatientByAccessCode(accessCode)
       
-      guard placeholderFirstName == normalizedFirstName && placeholderLastName == normalizedLastName else {
-        return false
-      }
-      
-      // Match DOB if provided
-      if let dobString = dobString {
-        guard placeholder.date_of_birth == dobString else { return false }
+      if matchingPlaceholderId != nil {
+        print("✅ PatientService.ensurePatientProfile: found placeholder by access code!")
       } else {
-        guard placeholder.date_of_birth == nil else { return false }
+        print("ℹ️ PatientService.ensurePatientProfile: no placeholder found for access code '\(accessCode)'")
       }
-      
-      // Match gender if provided
-      if let apiGender = apiGender {
-        guard placeholder.gender == apiGender else { return false }
-      } else {
-        guard placeholder.gender == nil else { return false }
-      }
-      
-      return true
-    }
-    
-    if matchingPlaceholder != nil {
-      print("✅ PatientService.ensurePatientProfile: found matching placeholder!")
     } else {
-      print("ℹ️ PatientService.ensurePatientProfile: no matching placeholder found")
+      print("ℹ️ PatientService.ensurePatientProfile: no access code provided, will create new profile")
     }
     
     // STEP 2: If matching placeholder found, UPDATE it to link to this profile
-    if let placeholder = matchingPlaceholder {
-      print("🔗 PatientService.ensurePatientProfile: found matching placeholder \(placeholder.id), linking to profile \(profileId)")
+    if let placeholderId = matchingPlaceholderId {
+      print("🔗 PatientService.ensurePatientProfile: found placeholder \(placeholderId), linking to profile \(profileId)")
       
       // Update the placeholder to set profile_id and other fields
       let updatePayload = PatientProfileUpsert(
@@ -200,10 +191,10 @@ enum PatientService {
           .schema("accounts")
           .from("patient_profiles")
           .update(updatePayload)
-          .eq("id", value: placeholder.id.uuidString)
+          .eq("id", value: placeholderId.uuidString)
           .execute()
         
-        print("✅ PatientService.ensurePatientProfile: linked placeholder \(placeholder.id) to profile \(profileId)")
+        print("✅ PatientService.ensurePatientProfile: linked placeholder \(placeholderId) to profile \(profileId)")
         
         // Verify pt_patient_map link exists after update
         // The link should already exist from when PT created the placeholder
@@ -216,23 +207,23 @@ enum PatientService {
             .schema("accounts")
             .from("pt_patient_map")
             .select("pt_profile_id")
-            .eq("patient_profile_id", value: placeholder.id.uuidString)
+            .eq("patient_profile_id", value: placeholderId.uuidString)
             .limit(1)
             .decoded()
           
           if let map = mapRows.first {
             print("✅ PatientService.ensurePatientProfile: verified pt_patient_map link exists to PT \(map.pt_profile_id)")
           } else {
-            print("⚠️ PatientService.ensurePatientProfile: WARNING - no pt_patient_map link found for placeholder \(placeholder.id)")
+            print("⚠️ PatientService.ensurePatientProfile: WARNING - no pt_patient_map link found for placeholder \(placeholderId)")
           }
         } catch {
           print("⚠️ PatientService.ensurePatientProfile: could not verify pt_patient_map link: \(error)")
           // Don't throw - the link might still exist, we just can't verify it due to RLS
         }
         
-        return placeholder.id
+        return placeholderId
       } catch {
-        print("❌ PatientService.ensurePatientProfile: failed to update placeholder \(placeholder.id): \(error)")
+        print("❌ PatientService.ensurePatientProfile: failed to update placeholder \(placeholderId): \(error)")
         if let postgrestError = error as? PostgrestError {
           print("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
         }

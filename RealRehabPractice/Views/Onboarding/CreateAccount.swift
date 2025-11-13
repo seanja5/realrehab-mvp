@@ -33,6 +33,9 @@ struct CreateAccountView: View {
     @State private var dateOfSurgery = Date()
     @State private var lastPTVisit = Date()
     
+    // Access Code State
+    @State private var accessCode = ""
+    
     let genderOptions = ["Male", "Female", "Non-binary", "Prefer not to say"]
     
     var body: some View {
@@ -99,6 +102,37 @@ struct CreateAccountView: View {
                             }
                         }
                         
+                        Divider()
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Access Code (Optional)")
+                                .font(.rrCaption)
+                                .foregroundStyle(.secondary)
+                            
+                            Text("If your Physical Therapist provided you with an 8-digit access code, enter it here to link your account.")
+                                .font(.rrCaption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            
+                            FormTextField(
+                                title: "Access Code",
+                                placeholder: "Enter 8-digit code",
+                                text: $accessCode
+                            )
+                            .keyboardType(.numberPad)
+                            .onChange(of: accessCode) { oldValue, newValue in
+                                // Limit to 8 digits and only allow numbers
+                                let filtered = newValue.filter { $0.isNumber }
+                                if filtered.count <= 8 {
+                                    accessCode = filtered
+                                    auth.accessCode = filtered
+                                } else {
+                                    accessCode = String(filtered.prefix(8))
+                                    auth.accessCode = String(filtered.prefix(8))
+                                }
+                            }
+                        }
+                        
                     }
                     .padding(.horizontal, 20)
                     
@@ -112,6 +146,7 @@ struct CreateAccountView: View {
                                 auth.lastName = lastName
                                 auth.email = email
                                 auth.password = password
+                                auth.accessCode = accessCode
                                 await auth.signUp()
                                 if auth.errorMessage == nil {
                                     router.go(.ptDetail)
@@ -153,7 +188,8 @@ struct CreateAccountView: View {
         !phoneNumber.isEmpty &&
         !password.isEmpty &&
         password == confirmPassword &&
-        gender != "Select"
+        gender != "Select" &&
+        (accessCode.isEmpty || accessCode.count == 8)  // Access code must be 8 digits if provided
     }
 }
 

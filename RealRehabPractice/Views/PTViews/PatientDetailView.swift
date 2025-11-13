@@ -140,6 +140,39 @@ struct PatientDetailView: View {
                         .frame(height: 1)
                         .padding(.horizontal, 16)
                     
+                    // Access Code Section
+                    if let accessCode = patient?.access_code, !accessCode.isEmpty {
+                        VStack(alignment: .leading, spacing: RRSpace.stack) {
+                            Text("Access Code")
+                                .font(.rrTitle)
+                            
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(.white)
+                                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                                .overlay(
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Share this code with your patient to link their account:")
+                                            .font(.rrCaption)
+                                            .foregroundStyle(.secondary)
+                                        
+                                        Text(accessCode)
+                                            .font(.system(size: 32, weight: .bold, design: .monospaced))
+                                            .foregroundStyle(.primary)
+                                            .frame(maxWidth: .infinity, alignment: .center)
+                                            .padding(.vertical, 8)
+                                    }
+                                    .padding(16)
+                                )
+                                .frame(minHeight: 100)
+                        }
+                        .padding(.horizontal, 16)
+                        
+                        Rectangle()
+                            .fill(Color.black.opacity(0.12))
+                            .frame(height: 1)
+                            .padding(.horizontal, 16)
+                    }
+                    
                     // Danger Zone
                     VStack(alignment: .leading, spacing: RRSpace.stack) {
                         Text("Danger Zone")

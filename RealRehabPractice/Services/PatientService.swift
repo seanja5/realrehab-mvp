@@ -46,6 +46,7 @@ enum PatientService {
     let surgeryDate: String?
     let lastPtVisit: String?
     let gender: String?
+    let phone: String?
 
     enum CodingKeys: String, CodingKey {
       case profile_id
@@ -53,6 +54,7 @@ enum PatientService {
       case surgeryDate = "surgery_date"
       case lastPtVisit = "last_pt_visit"
       case gender
+      case phone
     }
   }
 
@@ -195,7 +197,8 @@ enum PatientService {
     surgeryDate: Date?,
     lastPtVisit: Date?,
     gender: String?,
-    accessCode: String?
+    accessCode: String?,
+    phone: String?
   ) async throws -> UUID {
     let df = ISO8601DateFormatter()
     df.formatOptions = [.withFullDate]
@@ -229,12 +232,17 @@ enum PatientService {
       print("🔍 PatientService.ensurePatientProfile: attempting to update patient_profiles.id=\(placeholderId) to set profile_id=\(profileId)")
       
       // Update the placeholder to set profile_id and other fields
+      let trimmedPhone = phone?.trimmingCharacters(in: .whitespacesAndNewlines)
+      let phoneToSave = trimmedPhone?.isEmpty == false ? trimmedPhone : nil
+      print("📱 PatientService.ensurePatientProfile: updating placeholder with phone='\(phoneToSave ?? "nil")'")
+      
       let updatePayload = PatientProfileUpsert(
         profile_id: profileId,
         dateOfBirth: dobString,
         surgeryDate: iso(surgeryDate),
         lastPtVisit: iso(lastPtVisit),
-        gender: apiGender
+        gender: apiGender,
+        phone: phoneToSave
       )
       
       do {
@@ -252,13 +260,14 @@ enum PatientService {
         struct VerifyRow: Decodable {
           let id: UUID
           let profile_id: UUID?
+          let phone: String?
         }
         
         do {
           let verifyRows: [VerifyRow] = try await client
             .schema("accounts")
             .from("patient_profiles")
-            .select("id,profile_id")
+            .select("id,profile_id,phone")
             .eq("id", value: placeholderId.uuidString)
             .limit(1)
             .decoded()
@@ -268,6 +277,14 @@ enum PatientService {
               print("✅ PatientService.ensurePatientProfile: verified profile_id was updated correctly to \(profileId)")
             } else {
               print("⚠️ PatientService.ensurePatientProfile: WARNING - profile_id is \(row.profile_id?.uuidString ?? "NULL"), expected \(profileId)")
+            }
+            // Verify phone was saved
+            if let savedPhone = row.phone, !savedPhone.isEmpty {
+              print("✅ PatientService.ensurePatientProfile: verified phone was saved: '\(savedPhone)'")
+            } else if phoneToSave != nil {
+              print("⚠️ PatientService.ensurePatientProfile: WARNING - phone was NOT saved! Expected '\(phoneToSave!)', but got NULL")
+            } else {
+              print("ℹ️ PatientService.ensurePatientProfile: phone is NULL (no phone provided)")
             }
           } else {
             print("⚠️ PatientService.ensurePatientProfile: WARNING - could not find row after update")
@@ -320,27 +337,42 @@ enum PatientService {
     // STEP 3: No matching placeholder found, proceed with normal upsert/insert
     print("ℹ️ PatientService.ensurePatientProfile: no matching placeholder found, creating new profile")
     
+    let trimmedPhone = phone?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let phoneToSave = trimmedPhone?.isEmpty == false ? trimmedPhone : nil
+    print("📱 PatientService.ensurePatientProfile: creating new profile with phone='\(phoneToSave ?? "nil")'")
+    
     let payload = PatientProfileUpsert(
       profile_id: profileId,
       dateOfBirth: dobString,
       surgeryDate: iso(surgeryDate),
       lastPtVisit: iso(lastPtVisit),
-      gender: apiGender
+      gender: apiGender,
+      phone: phoneToSave
     )
 
-    struct Row: Decodable { let id: UUID }
+    struct Row: Decodable { 
+      let id: UUID
+      let phone: String?
+    }
     
     // Try upsert first
     do {
       let rows: [Row] = try await client
         .schema("accounts").from("patient_profiles")
         .upsert(payload, onConflict: "profile_id")
-        .select("id")
+        .select("id,phone")
         .limit(1)
         .decoded()
 
       if let row = rows.first {
         print("✅ PatientService.ensurePatientProfile: upserted \(row.id) for profile \(profileId)")
+        if let savedPhone = row.phone, !savedPhone.isEmpty {
+          print("✅ PatientService.ensurePatientProfile: verified phone was saved via upsert: '\(savedPhone)'")
+        } else if phoneToSave != nil {
+          print("⚠️ PatientService.ensurePatientProfile: WARNING - phone was NOT saved via upsert! Expected '\(phoneToSave!)', but got NULL")
+        } else {
+          print("ℹ️ PatientService.ensurePatientProfile: phone is NULL (no phone provided)")
+        }
         return row.id
       }
     } catch {
@@ -353,12 +385,19 @@ enum PatientService {
       let inserted: [Row] = try await client
         .schema("accounts").from("patient_profiles")
         .insert(payload, returning: .representation)
-        .select("id")
+        .select("id,phone")
         .limit(1)
         .decoded()
       
       if let row = inserted.first {
         print("✅ PatientService.ensurePatientProfile: inserted new row \(row.id) for profile \(profileId)")
+        if let savedPhone = row.phone, !savedPhone.isEmpty {
+          print("✅ PatientService.ensurePatientProfile: verified phone was saved via insert: '\(savedPhone)'")
+        } else if phoneToSave != nil {
+          print("⚠️ PatientService.ensurePatientProfile: WARNING - phone was NOT saved via insert! Expected '\(phoneToSave!)', but got NULL")
+        } else {
+          print("ℹ️ PatientService.ensurePatientProfile: phone is NULL (no phone provided)")
+        }
         return row.id
       }
     } catch {

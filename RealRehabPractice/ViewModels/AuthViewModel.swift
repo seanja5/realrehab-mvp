@@ -34,6 +34,9 @@ final class AuthViewModel: ObservableObject {
       let trimmedAccessCode = self.accessCode.trimmingCharacters(in: .whitespacesAndNewlines)
       let accessCodeToUse = trimmedAccessCode.isEmpty ? nil : trimmedAccessCode
       
+      let trimmedPhone = self.phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+      let phoneToUse = trimmedPhone.isEmpty ? nil : trimmedPhone
+      
       let patientProfileId = try await PatientService.ensurePatientProfile(
         profileId: profile.id,
         firstName: self.firstName,
@@ -42,7 +45,8 @@ final class AuthViewModel: ObservableObject {
         surgeryDate: self.dateOfSurgery,
         lastPtVisit: self.lastPTVisit,
         gender: apiGender,
-        accessCode: accessCodeToUse
+        accessCode: accessCodeToUse,
+        phone: phoneToUse
       )
 
       // Note: PT linking happens automatically if a matching placeholder was found and linked

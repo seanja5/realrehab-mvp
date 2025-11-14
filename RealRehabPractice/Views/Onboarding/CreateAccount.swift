@@ -146,6 +146,11 @@ struct CreateAccountView: View {
                                 auth.lastName = lastName
                                 auth.email = email
                                 auth.password = password
+                                auth.phoneNumber = phoneNumber
+                                auth.dateOfBirth = dateOfBirth
+                                auth.dateOfSurgery = dateOfSurgery
+                                auth.lastPTVisit = lastPTVisit
+                                auth.gender = gender
                                 auth.accessCode = accessCode
                                 await auth.signUp()
                                 if auth.errorMessage == nil {

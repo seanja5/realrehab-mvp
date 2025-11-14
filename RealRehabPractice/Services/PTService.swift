@@ -299,6 +299,12 @@ enum PTService {
             .in("id", values: ids)
             .decoded()
         
+        // Log phone numbers from patient_profiles
+        print("📱 PTService.listMyPatients: phone numbers from patient_profiles:")
+        for patient in patients {
+            print("   - Patient \(patient.id): phone=\(patient.phone ?? "NULL")")
+        }
+        
         // Fetch emails and phones for those with a profile_id
         var emailByProfile: [UUID: String] = [:]
         var phoneByProfile: [UUID: String] = [:]
@@ -340,15 +346,20 @@ enum PTService {
         
         return patients.map { patient in
             // Use phone from profiles table as fallback if patient_profiles.phone is NULL
-            let phoneValue = patient.phone ?? (patient.profile_id.flatMap { profileId in phoneByProfile[profileId] })
+            let phoneFromPatientProfiles = patient.phone
+            let phoneFromProfiles = patient.profile_id.flatMap { profileId in phoneByProfile[profileId] }
+            let phoneValue = phoneFromPatientProfiles ?? phoneFromProfiles
             
             // Get email from profiles table using profile_id
             let emailValue = patient.profile_id.flatMap { profileId in emailByProfile[profileId] }
             
             if let profileId = patient.profile_id {
-                print("🔍 PTService.listMyPatients: patient \(patient.id) has profile_id \(profileId), email: \(emailValue ?? "nil"), phone: \(phoneValue ?? "nil")")
+                print("🔍 PTService.listMyPatients: patient \(patient.id) has profile_id \(profileId)")
+                print("   📧 Email: patient_profiles=\(emailValue ?? "nil"), profiles=\(emailValue ?? "nil")")
+                print("   📱 Phone: patient_profiles=\(phoneFromPatientProfiles ?? "NULL"), profiles=\(phoneFromProfiles ?? "NULL"), final=\(phoneValue ?? "nil")")
             } else {
                 print("⚠️ PTService.listMyPatients: patient \(patient.id) has no profile_id (unlinked)")
+                print("   📱 Phone: patient_profiles=\(phoneFromPatientProfiles ?? "NULL"), final=\(phoneValue ?? "nil")")
             }
             
             return SimplePatient(

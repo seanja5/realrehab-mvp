@@ -8,19 +8,6 @@ struct PTSettingsView: View {
     @State private var ptProfile: PTService.PTProfileRow? = nil
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
-    @State private var isEditing = false
-    
-    // Editable fields
-    @State private var firstName: String = ""
-    @State private var lastName: String = ""
-    @State private var email: String = ""
-    @State private var phone: String = ""
-    @State private var practiceName: String = ""
-    @State private var practiceAddress: String = ""
-    @State private var specialization: String = ""
-    @State private var licenseNumber: String = ""
-    @State private var npiNumber: String = ""
-    @State private var isSaving = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -53,20 +40,6 @@ struct PTSettingsView: View {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                if isEditing {
-                    Button("Save") {
-                        Task {
-                            await saveProfile()
-                        }
-                    }
-                    .disabled(isSaving)
-                } else {
-                    Button("Edit") {
-                        isEditing = true
-                    }
-                }
-            }
         }
         .task {
             await loadProfile()
@@ -86,46 +59,24 @@ struct PTSettingsView: View {
                 Text("Name")
                     .font(.rrCaption)
                     .foregroundStyle(.secondary)
-                if isEditing {
-                    HStack {
-                        TextField("First Name", text: $firstName)
-                            .textFieldStyle(.roundedBorder)
-                        TextField("Last Name", text: $lastName)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                } else {
-                    Text(displayName)
-                        .font(.rrBody)
-                }
+                Text(displayName)
+                    .font(.rrBody)
 
                 Divider()
 
                 Text("Email")
                     .font(.rrCaption)
                     .foregroundStyle(.secondary)
-                if isEditing {
-                    TextField("Email", text: $email)
-                        .textFieldStyle(.roundedBorder)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                } else {
-                    Text(email.isEmpty ? "—" : email)
-                        .font(.rrBody)
-                }
+                Text(ptProfile?.email ?? "—")
+                    .font(.rrBody)
 
                 Divider()
 
                 Text("Phone")
                     .font(.rrCaption)
                     .foregroundStyle(.secondary)
-                if isEditing {
-                    TextField("Phone", text: $phone)
-                        .textFieldStyle(.roundedBorder)
-                        .keyboardType(.phonePad)
-                } else {
-                    Text(phone.isEmpty ? "—" : phone)
-                        .font(.rrBody)
-                }
+                Text(ptProfile?.phone ?? "—")
+                    .font(.rrBody)
 
                 Divider()
 
@@ -173,13 +124,8 @@ struct PTSettingsView: View {
                     Text("Practice/Clinic Name")
                         .font(.rrCaption)
                         .foregroundStyle(.secondary)
-                    if isEditing {
-                        TextField("Practice Name", text: $practiceName)
-                            .textFieldStyle(.roundedBorder)
-                    } else {
-                        Text(practiceName.isEmpty ? "—" : practiceName)
-                            .font(.rrBody)
-                    }
+                    Text(ptProfile?.practice_name ?? "—")
+                        .font(.rrBody)
                 }
 
                 Divider()
@@ -188,14 +134,8 @@ struct PTSettingsView: View {
                     Text("Practice Address")
                         .font(.rrCaption)
                         .foregroundStyle(.secondary)
-                    if isEditing {
-                        TextField("Practice Address", text: $practiceAddress, axis: .vertical)
-                            .textFieldStyle(.roundedBorder)
-                            .lineLimit(3...6)
-                    } else {
-                        Text(practiceAddress.isEmpty ? "—" : practiceAddress)
-                            .font(.rrBody)
-                    }
+                    Text(ptProfile?.practice_address ?? "—")
+                        .font(.rrBody)
                 }
 
                 Divider()
@@ -204,13 +144,8 @@ struct PTSettingsView: View {
                     Text("Specialization")
                         .font(.rrCaption)
                         .foregroundStyle(.secondary)
-                    if isEditing {
-                        TextField("Specialization", text: $specialization)
-                            .textFieldStyle(.roundedBorder)
-                    } else {
-                        Text(specialization.isEmpty ? "—" : specialization)
-                            .font(.rrBody)
-                    }
+                    Text(ptProfile?.specialization ?? "—")
+                        .font(.rrBody)
                 }
 
                 Divider()
@@ -219,13 +154,8 @@ struct PTSettingsView: View {
                     Text("License Number")
                         .font(.rrCaption)
                         .foregroundStyle(.secondary)
-                    if isEditing {
-                        TextField("License Number", text: $licenseNumber)
-                            .textFieldStyle(.roundedBorder)
-                    } else {
-                        Text(licenseNumber.isEmpty ? "—" : licenseNumber)
-                            .font(.rrBody)
-                    }
+                    Text(ptProfile?.license_number ?? "—")
+                        .font(.rrBody)
                 }
 
                 Divider()
@@ -234,20 +164,15 @@ struct PTSettingsView: View {
                     Text("NPI Number")
                         .font(.rrCaption)
                         .foregroundStyle(.secondary)
-                    if isEditing {
-                        TextField("NPI Number", text: $npiNumber)
-                            .textFieldStyle(.roundedBorder)
-                    } else {
-                        Text(npiNumber.isEmpty ? "—" : npiNumber)
-                            .font(.rrBody)
-                    }
+                    Text(ptProfile?.npi_number ?? "—")
+                        .font(.rrBody)
                 }
             }
         }
     }
 
     private var dangerZoneSection: some View {
-        settingsCard(title: "Danger Zone") {
+        settingsCard(title: "Sign out") {
             PrimaryButton(title: "Sign out") {
                 Task {
                     try? await AuthService.signOut()
@@ -258,9 +183,10 @@ struct PTSettingsView: View {
     }
     
     private var displayName: String {
-        let first = firstName.isEmpty ? "—" : firstName
-        let last = lastName.isEmpty ? "—" : lastName
-        if first == "—" && last == "—" {
+        guard let profile = ptProfile else { return "—" }
+        let first = profile.first_name ?? ""
+        let last = profile.last_name ?? ""
+        if first.isEmpty && last.isEmpty {
             return "—"
         }
         return "\(first) \(last)".trimmingCharacters(in: .whitespaces)
@@ -295,52 +221,11 @@ struct PTSettingsView: View {
         do {
             let profile = try await PTService.myPTProfile()
             self.ptProfile = profile
-            
-            // Populate fields
-            self.firstName = profile.first_name ?? ""
-            self.lastName = profile.last_name ?? ""
-            self.email = profile.email ?? ""
-            self.phone = profile.phone ?? ""
-            self.practiceName = profile.practice_name ?? ""
-            self.practiceAddress = profile.practice_address ?? ""
-            self.specialization = profile.specialization ?? ""
-            self.licenseNumber = profile.license_number ?? ""
-            self.npiNumber = profile.npi_number ?? ""
         } catch {
             print("❌ PTSettingsView.loadProfile error: \(error)")
             errorMessage = error.localizedDescription
         }
         isLoading = false
-    }
-    
-    private func saveProfile() async {
-        guard let ptProfileId = session.ptProfileId else {
-            errorMessage = "PT profile not available"
-            return
-        }
-        
-        isSaving = true
-        do {
-            try await PTService.updatePTProfile(
-                ptProfileId: ptProfileId,
-                email: email.isEmpty ? nil : email,
-                firstName: firstName.isEmpty ? nil : firstName,
-                lastName: lastName.isEmpty ? nil : lastName,
-                phone: phone.isEmpty ? nil : phone,
-                licenseNumber: licenseNumber.isEmpty ? nil : licenseNumber,
-                npiNumber: npiNumber.isEmpty ? nil : npiNumber,
-                practiceName: practiceName.isEmpty ? nil : practiceName,
-                practiceAddress: practiceAddress.isEmpty ? nil : practiceAddress,
-                specialization: specialization.isEmpty ? nil : specialization
-            )
-            isEditing = false
-            // Reload to get updated data
-            await loadProfile()
-        } catch {
-            print("❌ PTSettingsView.saveProfile error: \(error)")
-            errorMessage = "Failed to save: \(error.localizedDescription)"
-        }
-        isSaving = false
     }
 }
 

@@ -4,6 +4,10 @@ struct PatientSettingsView: View {
     @EnvironmentObject private var router: Router
     @State private var allowReminders = true
     @State private var allowCamera = false
+    @State private var patientProfile: PatientService.PatientProfileRow? = nil
+    @State private var email: String? = nil
+    @State private var isLoading = false
+    @State private var errorMessage: String? = nil
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -34,22 +38,67 @@ struct PatientSettingsView: View {
                 BackButton()
             }
         }
+        .task {
+            await loadProfile()
+        }
+        .alert("Error", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") {
+                errorMessage = nil
+            }
+        } message: {
+            Text(errorMessage ?? "")
+        }
     }
 
     private var accountSection: some View {
         settingsCard(title: "Account") {
             VStack(alignment: .leading, spacing: 8) {
-                labeledValue(label: "Name", value: "Taylor Logan")
+                labeledValue(label: "Name", value: displayName)
                 Divider()
-                labeledValue(label: "Email", value: "taylor.logan@realrehab.com")
+                labeledValue(label: "Email", value: email ?? "—")
                 Divider()
-                labeledValue(label: "Phone", value: "(555) 987-6543")
+                labeledValue(label: "Phone", value: patientProfile?.phone ?? "—")
                 Divider()
-                labeledValue(label: "Date of Birth", value: "07/21/2003")
+                labeledValue(label: "Date of Birth", value: formattedDate(patientProfile?.date_of_birth))
                 Divider()
-                labeledValue(label: "Gender", value: "Female")
+                labeledValue(label: "Gender", value: patientProfile?.gender ?? "—")
+                if let surgeryDate = patientProfile?.surgery_date, !surgeryDate.isEmpty {
+                    Divider()
+                    labeledValue(label: "Date of Surgery", value: formattedDate(surgeryDate))
+                }
+                if let lastVisit = patientProfile?.last_pt_visit, !lastVisit.isEmpty {
+                    Divider()
+                    labeledValue(label: "Last PT Visit", value: formattedDate(lastVisit))
+                }
             }
         }
+    }
+    
+    private var displayName: String {
+        guard let profile = patientProfile else { return "—" }
+        let first = profile.first_name ?? ""
+        let last = profile.last_name ?? ""
+        if first.isEmpty && last.isEmpty {
+            return "—"
+        }
+        return "\(first) \(last)".trimmingCharacters(in: .whitespaces)
+    }
+    
+    private func formattedDate(_ dateString: String?) -> String {
+        guard let dateString = dateString, !dateString.isEmpty else {
+            return "—"
+        }
+        
+        let inputFormatter = ISO8601DateFormatter()
+        inputFormatter.formatOptions = [.withFullDate]
+        
+        guard let date = inputFormatter.date(from: dateString) else {
+            return dateString
+        }
+        
+        let outputFormatter = DateFormatter()
+        outputFormatter.dateStyle = .medium
+        return outputFormatter.string(from: date)
     }
 
     private var notificationsSection: some View {
@@ -58,9 +107,9 @@ struct PatientSettingsView: View {
                 Text("Allow reminders")
                     .font(.rrBody)
             }
-
+            
             Divider()
-
+            
             Toggle(isOn: $allowCamera) {
                 Text("Allow camera")
                     .font(.rrBody)
@@ -70,7 +119,7 @@ struct PatientSettingsView: View {
     }
 
     private var dangerZoneSection: some View {
-        settingsCard(title: "Danger Zone") {
+        settingsCard(title: "Sign out") {
             PrimaryButton(title: "Sign out") {
                 Task {
                     try? await AuthService.signOut()
@@ -122,6 +171,24 @@ struct PatientSettingsView: View {
 
     private func handleAddTapped() {
         router.go(.pairDevice)
+    }
+    
+    private func loadProfile() async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            let profile = try await PatientService.myPatientProfile()
+            self.patientProfile = profile
+            
+            // Fetch email from profiles table
+            if let profileId = profile.profile_id {
+                self.email = try await PatientService.getEmail(profileId: profileId)
+            }
+        } catch {
+            print("❌ PatientSettingsView.loadProfile error: \(error)")
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
     }
 }
 

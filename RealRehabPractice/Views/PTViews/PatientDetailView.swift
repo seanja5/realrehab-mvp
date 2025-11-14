@@ -175,14 +175,14 @@ struct PatientDetailView: View {
                     
                     // Danger Zone
                     VStack(alignment: .leading, spacing: RRSpace.stack) {
-                        Text("Danger Zone")
+                        Text("Remove")
                             .font(.rrTitle)
                             .foregroundStyle(.red)
                         
                         Button {
                             showDeleteConfirmation = true
                         } label: {
-                            Text("Delete Patient")
+                            Text("Remove Patient")
                                 .font(.rrBody)
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)

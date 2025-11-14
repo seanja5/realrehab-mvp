@@ -16,7 +16,6 @@ struct RehabOverviewView: View {
     @State private var showTimePicker: Bool = false
 
     @State private var allowReminders: Bool = false
-    @State private var allowCamera: Bool = false
 
     private var canConfirm: Bool {
         startDateChosen && !selectedDays.isEmpty
@@ -141,12 +140,11 @@ This rehabilitation journey will take you through a series of lessons and benchm
                     times: times
                 )
 
-                // Toggles
+                // Toggle
                 Toggle("Allow Reminders", isOn: $allowReminders)
                     .font(.rrBody)
                     .padding(.top, 4)
-                Toggle("Allow Camera", isOn: $allowCamera)
-                    .font(.rrBody)
+                    .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
 
                 // Bottom padding so the button isn't cramped
                 Spacer().frame(height: 16)

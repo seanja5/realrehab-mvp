@@ -13,6 +13,18 @@ enum PatientService {
     let last_name: String?
     let phone: String?
   }
+  
+  struct PatientProfileRow: Decodable {
+    let id: UUID
+    let profile_id: UUID?
+    let first_name: String?
+    let last_name: String?
+    let date_of_birth: String?
+    let gender: String?
+    let phone: String?
+    let surgery_date: String?
+    let last_pt_visit: String?
+  }
 
   struct PTProfileUpsert: Encodable {
     let email: String
@@ -56,6 +68,44 @@ enum PatientService {
       throw NSError(domain: "PatientService", code: 404, userInfo: [NSLocalizedDescriptionKey: "No patient_profile row for current user"])
     }
     return r.id
+  }
+  
+  // Fetch the current user's patient profile
+  static func myPatientProfile() async throws -> PatientProfileRow {
+    guard let profile = try await AuthService.myProfile() else {
+      throw NSError(domain: "PatientService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profile not found"])
+    }
+    
+    let rows: [PatientProfileRow] = try await client
+      .schema("accounts")
+      .from("patient_profiles")
+      .select("id,profile_id,first_name,last_name,date_of_birth,gender,phone,surgery_date,last_pt_visit")
+      .eq("profile_id", value: profile.id.uuidString)
+      .limit(1)
+      .decoded()
+    
+    guard let row = rows.first else {
+      throw NSError(domain: "PatientService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Patient profile not found"])
+    }
+    
+    return row
+  }
+  
+  // Get email from profiles table
+  static func getEmail(profileId: UUID) async throws -> String? {
+    struct EmailRow: Decodable {
+      let email: String?
+    }
+    
+    let rows: [EmailRow] = try await client
+      .schema("accounts")
+      .from("profiles")
+      .select("email")
+      .eq("id", value: profileId.uuidString)
+      .limit(1)
+      .decoded()
+    
+    return rows.first?.email
   }
 
   // Upsert/find a PT profile by email and return the row

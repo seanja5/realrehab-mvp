@@ -299,37 +299,68 @@ enum PTService {
             .in("id", values: ids)
             .decoded()
         
-        // Fetch emails for those with a profile_id
+        // Fetch emails and phones for those with a profile_id
         var emailByProfile: [UUID: String] = [:]
+        var phoneByProfile: [UUID: String] = [:]
         let profileIds = patients.compactMap { $0.profile_id?.uuidString }
+        print("🔍 PTService.listMyPatients: fetching emails/phones for \(profileIds.count) profile IDs: \(profileIds)")
+        
         if !profileIds.isEmpty {
             struct PRow: Decodable {
                 let id: UUID
                 let email: String?
+                let phone: String?
             }
             let baseProfiles: [PRow] = try await client
                 .schema("accounts")
                 .from("profiles")
-                .select("id,email")
+                .select("id,email,phone")
                 .in("id", values: profileIds)
                 .decoded()
+            
+            print("📧 PTService.listMyPatients: fetched \(baseProfiles.count) profiles from accounts.profiles")
+            
+            // Build email map - handle citext by converting to String explicitly
             emailByProfile = Dictionary(uniqueKeysWithValues: baseProfiles.compactMap { profile in
-                guard let email = profile.email, !email.isEmpty else { return nil }
-                return (profile.id, email)
+                guard let email = profile.email, !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+                let emailString = String(describing: email).trimmingCharacters(in: .whitespacesAndNewlines)
+                print("✅ PTService.listMyPatients: found email '\(emailString)' for profile \(profile.id)")
+                return (profile.id, emailString)
             })
+            
+            // Build phone map
+            phoneByProfile = Dictionary(uniqueKeysWithValues: baseProfiles.compactMap { profile in
+                guard let phone = profile.phone, !phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+                print("✅ PTService.listMyPatients: found phone '\(phone)' for profile \(profile.id)")
+                return (profile.id, phone)
+            })
+            
+            print("📊 PTService.listMyPatients: built email map with \(emailByProfile.count) entries, phone map with \(phoneByProfile.count) entries")
         }
         
-        return patients.map {
-            SimplePatient(
-                patient_profile_id: $0.id,
-                first_name: $0.first_name,
-                last_name: $0.last_name,
-                date_of_birth: $0.date_of_birth,  // Already string
-                gender: $0.gender,                 // Can be nil
-                email: $0.profile_id.flatMap { emailByProfile[$0] },
-                phone: $0.phone,
-                profile_id: $0.profile_id,
-                access_code: $0.access_code
+        return patients.map { patient in
+            // Use phone from profiles table as fallback if patient_profiles.phone is NULL
+            let phoneValue = patient.phone ?? (patient.profile_id.flatMap { profileId in phoneByProfile[profileId] })
+            
+            // Get email from profiles table using profile_id
+            let emailValue = patient.profile_id.flatMap { profileId in emailByProfile[profileId] }
+            
+            if let profileId = patient.profile_id {
+                print("🔍 PTService.listMyPatients: patient \(patient.id) has profile_id \(profileId), email: \(emailValue ?? "nil"), phone: \(phoneValue ?? "nil")")
+            } else {
+                print("⚠️ PTService.listMyPatients: patient \(patient.id) has no profile_id (unlinked)")
+            }
+            
+            return SimplePatient(
+                patient_profile_id: patient.id,
+                first_name: patient.first_name,
+                last_name: patient.last_name,
+                date_of_birth: patient.date_of_birth,  // Already string
+                gender: patient.gender,                 // Can be nil
+                email: emailValue,
+                phone: phoneValue,
+                profile_id: patient.profile_id,
+                access_code: patient.access_code
             )
         }
     }
@@ -365,23 +396,35 @@ enum PTService {
             )
         }
         
-        // Fetch email if profile_id exists
+        // Fetch email and phone if profile_id exists
         var email: String? = nil
+        var phone: String? = patient.phone  // Start with phone from patient_profiles
         if let profileId = patient.profile_id {
             struct PRow: Decodable {
                 let id: UUID
                 let email: String?
+                let phone: String?
             }
             let profiles: [PRow] = try await client
                 .schema("accounts")
                 .from("profiles")
-                .select("id,email")
+                .select("id,email,phone")
                 .eq("id", value: profileId.uuidString)
                 .limit(1)
                 .decoded()
             
-            if let profile = profiles.first, let profileEmail = profile.email, !profileEmail.isEmpty {
-                email = profileEmail
+            if let profile = profiles.first {
+                // Handle email (citext) - convert to String explicitly
+                if let profileEmail = profile.email, !profileEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    email = String(describing: profileEmail).trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                
+                // Use phone from profiles as fallback if patient_profiles.phone is NULL
+                if phone == nil || phone!.isEmpty {
+                    if let profilePhone = profile.phone, !profilePhone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        phone = profilePhone
+                    }
+                }
             }
         }
         
@@ -392,7 +435,7 @@ enum PTService {
             date_of_birth: patient.date_of_birth,
             gender: patient.gender,
             email: email,
-            phone: patient.phone,
+            phone: phone,
             profile_id: patient.profile_id,
             access_code: patient.access_code
         )

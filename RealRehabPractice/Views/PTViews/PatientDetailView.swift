@@ -217,6 +217,7 @@ struct PatientDetailView: View {
             }
         }
         .task {
+            vm.setPTProfileId(session.ptProfileId)
             await loadPatientData(patientProfileId: patientProfileId)
         }
         .onChange(of: notes) { oldValue, newValue in

@@ -454,6 +454,26 @@ enum PTService {
     
     @MainActor
     static func deletePatientMapping(ptProfileId: UUID, patientProfileId: UUID) async throws {
+        // Try RPC function first (bypasses RLS issues)
+        do {
+            let params: [String: String] = [
+                "p_pt_profile_id": ptProfileId.uuidString,
+                "p_patient_profile_id": patientProfileId.uuidString
+            ]
+            
+            _ = try await client
+                .schema("accounts")
+                .rpc("delete_pt_patient_mapping", params: params)
+                .execute()
+            
+            print("✅ PTService.deletePatientMapping: RPC function succeeded")
+            return
+        } catch {
+            print("⚠️ PTService.deletePatientMapping: RPC failed, trying direct delete: \(error)")
+            // Fall back to direct delete if RPC doesn't exist
+        }
+        
+        // Fallback to direct delete (original method)
         _ = try await client
             .schema("accounts")
             .from("pt_patient_map")

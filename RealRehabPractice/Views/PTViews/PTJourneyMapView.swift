@@ -323,7 +323,7 @@ struct PTJourneyMapView: View {
         .onChange(of: nodes.count) {
             layoutNodesZigZag()
         }
-        .padding(.bottom, 100) // Extra padding for Confirm Journey button
+        .padding(.bottom, 20) // Extra padding for Confirm Journey button
     }
     
     private var maxHeight: CGFloat {

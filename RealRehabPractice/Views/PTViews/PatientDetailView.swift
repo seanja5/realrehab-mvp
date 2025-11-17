@@ -184,11 +184,14 @@ struct PatientDetailView: View {
                         } label: {
                             Text("Remove Patient")
                                 .font(.rrBody)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(.red)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
-                                .background(Color.red)
-                                .clipShape(RoundedRectangle(cornerRadius: 20))
+                                .background(Color.clear)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(Color.red, lineWidth: 1)
+                                )
                         }
                     }
                     .padding(.horizontal, 16)

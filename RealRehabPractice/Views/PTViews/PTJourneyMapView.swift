@@ -9,24 +9,53 @@ struct PTJourneyMapView: View {
     @State private var errorMessage: String?
     
     // MARK: - State
-    @State private var nodes: [LessonNode] = [
-        LessonNode(title: "Knee Extension", icon: .person, isLocked: false, reps: 20, restSec: 3),
-        LessonNode(title: "Wall Sits", icon: .video, isLocked: false, reps: 12, restSec: 3),
-        LessonNode(title: "Lunges", icon: .video, isLocked: false, reps: 12, restSec: 3),
-        LessonNode(title: "Knee Extension", icon: .video, isLocked: false, reps: 12, restSec: 3),
-        LessonNode(title: "Wall Sits", icon: .video, isLocked: false, reps: 12, restSec: 3),
-        LessonNode(title: "Lunges", icon: .video, isLocked: false, reps: 12, restSec: 3),
-        LessonNode(title: "Knee Extension", icon: .video, isLocked: false, reps: 12, restSec: 3)
-    ]
+    @State private var nodes: [LessonNode] = {
+        var defaultNodes: [LessonNode] = [
+            LessonNode(title: "Knee Extension", icon: .person, isLocked: false, reps: 20, restSec: 3),
+            LessonNode(title: "Wall Sits", icon: .video, isLocked: false, reps: 12, restSec: 3),
+            LessonNode(title: "Lunges", icon: .video, isLocked: false, reps: 12, restSec: 3),
+            LessonNode(title: "Knee Extension", icon: .video, isLocked: false, reps: 12, restSec: 3),
+            LessonNode(title: "Wall Sits", icon: .video, isLocked: false, reps: 12, restSec: 3),
+            LessonNode(title: "Lunges", icon: .video, isLocked: false, reps: 12, restSec: 3),
+            LessonNode(title: "Knee Extension", icon: .video, isLocked: false, reps: 12, restSec: 3)
+        ]
+        
+        // Set default parameters for Wall Sits lessons
+        for index in defaultNodes.indices {
+            if defaultNodes[index].title.lowercased().contains("wall sits") {
+                defaultNodes[index].enableReps = false
+                defaultNodes[index].enableRestBetweenReps = false
+                defaultNodes[index].enableSets = false
+                defaultNodes[index].enableRestBetweenSets = false
+                defaultNodes[index].enableKneeBendAngle = true
+                defaultNodes[index].enableTimeHoldingPosition = true
+                defaultNodes[index].kneeBendAngle = 120
+                defaultNodes[index].timeHoldingPosition = 30
+            }
+        }
+        
+        return defaultNodes
+    }()
     
-    @State private var showingAddSheet = false
+    @State private var showingAddPopover = false
     @State private var addSelection = 0
+    @State private var customLessonName = ""
     @State private var showingRehabOverview = false
     @State private var selectedNodeID: UUID? = nil
     @State private var showingEditor = false
     @State private var tempReps: Int = 12
     @State private var tempRest: Int = 3
     @State private var tempLocked: Bool = false
+    @State private var tempSets: Int = 4
+    @State private var tempRestBetweenSets: Int = 20
+    @State private var tempKneeBendAngle: Int = 120
+    @State private var tempTimeHoldingPosition: Int = 30
+    @State private var enableReps = true
+    @State private var enableRestBetweenReps = true
+    @State private var enableSets = false
+    @State private var enableRestBetweenSets = false
+    @State private var enableKneeBendAngle = false
+    @State private var enableTimeHoldingPosition = false
     
     // Drag state
     @State private var draggingIndex: Int?
@@ -34,7 +63,7 @@ struct PTJourneyMapView: View {
     @State private var isDragging = false
     @State private var pressedIndex: Int? = nil // Index of bubble that is "pressed"/enlarged by tap
     
-    private let exerciseTypes = ["Knee Extension (Advanced)", "Wall Sits", "Lunges"]
+    private let exerciseTypes = ["Knee Extension (Advanced)", "Wall Sits", "Lunges", "Squats", "Custom"]
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -113,7 +142,20 @@ struct PTJourneyMapView: View {
                 nodes = savedNodes.map { dto in
                     let iconType: LessonNode.IconType = dto.icon == "person" ? .person : .video
                     // Create new LessonNode (id will be auto-generated UUID)
-                    let node = LessonNode(title: dto.title, icon: iconType, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec)
+                    var node = LessonNode(title: dto.title, icon: iconType, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec)
+                    
+                    // Special handling for "Wall Sits" lessons
+                    if dto.title.lowercased().contains("wall sits") {
+                        node.enableReps = false
+                        node.enableRestBetweenReps = false
+                        node.enableSets = false
+                        node.enableRestBetweenSets = false
+                        node.enableKneeBendAngle = true
+                        node.enableTimeHoldingPosition = true
+                        node.kneeBendAngle = 120
+                        node.timeHoldingPosition = 30
+                    }
+                    
                     // Note: We create new UUIDs since LessonNode.id is let and auto-generated
                     // The stored id in DTO is for reference but we generate new ones for UI
                     return node
@@ -252,7 +294,16 @@ struct PTJourneyMapView: View {
                 HStack {
                     Spacer()
                     Button {
-                        showingAddSheet = true
+                        showingAddPopover = true
+                        // Reset add form
+                        addSelection = 0
+                        customLessonName = ""
+                        enableReps = true
+                        enableRestBetweenReps = true
+                        enableSets = false
+                        enableRestBetweenSets = false
+                        enableKneeBendAngle = false
+                        enableTimeHoldingPosition = false
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 20, weight: .semibold))
@@ -295,12 +346,13 @@ struct PTJourneyMapView: View {
                 BackButton()
             }
         }
-        .sheet(isPresented: $showingAddSheet) {
-            addLessonSheet
-        }
         .overlay {
             if showingEditor {
                 editorPopover
+            }
+            
+            if showingAddPopover {
+                addLessonPopover
             }
             
             // Dismiss popover when tapping outside
@@ -377,41 +429,154 @@ struct PTJourneyMapView: View {
         .padding(16)
     }
     
-    // MARK: - Add Lesson Sheet
-    private var addLessonSheet: some View {
-        NavigationView {
-            VStack(spacing: 24) {
-                Text("Add a Lesson")
-                    .font(.rrHeadline)
-                    .padding(.top)
-                
-                Picker("Exercise Type", selection: $addSelection) {
-                    ForEach(0..<exerciseTypes.count, id: \.self) { index in
-                        Text(exerciseTypes[index]).tag(index)
-                    }
-                }
-                .pickerStyle(.menu)
-                .padding(.horizontal)
-                
-                Spacer()
-                
-                PrimaryButton(title: "Add Lesson") {
-                    let newTitle = exerciseTypes[addSelection]
-                    addNode(with: newTitle)
-                    showingAddSheet = false
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Cancel") {
-                        showingAddSheet = false
-                    }
+    // MARK: - Add Lesson Popover
+    private var addLessonPopover: some View {
+        Color.black.opacity(0.25)
+            .ignoresSafeArea()
+            .onTapGesture {
+                withAnimation(.spring()) {
+                    showingAddPopover = false
                 }
             }
-        }
+            .overlay {
+                VStack(spacing: 0) {
+                    // Spacer to push content below navbar
+                    Spacer()
+                        .frame(height: 100) // Space for navbar title area
+                    
+                    HStack {
+                        Spacer()
+                        
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Add a Lesson")
+                                    .font(.rrTitle)
+                                    .foregroundStyle(.primary)
+                                
+                                // Exercise Type Dropdown
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Exercise Type")
+                                        .font(.rrBody)
+                                    
+                                    Picker("Exercise Type", selection: $addSelection) {
+                                        ForEach(0..<exerciseTypes.count, id: \.self) { index in
+                                            Text(exerciseTypes[index]).tag(index)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .padding(14)
+                                    .background(Color(uiColor: .secondarySystemFill))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                }
+                                
+                                // Custom Lesson Text Field - only show when "Custom" is selected
+                                if addSelection == exerciseTypes.count - 1 { // "Custom" is last item
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Custom Lesson")
+                                            .font(.rrBody)
+                                        
+                                        TextField("Enter custom lesson name", text: $customLessonName)
+                                            .font(.rrBody)
+                                            .padding(14)
+                                            .background(Color(uiColor: .secondarySystemFill))
+                                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    }
+                                }
+                                
+                                // Types of Parameters
+                                Text("Types of Parameters")
+                                    .font(.rrHeadline)
+                                    .padding(.top, 8)
+                                
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Text("Number of repetitions")
+                                            .font(.rrBody)
+                                        Spacer()
+                                        Toggle("", isOn: $enableReps)
+                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                                    }
+                                    
+                                    HStack {
+                                        Text("Time in between repetitions")
+                                            .font(.rrBody)
+                                        Spacer()
+                                        Toggle("", isOn: $enableRestBetweenReps)
+                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                                    }
+                                    
+                                    HStack {
+                                        Text("Number of sets")
+                                            .font(.rrBody)
+                                        Spacer()
+                                        Toggle("", isOn: $enableSets)
+                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                                    }
+                                    
+                                    HStack {
+                                        Text("Rest in between sets (sec)")
+                                            .font(.rrBody)
+                                        Spacer()
+                                        Toggle("", isOn: $enableRestBetweenSets)
+                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                                    }
+                                    
+                                    HStack {
+                                        Text("Knee bend angle (degrees)")
+                                            .font(.rrBody)
+                                        Spacer()
+                                        Toggle("", isOn: $enableKneeBendAngle)
+                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                                    }
+                                    
+                                    HStack {
+                                        Text("Time holding position (sec)")
+                                            .font(.rrBody)
+                                        Spacer()
+                                        Toggle("", isOn: $enableTimeHoldingPosition)
+                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                                    }
+                                }
+                                
+                                PrimaryButton(title: "Add Lesson") {
+                                    let newTitle = (addSelection == exerciseTypes.count - 1 && !customLessonName.isEmpty) ? customLessonName : exerciseTypes[addSelection]
+                                    addNode(
+                                        with: newTitle,
+                                        enableReps: enableReps,
+                                        enableRestBetweenReps: enableRestBetweenReps,
+                                        enableSets: enableSets,
+                                        enableRestBetweenSets: enableRestBetweenSets,
+                                        enableKneeBendAngle: enableKneeBendAngle,
+                                        enableTimeHoldingPosition: enableTimeHoldingPosition
+                                    )
+                                    withAnimation(.spring()) {
+                                        showingAddPopover = false
+                                    }
+                                }
+                                
+                                SecondaryButton(title: "Close") {
+                                    withAnimation(.spring()) {
+                                        showingAddPopover = false
+                                    }
+                                }
+                            }
+                            .padding(20)
+                        }
+                        .frame(maxWidth: 340)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
+                        )
+                        
+                        Spacer()
+                    }
+                    
+                    // Spacer to push content above Confirm Journey button
+                    Spacer()
+                        .frame(height: 120) // Space for Confirm Journey button
+                }
+            }
     }
     
     // MARK: - Editor Popover (centered)
@@ -426,11 +591,53 @@ struct PTJourneyMapView: View {
                 }
             }
             .overlay {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(selectedNodeTitle)
-                        .font(.rrTitle)
-                        .foregroundStyle(.primary)
-                    
+                let enabledParamCount = enabledParameterCount
+                let needsScrolling = enabledParamCount >= 4
+                
+                Group {
+                    if needsScrolling {
+                        ScrollView {
+                            editorContent
+                        }
+                        .frame(maxWidth: 340, maxHeight: 600)
+                    } else {
+                        editorContent
+                            .frame(maxWidth: 340)
+                    }
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
+                )
+            }
+    }
+    
+    // Computed property to count enabled parameters
+    private var enabledParameterCount: Int {
+        guard let id = selectedNodeID, let node = nodes.first(where: { $0.id == id }) else {
+            return 0
+        }
+        var count = 0
+        if node.enableReps { count += 1 }
+        if node.enableRestBetweenReps { count += 1 }
+        if node.enableSets { count += 1 }
+        if node.enableRestBetweenSets { count += 1 }
+        if node.enableKneeBendAngle { count += 1 }
+        if node.enableTimeHoldingPosition { count += 1 }
+        return count
+    }
+    
+    // Editor content view
+    private var editorContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(selectedNodeTitle)
+                .font(.rrTitle)
+                .foregroundStyle(.primary)
+            
+            // Conditionally show parameters based on what's enabled for this node
+            if let id = selectedNodeID, let node = nodes.first(where: { $0.id == id }) {
+                if node.enableReps {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Set number of repetitions")
                             .font(.rrBody)
@@ -443,7 +650,9 @@ struct PTJourneyMapView: View {
                             }
                         }
                     }
-                    
+                }
+                
+                if node.enableRestBetweenReps {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Time in between repetitions (sec)")
                             .font(.rrBody)
@@ -456,25 +665,94 @@ struct PTJourneyMapView: View {
                             }
                         }
                     }
-                    
-                    Toggle(isOn: $tempLocked) {
-                        Text("Lock Lesson?")
+                }
+                if node.enableSets {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Number of sets")
                             .font(.rrBody)
-                    }
-                    .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
-                    
-                    PrimaryButton(title: "Set Parameters") {
-                        commitEdit()
+                        
+                        HStack(spacing: 8) {
+                            Stepper(value: $tempSets, in: 1...50) {
+                                Text("\(tempSets)")
+                                    .font(.rrBody)
+                                    .frame(minWidth: 40)
+                            }
+                        }
                     }
                 }
-                .padding(20)
-                .frame(maxWidth: 340)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color.white)
-                        .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
-                )
+                
+                if node.enableRestBetweenSets {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Rest in between sets (sec)")
+                            .font(.rrBody)
+                        
+                        HStack(spacing: 8) {
+                            Stepper(value: $tempRestBetweenSets, in: 0...300) {
+                                Text("\(tempRestBetweenSets)")
+                                    .font(.rrBody)
+                                    .frame(minWidth: 40)
+                            }
+                        }
+                    }
+                }
+                
+                if node.enableKneeBendAngle {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Knee bend angle (degrees)")
+                            .font(.rrBody)
+                        
+                        HStack(spacing: 8) {
+                            Stepper(value: $tempKneeBendAngle, in: 0...180) {
+                                Text("\(tempKneeBendAngle)")
+                                    .font(.rrBody)
+                                    .frame(minWidth: 40)
+                            }
+                        }
+                    }
+                }
+                
+                if node.enableTimeHoldingPosition {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Time holding position (sec)")
+                            .font(.rrBody)
+                        
+                        HStack(spacing: 8) {
+                            Stepper(value: $tempTimeHoldingPosition, in: 0...300) {
+                                Text("\(tempTimeHoldingPosition)")
+                                    .font(.rrBody)
+                                    .frame(minWidth: 40)
+                            }
+                        }
+                    }
+                }
             }
+            
+            Toggle(isOn: $tempLocked) {
+                Text("Lock Lesson?")
+                    .font(.rrBody)
+            }
+            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+            
+            PrimaryButton(title: "Set Parameters") {
+                commitEdit()
+            }
+            
+            Button {
+                removeSelectedNode()
+            } label: {
+                Text("Remove Lesson")
+                    .font(.rrBody)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.red, lineWidth: 1)
+                    )
+            }
+        }
+        .padding(20)
     }
     
     // MARK: - Computed Properties
@@ -495,6 +773,10 @@ struct PTJourneyMapView: View {
         tempReps = node.reps
         tempRest = node.restSec
         tempLocked = node.isLocked
+        tempSets = node.sets ?? 4
+        tempRestBetweenSets = node.restBetweenSets ?? 20
+        tempKneeBendAngle = node.kneeBendAngle ?? 120
+        tempTimeHoldingPosition = node.timeHoldingPosition ?? 30
         selectedNodeID = node.id
         withAnimation(.spring()) {
             showingEditor = true
@@ -507,11 +789,36 @@ struct PTJourneyMapView: View {
             nodes[idx].reps = tempReps
             nodes[idx].restSec = tempRest
             nodes[idx].isLocked = tempLocked
+            if nodes[idx].enableSets {
+                nodes[idx].sets = tempSets
+            }
+            if nodes[idx].enableRestBetweenSets {
+                nodes[idx].restBetweenSets = tempRestBetweenSets
+            }
+            if nodes[idx].enableKneeBendAngle {
+                nodes[idx].kneeBendAngle = tempKneeBendAngle
+            }
+            if nodes[idx].enableTimeHoldingPosition {
+                nodes[idx].timeHoldingPosition = tempTimeHoldingPosition
+            }
         }
         withAnimation(.spring()) {
             showingEditor = false
             selectedNodeID = nil
             pressedIndex = nil
+        }
+    }
+    
+    private func removeSelectedNode() {
+        if let id = selectedNodeID,
+           let idx = nodeIndex(for: id) {
+            withAnimation(.spring()) {
+                nodes.remove(at: idx)
+                layoutNodesZigZag()
+                showingEditor = false
+                selectedNodeID = nil
+                pressedIndex = nil
+            }
         }
     }
     
@@ -557,8 +864,50 @@ struct PTJourneyMapView: View {
         isDragging = false
     }
     
-    private func addNode(with title: String) {
-        let newNode = LessonNode(title: title, icon: .video, isLocked: false, reps: 12, restSec: 3)
+    private func addNode(
+        with title: String,
+        enableReps: Bool,
+        enableRestBetweenReps: Bool,
+        enableSets: Bool,
+        enableRestBetweenSets: Bool,
+        enableKneeBendAngle: Bool,
+        enableTimeHoldingPosition: Bool
+    ) {
+        var newNode = LessonNode(title: title, icon: .video, isLocked: false, reps: 12, restSec: 3)
+        
+        // Special handling for "Wall Sits" lessons
+        if title.lowercased().contains("wall sits") {
+            newNode.enableReps = false
+            newNode.enableRestBetweenReps = false
+            newNode.enableSets = false
+            newNode.enableRestBetweenSets = false
+            newNode.enableKneeBendAngle = true
+            newNode.enableTimeHoldingPosition = true
+            newNode.kneeBendAngle = 120
+            newNode.timeHoldingPosition = 30
+        } else {
+            newNode.enableReps = enableReps
+            newNode.enableRestBetweenReps = enableRestBetweenReps
+            newNode.enableSets = enableSets
+            newNode.enableRestBetweenSets = enableRestBetweenSets
+            newNode.enableKneeBendAngle = enableKneeBendAngle
+            newNode.enableTimeHoldingPosition = enableTimeHoldingPosition
+            
+            // Set default values for enabled parameters
+            if enableSets {
+                newNode.sets = 4
+            }
+            if enableRestBetweenSets {
+                newNode.restBetweenSets = 20
+            }
+            if enableKneeBendAngle {
+                newNode.kneeBendAngle = 120
+            }
+            if enableTimeHoldingPosition {
+                newNode.timeHoldingPosition = 30
+            }
+        }
+        
         nodes.append(newNode)
         layoutNodesZigZag()
     }
@@ -573,6 +922,20 @@ struct LessonNode: Identifiable {
     var reps: Int
     var restSec: Int
     var yOffset: CGFloat = 0
+    
+    // New optional parameters
+    var sets: Int? = nil
+    var restBetweenSets: Int? = nil
+    var kneeBendAngle: Int? = nil
+    var timeHoldingPosition: Int? = nil
+    
+    // Track which parameters are enabled
+    var enableReps: Bool = true
+    var enableRestBetweenReps: Bool = true
+    var enableSets: Bool = false
+    var enableRestBetweenSets: Bool = false
+    var enableKneeBendAngle: Bool = false
+    var enableTimeHoldingPosition: Bool = false
     
     enum IconType {
         case person

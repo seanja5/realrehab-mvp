@@ -115,11 +115,23 @@ struct PatientSettingsView: View {
 
     private var dangerZoneSection: some View {
         settingsCard(title: "Sign out") {
-            PrimaryButton(title: "Sign out") {
+            Button {
                 Task {
                     try? await AuthService.signOut()
                     router.reset(to: .welcome)
                 }
+            } label: {
+                Text("Sign out")
+                    .font(.rrBody)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 16)
+                    .background(Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.red, lineWidth: 1)
+                    )
             }
         }
     }

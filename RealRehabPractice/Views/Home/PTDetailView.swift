@@ -102,11 +102,6 @@ struct PTDetailView: View {
         .navigationTitle("Your Physical Therapist")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                BackButton()
-            }
-        }
         .task {
             await vm.load()
         }

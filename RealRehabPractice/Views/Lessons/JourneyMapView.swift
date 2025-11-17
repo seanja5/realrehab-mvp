@@ -148,11 +148,6 @@ struct JourneyMapView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    BackButton()
-                }
-            }
             .overlay {
                 if showCallout {
                     Color.black.opacity(0.3)

@@ -33,11 +33,6 @@ struct PatientSettingsView: View {
             .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                BackButton()
-            }
-        }
         .task {
             await loadProfile()
         }

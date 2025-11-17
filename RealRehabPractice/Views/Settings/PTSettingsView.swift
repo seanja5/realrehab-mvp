@@ -36,11 +36,6 @@ struct PTSettingsView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                BackButton()
-            }
-        }
         .task {
             await loadProfile()
         }

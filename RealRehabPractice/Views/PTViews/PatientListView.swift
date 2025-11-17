@@ -91,11 +91,6 @@ struct PatientListView: View {
         .navigationTitle("Patients")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                BackButton()
-            }
-        }
         .task {
             vm.setPTProfileId(session.ptProfileId)
             await vm.load()

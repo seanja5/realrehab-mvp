@@ -41,7 +41,7 @@ struct PTJourneyMapView: View {
             content
             
             // Confirm Journey button fixed at bottom
-            VStack {
+            VStack(spacing: 0) {
                 Spacer()
                 PrimaryButton(
                     title: isLoading ? "Saving..." : "Confirm Journey",
@@ -52,6 +52,7 @@ struct PTJourneyMapView: View {
                     }
                 }
                 .padding(.horizontal, 24)
+                .padding(.top, 20)
                 .padding(.bottom, 20)
                 .background(Color.white)
             }
@@ -286,6 +287,7 @@ struct PTJourneyMapView: View {
             }
         }
         .rrPageBackground()
+        .navigationTitle("Journey Map")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -459,6 +461,7 @@ struct PTJourneyMapView: View {
                         Text("Lock Lesson?")
                             .font(.rrBody)
                     }
+                    .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
                     
                     PrimaryButton(title: "Set Parameters") {
                         commitEdit()

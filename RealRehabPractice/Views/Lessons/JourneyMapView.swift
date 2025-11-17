@@ -64,91 +64,121 @@ struct JourneyMapView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(spacing: 0) {
+            if vm.nodes.isEmpty {
+                VStack {
                     Spacer()
-                        .frame(height: 40)
-                    
-                    GeometryReader { geometry in
-                        ZStack {
-                            Path { path in
-                                let width = geometry.size.width
-                                let startX = width * 0.3
-                                var currentX = startX
-                                var currentY: CGFloat = 40
-                                
-                                path.move(to: CGPoint(x: currentX, y: currentY))
-                                
-                                for (index, node) in vm.nodes.enumerated() {
-                                    if index > 0 {
-                                        currentX = (index % 2 == 0) ? width * 0.3 : width * 0.7
+                    Text("You have not been assigned a rehab plan yet")
+                        .font(.rrTitle)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        Spacer()
+                            .frame(height: 40)
+                        
+                        GeometryReader { geometry in
+                            ZStack {
+                                Path { path in
+                                    let width = geometry.size.width
+                                    let startX = width * 0.3
+                                    var currentX = startX
+                                    var currentY: CGFloat = 40
+                                    
+                                    path.move(to: CGPoint(x: currentX, y: currentY))
+                                    
+                                    for (index, node) in vm.nodes.enumerated() {
+                                        if index > 0 {
+                                            currentX = (index % 2 == 0) ? width * 0.3 : width * 0.7
+                                        }
+                                        currentY = node.yOffset + 40
+                                        path.addLine(to: CGPoint(x: currentX, y: currentY))
                                     }
-                                    currentY = node.yOffset + 40
-                                    path.addLine(to: CGPoint(x: currentX, y: currentY))
+                                }
+                                .stroke(Color.brandLightBlue.opacity(0.4), lineWidth: 2)
+                                
+                                ForEach(Array(vm.nodes.enumerated()), id: \.element.id) { index, node in
+                                    let nodeX = (index % 2 == 0) ? geometry.size.width * 0.3 : geometry.size.width * 0.7
+                                    
+                                    NodeView(node: node)
+                                        .position(x: nodeX, y: node.yOffset + 40)
+                                        .onTapGesture {
+                                            selectedNodeIndex = index
+                                            if node.isLocked {
+                                                showLockedPopup = true
+                                            } else {
+                                                showCallout = true
+                                            }
+                                        }
                                 }
                             }
-                            .stroke(Color.brandLightBlue.opacity(0.4), lineWidth: 2)
-                            
-                            ForEach(Array(vm.nodes.enumerated()), id: \.element.id) { index, node in
-                                let nodeX = (index % 2 == 0) ? geometry.size.width * 0.3 : geometry.size.width * 0.7
-                                
-                                NodeView(node: node)
-                                    .position(x: nodeX, y: node.yOffset + 40)
-                                    .onTapGesture {
-                                        selectedNodeIndex = index
-                                        if node.isLocked {
-                                            showLockedPopup = true
-                                        } else {
-                                            showCallout = true
-                                        }
-                                    }
-                            }
+                            .frame(height: maxHeight)
                         }
                         .frame(height: maxHeight)
+                        .padding(.horizontal, 16)
+                        
+                        Spacer()
+                            .frame(height: 60)
                     }
-                    .frame(height: maxHeight)
-                    .padding(.horizontal, 16)
-                    
-                    Spacer()
-                        .frame(height: 60)
                 }
             }
-            .rrPageBackground()
-            .safeAreaInset(edge: .top) {
-                headerCard
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
-                    )
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .overlay(alignment: .topTrailing) {
-                        if showSchedulePopover {
-                            VStack {
+            
+            PatientTabBar(
+                selected: .journey,
+                onSelect: { tab in
+                    switch tab {
+                    case .dashboard:
+                        router.goWithoutAnimation(.ptDetail)
+                    case .journey:
+                        break
+                    case .settings:
+                        router.goWithoutAnimation(.patientSettings)
+                    }
+                },
+                onAddTapped: {
+                    router.go(.pairDevice)
+                }
+            )
+            .ignoresSafeArea(.keyboard, edges: .bottom)
+        }
+        .rrPageBackground()
+        .safeAreaInset(edge: .top) {
+            headerCard
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .overlay(alignment: .topTrailing) {
+                    if showSchedulePopover {
+                        VStack {
+                            Spacer()
+                                .frame(height: 80)
+                            
+                            HStack {
                                 Spacer()
-                                    .frame(height: 80)
                                 
-                                HStack {
-                                    Spacer()
-                                    
-                                    ScheduleSummaryPopover(
-                                        startDate: scheduleStartDate,
-                                        selectedDays: scheduleWeekdays,
-                                        times: scheduleTimes,
-                                        onDismiss: {
-                                            showSchedulePopover = false
-                                        }
-                                    )
-                                    .padding(.trailing, 16)
-                                }
+                                ScheduleSummaryPopover(
+                                    startDate: scheduleStartDate,
+                                    selectedDays: scheduleWeekdays,
+                                    times: scheduleTimes,
+                                    onDismiss: {
+                                        showSchedulePopover = false
+                                    }
+                                )
+                                .padding(.trailing, 16)
                             }
                         }
                     }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .overlay {
+                }
+        }
+        .navigationTitle("Journey Map")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .overlay {
                 if showCallout {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
@@ -222,30 +252,10 @@ struct JourneyMapView: View {
                             .padding(.top, 140)
                         }
                 }
-            }
-            .task {
-                await vm.load()
-            }
-            
-            PatientTabBar(
-                selected: .journey,
-                onSelect: { tab in
-                    switch tab {
-                    case .dashboard:
-                        router.goWithoutAnimation(.ptDetail)
-                    case .journey:
-                        break
-                    case .settings:
-                        router.goWithoutAnimation(.patientSettings)
-                    }
-                },
-                onAddTapped: {
-                    router.go(.pairDevice)
-                }
-            )
-            .ignoresSafeArea(.keyboard, edges: .bottom)
         }
-        .rrPageBackground()
+        .task {
+            await vm.load()
+        }
     }
     
     // MARK: - Header Card

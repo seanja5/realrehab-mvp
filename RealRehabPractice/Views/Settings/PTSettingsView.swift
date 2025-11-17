@@ -29,7 +29,7 @@ struct PTSettingsView: View {
             PTTabBar(selected: .settings) { tab in
                 switch tab {
                 case .dashboard:
-                    router.go(.patientList)
+                    router.goWithoutAnimation(.patientList)
                 case .settings:
                     break
                 }

@@ -87,9 +87,9 @@ struct PTDetailView: View {
                     case .dashboard:
                         break
                     case .journey:
-                        router.go(.journeyMap)
+                        router.goWithoutAnimation(.journeyMap)
                     case .settings:
-                        router.go(.patientSettings)
+                        router.goWithoutAnimation(.patientSettings)
                     }
                 },
                 onAddTapped: {

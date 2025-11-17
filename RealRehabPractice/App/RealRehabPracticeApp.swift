@@ -22,31 +22,44 @@ struct RealRehabPracticeApp: App {
                 NavigationStack(path: $router.path) {
                     WelcomeView()
                         .navigationDestination(for: Route.self) { route in
-                            switch route {
-                            case .welcome: WelcomeView()
-                            case .selectSignUp: SelectSignUpView()
-                            case .createAccount: CreateAccountView()
-                            case .ptCreateAccount: PTCreateAccountView()
-                            case .pairDevice: PairDeviceView()
-                            case .calibrateDevice: CalibrateDeviceView()
-                            case .allSet: AllSetView()
-                            case .ptDetail: PTDetailView()
-                            case .home: HomeView()
-                            case .homeSubCategory: HomeSubCategoryView()
-                            case .rehabOverview: RehabOverviewView()
-                            case .journeyMap: JourneyMapView()
-                            case .patientSettings: PatientSettingsView()
-                            case .lesson: LessonView()                // ← single lesson screen
-                            case .completion: CompletionView()
-                            case .login: LoginView()
-                            case .ptSettings: PTSettingsView()
-                            case .patientList: PatientListView()
-                            case .ptPatientDetail(let patientProfileId): PatientDetailView(patientProfileId: patientProfileId)
-                            case .ptCategorySelect(let patientProfileId): CategorySelectView(patientProfileId: patientProfileId)
-                            case .ptInjurySelect(let patientProfileId): InjurySelectView(patientProfileId: patientProfileId)
-                            case .ptJourneyMap(let patientProfileId, let planId): PTJourneyMapView(patientProfileId: patientProfileId, planId: planId)
+                            Group {
+                                switch route {
+                                case .welcome: WelcomeView()
+                                case .selectSignUp: SelectSignUpView()
+                                case .createAccount: CreateAccountView()
+                                case .ptCreateAccount: PTCreateAccountView()
+                                case .pairDevice: PairDeviceView()
+                                case .calibrateDevice: CalibrateDeviceView()
+                                case .allSet: AllSetView()
+                                case .ptDetail: PTDetailView()
+                                case .home: HomeView()
+                                case .homeSubCategory: HomeSubCategoryView()
+                                case .rehabOverview: RehabOverviewView()
+                                case .journeyMap: JourneyMapView()
+                                case .patientSettings: PatientSettingsView()
+                                case .lesson: LessonView()                // ← single lesson screen
+                                case .completion: CompletionView()
+                                case .login: LoginView()
+                                case .ptSettings: PTSettingsView()
+                                case .patientList: PatientListView()
+                                case .ptPatientDetail(let patientProfileId): PatientDetailView(patientProfileId: patientProfileId)
+                                case .ptCategorySelect(let patientProfileId): CategorySelectView(patientProfileId: patientProfileId)
+                                case .ptInjurySelect(let patientProfileId): InjurySelectView(patientProfileId: patientProfileId)
+                                case .ptJourneyMap(let patientProfileId, let planId): PTJourneyMapView(patientProfileId: patientProfileId, planId: planId)
+                                }
+                            }
+                            .id(route)
+                            .transaction { transaction in
+                                if router.lastRouteWithoutAnimation == route {
+                                    transaction.disablesAnimations = true
+                                }
                             }
                         }
+                }
+                .transaction { transaction in
+                    if router.lastRouteWithoutAnimation != nil {
+                        transaction.disablesAnimations = true
+                    }
                 }
             }
             .simultaneousGesture(

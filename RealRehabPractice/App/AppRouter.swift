@@ -28,11 +28,43 @@ enum Route: Hashable {
 
 final class Router: ObservableObject {   // class + ObservableObject
     @Published var path = NavigationPath()
+    @Published var lastRouteWithoutAnimation: Route? = nil
 
-    func go(_ r: Route) { path.append(r) }
+    func go(_ r: Route) {
+        lastRouteWithoutAnimation = nil
+        path.append(r)
+    }
+    
+    func goWithoutAnimation(_ r: Route) {
+        lastRouteWithoutAnimation = r
+        // Use both withAnimation(nil) and withTransaction for maximum reliability
+        withAnimation(nil) {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                path.append(r)
+            }
+        }
+        // Clear the flag after navigation completes
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            if self.lastRouteWithoutAnimation == r {
+                self.lastRouteWithoutAnimation = nil
+            }
+        }
+    }
 
     func reset(to r: Route = .welcome) {
+        lastRouteWithoutAnimation = nil
         path = .init()
         path.append(r)
+    }
+    
+    func isTabBarRoute(_ route: Route) -> Bool {
+        switch route {
+        case .ptDetail, .journeyMap, .patientSettings, .ptSettings, .patientList:
+            return true
+        default:
+            return false
+        }
     }
 }

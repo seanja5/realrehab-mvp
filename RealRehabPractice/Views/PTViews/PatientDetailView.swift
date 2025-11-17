@@ -201,9 +201,9 @@ struct PatientDetailView: View {
             PTTabBar(selected: .dashboard) { tab in
                 switch tab {
                 case .dashboard:
-                    router.go(.patientList)
+                    router.goWithoutAnimation(.patientList)
                 case .settings:
-                    router.go(.ptSettings)
+                    router.goWithoutAnimation(.ptSettings)
                 }
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)

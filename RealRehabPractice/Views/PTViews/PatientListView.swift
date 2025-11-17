@@ -77,7 +77,7 @@ struct PatientListView: View {
                 case .dashboard:
                     break
                 case .settings:
-                    router.go(.ptSettings)
+                    router.goWithoutAnimation(.ptSettings)
                 }
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)

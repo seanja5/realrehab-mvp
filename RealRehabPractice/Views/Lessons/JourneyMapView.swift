@@ -237,11 +237,11 @@ struct JourneyMapView: View {
                 onSelect: { tab in
                     switch tab {
                     case .dashboard:
-                        router.go(.ptDetail)
+                        router.goWithoutAnimation(.ptDetail)
                     case .journey:
                         break
                     case .settings:
-                        router.go(.patientSettings)
+                        router.goWithoutAnimation(.patientSettings)
                     }
                 },
                 onAddTapped: {

@@ -161,9 +161,9 @@ struct PatientSettingsView: View {
     private func handleSelect(tab: PatientTab) {
         switch tab {
         case .dashboard:
-            router.go(.ptDetail)
+            router.goWithoutAnimation(.ptDetail)
         case .journey:
-            router.go(.journeyMap)
+            router.goWithoutAnimation(.journeyMap)
         case .settings:
             break
         }

@@ -14,6 +14,7 @@ struct PTCreateAccountView: View {
     @State private var specialization = ""
     @State private var password = ""
     @State private var confirmPassword = ""
+    @FocusState private var isConfirmPasswordFocused: Bool
 
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -32,84 +33,107 @@ struct PTCreateAccountView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                VStack(spacing: 16) {
-                    HStack(spacing: 12) {
-                        FormTextField(title: "First Name", placeholder: "First Name", text: $firstName)
-                            .textContentType(.givenName)
-                            .autocapitalization(.words)
-                            .frame(maxWidth: .infinity)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 24) {
+                    VStack(spacing: 16) {
+                        HStack(spacing: 12) {
+                            FormTextField(title: "First Name", placeholder: "First Name", text: $firstName)
+                                .textContentType(.givenName)
+                                .autocapitalization(.words)
+                                .frame(maxWidth: .infinity)
 
-                        FormTextField(title: "Last Name", placeholder: "Last Name", text: $lastName)
-                            .textContentType(.familyName)
-                            .autocapitalization(.words)
-                            .frame(maxWidth: .infinity)
+                            FormTextField(title: "Last Name", placeholder: "Last Name", text: $lastName)
+                                .textContentType(.familyName)
+                                .autocapitalization(.words)
+                                .frame(maxWidth: .infinity)
+                        }
+
+                        FormTextField(title: "Email", placeholder: "Email", text: $email)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .textContentType(.emailAddress)
+                            .autocorrectionDisabled()
+
+                        FormTextField(title: "Phone Number", placeholder: "Phone Number", text: $phoneNumber)
+                            .keyboardType(.phonePad)
+                            .textContentType(.telephoneNumber)
+
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Create a Password")
+                                .font(.rrTitle)
+                                .foregroundStyle(.primary)
+
+                            FormSecureField(title: "Password", placeholder: "Password", text: $password)
+                                .textContentType(.newPassword)
+
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Confirm Password")
+                                    .font(.rrCaption)
+                                    .foregroundStyle(.secondary)
+
+                                SecureField("Confirm Password", text: $confirmPassword)
+                                    .font(.rrBody)
+                                    .padding(14)
+                                    .background(Color(uiColor: .secondarySystemFill))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    .textContentType(.newPassword)
+                                    .focused($isConfirmPasswordFocused)
+                                    .id("confirmPasswordField")
+                                    .onChange(of: isConfirmPasswordFocused) { oldValue, newValue in
+                                        if newValue {
+                                            // Scroll to confirm password field when it becomes focused
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                                withAnimation {
+                                                    proxy.scrollTo("confirmPasswordField", anchor: .center)
+                                                }
+                                            }
+                                        }
+                                    }
+                            }
+                        }
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Credentials")
+                                .font(.rrTitle)
+                                .foregroundStyle(.primary)
+
+                            FormTextField(title: "License Number", placeholder: "License Number", text: $licenseNumber)
+
+                            FormTextField(title: "NPI Number", placeholder: "NPI Number", text: $npiNumber)
+                                .keyboardType(.numberPad)
+                        }
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Practice Information")
+                                .font(.rrTitle)
+                                .foregroundStyle(.primary)
+
+                            FormTextField(title: "Practice Name", placeholder: "Practice Name", text: $practiceName)
+
+                            FormTextField(title: "Practice Address", placeholder: "Practice Address", text: $practiceAddress)
+
+                            FormMenuField(title: "Specialization", selection: $specialization, options: specializationOptions)
+                        }
                     }
+                    .padding(.horizontal, 20)
 
-                    FormTextField(title: "Email", placeholder: "Email", text: $email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .textContentType(.emailAddress)
-                        .autocorrectionDisabled()
-
-                    FormTextField(title: "Phone Number", placeholder: "Phone Number", text: $phoneNumber)
-                        .keyboardType(.phonePad)
-                        .textContentType(.telephoneNumber)
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Credentials")
-                            .font(.rrTitle)
-                            .foregroundStyle(.primary)
-
-                        FormTextField(title: "License Number", placeholder: "License Number", text: $licenseNumber)
-
-                        FormTextField(title: "NPI Number", placeholder: "NPI Number", text: $npiNumber)
-                            .keyboardType(.numberPad)
+                    PrimaryButton(
+                        title: isLoading ? "Creating..." : "Create Account",
+                        isDisabled: !isFormValid || isLoading,
+                        useLargeFont: true
+                    ) {
+                        Task { await submit() }
                     }
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Practice Information")
-                            .font(.rrTitle)
-                            .foregroundStyle(.primary)
-
-                        FormTextField(title: "Practice Name", placeholder: "Practice Name", text: $practiceName)
-
-                        FormTextField(title: "Practice Address", placeholder: "Practice Address", text: $practiceAddress)
-
-                        FormMenuField(title: "Specialization", selection: $specialization, options: specializationOptions)
-                    }
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Password")
-                            .font(.rrTitle)
-                            .foregroundStyle(.primary)
-
-                        FormSecureField(title: "Password", placeholder: "Password", text: $password)
-                            .textContentType(.newPassword)
-
-                        FormSecureField(title: "Confirm Password", placeholder: "Confirm Password", text: $confirmPassword)
-                            .textContentType(.newPassword)
-                    }
+                    .padding(.horizontal, 20)
                 }
-                .padding(.horizontal, 20)
-
-                PrimaryButton(
-                    title: isLoading ? "Creating..." : "Create Account",
-                    isDisabled: !isFormValid || isLoading,
-                    useLargeFont: true
-                ) {
-                    Task { await submit() }
-                }
-                .padding(.horizontal, 20)
+                .padding(.bottom, 40)
             }
-            .padding(.bottom, 40)
+            .scrollDismissesKeyboard(.interactively)
         }
         .rrPageBackground()
         .navigationTitle("Create an Account")

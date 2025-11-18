@@ -35,135 +35,156 @@ struct CreateAccountView: View {
     
     // Access Code State
     @State private var accessCode = ""
+    @FocusState private var isAccessCodeFocused: Bool
     
     let genderOptions = ["Male", "Female", "Non-binary", "Prefer not to say"]
     
     var body: some View {
         ZStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    VStack(spacing: 16) {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 24) {
                         VStack(spacing: 16) {
-                            HStack(spacing: 12) {
-                                FormTextField(title: "First Name", placeholder: "First Name", text: $firstName)
-                                    .textContentType(.givenName)
-                                    .autocapitalization(.words)
-                                    .frame(maxWidth: .infinity)
-                                FormTextField(title: "Last Name", placeholder: "Last Name", text: $lastName)
-                                    .textContentType(.familyName)
-                                    .autocapitalization(.words)
-                                    .frame(maxWidth: .infinity)
-                            }
-                            
-                            FormTextField(title: "Email", placeholder: "Email", text: $email)
-                                .keyboardType(.emailAddress)
-                                .textInputAutocapitalization(.never)
-                                .textContentType(.emailAddress)
-                                .autocorrectionDisabled()
-                                .onChange(of: email) { auth.email = $0 }
-                            
-                            FormTextField(title: "Phone Number", placeholder: "Phone Number", text: $phoneNumber)
-                                .keyboardType(.phonePad)
-                                .textContentType(.telephoneNumber)
-                        }
-                        
-                        Divider()
-                        
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Create a Password")
-                                .font(.rrTitle)
-                                .foregroundStyle(.primary)
-                            
-                            FormSecureField(title: "Password", placeholder: "Password", text: $password)
-                                .textContentType(.newPassword)
-                                .onChange(of: password) { auth.password = $0 }
-                            
-                            FormSecureField(title: "Confirm Password", placeholder: "Confirm Password", text: $confirmPassword)
-                                .textContentType(.newPassword)
-                        }
-                        
-                        Divider()
-                        
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack(spacing: 12) {
-                                FormDateField(title: "Date of Birth", date: $dateOfBirth)
-                                    .frame(maxWidth: .infinity)
+                            VStack(spacing: 16) {
+                                HStack(spacing: 12) {
+                                    FormTextField(title: "First Name", placeholder: "First Name", text: $firstName)
+                                        .textContentType(.givenName)
+                                        .autocapitalization(.words)
+                                        .frame(maxWidth: .infinity)
+                                    FormTextField(title: "Last Name", placeholder: "Last Name", text: $lastName)
+                                        .textContentType(.familyName)
+                                        .autocapitalization(.words)
+                                        .frame(maxWidth: .infinity)
+                                }
                                 
-                                FormMenuField(title: "Gender", selection: $gender, options: genderOptions)
-                                    .frame(maxWidth: .infinity)
-                            }
-                            
-                            HStack(spacing: 12) {
-                                FormDateField(title: "Date of Surgery", date: $dateOfSurgery)
-                                    .frame(maxWidth: .infinity)
+                                FormTextField(title: "Email", placeholder: "Email", text: $email)
+                                    .keyboardType(.emailAddress)
+                                    .textInputAutocapitalization(.never)
+                                    .textContentType(.emailAddress)
+                                    .autocorrectionDisabled()
+                                    .onChange(of: email) { auth.email = $0 }
                                 
-                                FormDateField(title: "Last PT Visit", date: $lastPTVisit)
-                                    .frame(maxWidth: .infinity)
+                                FormTextField(title: "Phone Number", placeholder: "Phone Number", text: $phoneNumber)
+                                    .keyboardType(.phonePad)
+                                    .textContentType(.telephoneNumber)
                             }
-                        }
-                        
-                        Divider()
-                        
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Access Code (Optional)")
-                                .font(.rrCaption)
-                                .foregroundStyle(.secondary)
                             
-                            Text("If your Physical Therapist provided you with an 8-digit access code, enter it here to link your account.")
-                                .font(.rrCaption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
+                            Divider()
                             
-                            FormTextField(
-                                title: "Access Code",
-                                placeholder: "Enter 8-digit code",
-                                text: $accessCode
-                            )
-                            .keyboardType(.numberPad)
-                            .onChange(of: accessCode) { oldValue, newValue in
-                                // Limit to 8 digits and only allow numbers
-                                let filtered = newValue.filter { $0.isNumber }
-                                if filtered.count <= 8 {
-                                    accessCode = filtered
-                                    auth.accessCode = filtered
-                                } else {
-                                    accessCode = String(filtered.prefix(8))
-                                    auth.accessCode = String(filtered.prefix(8))
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Create a Password")
+                                    .font(.rrTitle)
+                                    .foregroundStyle(.primary)
+                                
+                                FormSecureField(title: "Password", placeholder: "Password", text: $password)
+                                    .textContentType(.newPassword)
+                                    .onChange(of: password) { auth.password = $0 }
+                                
+                                FormSecureField(title: "Confirm Password", placeholder: "Confirm Password", text: $confirmPassword)
+                                    .textContentType(.newPassword)
+                            }
+                            
+                            Divider()
+                            
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack(spacing: 12) {
+                                    FormDateField(title: "Date of Birth", date: $dateOfBirth)
+                                        .frame(maxWidth: .infinity)
+                                    
+                                    FormMenuField(title: "Gender", selection: $gender, options: genderOptions)
+                                        .frame(maxWidth: .infinity)
+                                }
+                                
+                                HStack(spacing: 12) {
+                                    FormDateField(title: "Date of Surgery", date: $dateOfSurgery)
+                                        .frame(maxWidth: .infinity)
+                                    
+                                    FormDateField(title: "Last PT Visit", date: $lastPTVisit)
+                                        .frame(maxWidth: .infinity)
                                 }
                             }
+                            
+                            Divider()
+                            
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Access Code (Optional)")
+                                    .font(.rrCaption)
+                                    .foregroundStyle(.secondary)
+                                
+                                Text("If your Physical Therapist provided you with an 8-digit access code, enter it here to link your account.")
+                                    .font(.rrCaption)
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Access Code")
+                                        .font(.rrCaption)
+                                        .foregroundStyle(.secondary)
+                                    
+                                    TextField("Enter 8-digit code", text: $accessCode)
+                                        .font(.rrBody)
+                                        .padding(14)
+                                        .background(Color(fieldFill))
+                                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                                        .focused($isAccessCodeFocused)
+                                }
+                                .id("accessCodeField")
+                                .keyboardType(.numberPad)
+                                .onChange(of: accessCode) { oldValue, newValue in
+                                    // Limit to 8 digits and only allow numbers
+                                    let filtered = newValue.filter { $0.isNumber }
+                                    if filtered.count <= 8 {
+                                        accessCode = filtered
+                                        auth.accessCode = filtered
+                                    } else {
+                                        accessCode = String(filtered.prefix(8))
+                                        auth.accessCode = String(filtered.prefix(8))
+                                    }
+                                }
+                                .onChange(of: isAccessCodeFocused) { oldValue, newValue in
+                                    if newValue {
+                                        // Scroll to access code field when it becomes focused
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                            withAnimation {
+                                                proxy.scrollTo("accessCodeField", anchor: .center)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
                         }
+                        .padding(.horizontal, 20)
                         
+                        PrimaryButton(
+                            title: auth.isLoading ? "Creating..." : "Create Account!",
+                            isDisabled: !isFormValid || auth.isLoading,
+                            useLargeFont: true,
+                            action: {
+                                Task {
+                                    auth.firstName = firstName
+                                    auth.lastName = lastName
+                                    auth.email = email
+                                    auth.password = password
+                                    auth.phoneNumber = phoneNumber
+                                    auth.dateOfBirth = dateOfBirth
+                                    auth.dateOfSurgery = dateOfSurgery
+                                    auth.lastPTVisit = lastPTVisit
+                                    auth.gender = gender
+                                    auth.accessCode = accessCode
+                                    await auth.signUp()
+                                    if auth.errorMessage == nil {
+                                        router.go(.ptDetail)
+                                    }
+                                }
+                            }
+                        )
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
-                    
-                    PrimaryButton(
-                        title: auth.isLoading ? "Creating..." : "Create Account!",
-                        isDisabled: !isFormValid || auth.isLoading,
-                        useLargeFont: true,
-                        action: {
-                            Task {
-                                auth.firstName = firstName
-                                auth.lastName = lastName
-                                auth.email = email
-                                auth.password = password
-                                auth.phoneNumber = phoneNumber
-                                auth.dateOfBirth = dateOfBirth
-                                auth.dateOfSurgery = dateOfSurgery
-                                auth.lastPTVisit = lastPTVisit
-                                auth.gender = gender
-                                auth.accessCode = accessCode
-                                await auth.signUp()
-                                if auth.errorMessage == nil {
-                                    router.go(.ptDetail)
-                                }
-                            }
-                        }
-                    )
-                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
                 }
-                .padding(.bottom, 40)
+                .scrollDismissesKeyboard(.interactively)
             }
-            .ignoresSafeArea(.keyboard)
         }
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)

@@ -5,20 +5,20 @@ struct InjurySelectView: View {
     @EnvironmentObject var router: Router
     
     private let ligaments: [(String, String)] = [
-        ("ACL", "acl_placeholder"),
-        ("Meniscus", "meniscus_placeholder"),
-        ("PCL", "pcl_placeholder")
+        ("ACL", "acl tear"),
+        ("Meniscus", "meniscus"),
+        ("PCL", "PCL")
     ]
     
     private let tendons: [(String, String)] = [
-        ("Jumper's Knee", "jumpers_placeholder"),
-        ("IT Band", "itband_placeholder")
+        ("Jumper's Knee", "jumpers knee"),
+        ("IT Band", "IT Band")
     ]
     
     private let kneeReplacement: [(String, String)] = [
-        ("Mobility", "mobility_placeholder"),
-        ("Swelling Reduction", "swelling_placeholder"),
-        ("Range of Motion", "rom_placeholder")
+        ("Mobility", "Knee Mobility"),
+        ("Swelling Reduction", "swelling reduction"),
+        ("Range of Motion", "Range of Motion")
     ]
     
     var body: some View {
@@ -73,7 +73,7 @@ struct InjurySelectView: View {
                                 router.go(.ptJourneyMap(patientProfileId: patientProfileId, planId: nil))
                             } : nil
                         )
-                        .frame(width: 110)
+                        .frame(width: 160)
                     }
                 }
                 .padding(.horizontal, 16)

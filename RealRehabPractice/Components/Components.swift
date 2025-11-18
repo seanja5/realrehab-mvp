@@ -168,18 +168,20 @@ struct BodyPartCard: View {
             // Image block
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.gray.opacity(0.15))
-                .frame(width: 110, height: 110)
+                .frame(width: 160, height: 160)
                 .overlay(
                     Group {
                         if let image = image {
                             image
                                 .resizable()
                                 .scaledToFill()
+                                .frame(width: 160, height: 160)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else if let imageName = imageName {
                             Image(imageName, bundle: .main)
                                 .resizable()
                                 .scaledToFill()
+                                .frame(width: 160, height: 160)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
                             Image(systemName: "photo")
@@ -192,7 +194,7 @@ struct BodyPartCard: View {
             Text(title)
                 .font(.rrCaption)
                 .foregroundStyle(.primary)
-                .frame(maxWidth: 110, alignment: .center)
+                .frame(maxWidth: 160, alignment: .center)
         }
         .contentShape(Rectangle())
         .onTapGesture {

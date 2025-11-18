@@ -49,7 +49,13 @@ struct PTDetailView: View {
                                 RoundedRectangle(cornerRadius: 16)
                                     .fill(Color.gray.opacity(0.15))
                                     .frame(maxWidth: .infinity)
-                                    .frame(height: 190)
+                                    .frame(height: 240)
+                                    .overlay(
+                                        Image("aclrehab")
+                                            .resizable()
+                                            .scaledToFill()
+                                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    )
                             }
                             .buttonStyle(.plain)
                             .padding(.horizontal, 16)

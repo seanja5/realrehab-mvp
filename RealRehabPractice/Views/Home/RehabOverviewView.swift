@@ -4,8 +4,6 @@ struct RehabOverviewView: View {
     @EnvironmentObject var router: Router
 
     // MARK: - State
-    @State private var headerImageExists: Bool = (UIImage(named: "header-placeholder") != nil)
-
     @State private var startDate: Date = Date()
     @State private var startDateChosen: Bool = false
     @State private var showDatePicker: Bool = false
@@ -26,18 +24,16 @@ struct RehabOverviewView: View {
             VStack(alignment: .leading, spacing: 16) {
 
                 // Header media
-                if headerImageExists {
-                    Image("header-placeholder")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(height: 180)
-                        .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                } else {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.black.opacity(0.2))
-                        .frame(height: 180)
-                }
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.gray.opacity(0.15))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 240)
+                    .overlay(
+                        Image("aclrehab")
+                            .resizable()
+                            .scaledToFill()
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                    )
 
                 // Title section
                 Text("Knee Injury - ACL Rehab")

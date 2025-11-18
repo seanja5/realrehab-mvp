@@ -66,30 +66,30 @@ struct PatientDetailView: View {
                             .font(.rrTitle)
                         
                         if let plan = currentPlan {
-                            // Show gray card with plan info - make it tappable
+                            // Show image card - make it tappable
                             Button {
                                 // Navigate to PTJourneyMapView with planId to edit existing plan
                                 router.go(.ptJourneyMap(patientProfileId: patientProfileId, planId: plan.id))
                             } label: {
                                 RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.gray.opacity(0.2))
-                                    .frame(height: 120)
+                                    .fill(Color.gray.opacity(0.15))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 240)
                                     .overlay(
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            Text("\(plan.category) - \(plan.injury)")
-                                                .font(.rrTitle)
-                                                .foregroundStyle(.primary)
-                                        }
-                                        .padding(16)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        Image("aclrehab")
+                                            .resizable()
+                                            .scaledToFill()
+                                            .clipShape(RoundedRectangle(cornerRadius: 16))
                                     )
                             }
-                            .buttonStyle(PlainButtonStyle())
-                            .padding(.bottom, 8)
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 16)
                             
                             Text("\(plan.injury) Rehab")
                                 .font(.rrBody)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.primary)
+                                .padding(.top, 10)
+                                .padding(.horizontal, 16)
                                 .padding(.bottom, 8)
                             
                             SecondaryButton(title: "Change Rehab Plan") {

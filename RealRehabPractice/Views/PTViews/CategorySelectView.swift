@@ -5,21 +5,21 @@ struct CategorySelectView: View {
     @EnvironmentObject var router: Router
     
     private let lower: [(String, String)] = [
-        ("Knee", "knee_placeholder"),
-        ("Hip", "hip_placeholder"),
-        ("Ankle", "ankle_placeholder")
+        ("Knee", "knee"),
+        ("Hip", "hip"),
+        ("Ankle", "ankle")
     ]
     
     private let upper: [(String, String)] = [
-        ("Shoulder", "shoulder_placeholder"),
-        ("Elbow", "elbow_placeholder"),
-        ("Wrist", "wrist_placeholder")
+        ("Shoulder", "shoulder"),
+        ("Elbow", "elbow"),
+        ("Wrist", "wrist")
     ]
     
     private let spine: [(String, String)] = [
-        ("Cervical", "cervical_placeholder"),
-        ("Thoracic", "thoracic_placeholder"),
-        ("Lumbar", "lumbar_placeholder")
+        ("Cervical", "cervical"),
+        ("Thoracic", "thoracic"),
+        ("Lumbar", "lumbar")
     ]
     
     var body: some View {
@@ -74,7 +74,7 @@ struct CategorySelectView: View {
                                 router.go(.ptInjurySelect(patientProfileId: patientProfileId))
                             } : nil
                         )
-                        .frame(width: 110)
+                        .frame(width: 160)
                     }
                 }
                 .padding(.horizontal, 16)

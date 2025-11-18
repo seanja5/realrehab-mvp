@@ -178,6 +178,11 @@ struct JourneyMapView: View {
         .navigationTitle("Journey Map")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                BluetoothStatusIndicator()
+            }
+        }
         .overlay {
                 if showCallout {
                     Color.black.opacity(0.3)

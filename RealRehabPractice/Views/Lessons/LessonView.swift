@@ -135,6 +135,9 @@ struct LessonView: View {
                     }
                 }
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                BluetoothStatusIndicator()
+            }
         }
         .onDisappear {
             engine.stopGuidedSimulation()

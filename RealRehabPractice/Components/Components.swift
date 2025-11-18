@@ -200,7 +200,28 @@ struct BodyPartCard: View {
         .onTapGesture {
             if tappable { action?() }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(title)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(title)
+    }
+}
+
+// MARK: - Bluetooth Status Indicator
+struct BluetoothStatusIndicator: View {
+    @StateObject private var ble = BluetoothManager.shared
+    
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            // Main icon - using "link" icon which is generic for connectivity
+            Image(systemName: "link")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(.primary)
+            
+            // Status dot
+            Circle()
+                .fill(ble.connectedPeripheral != nil ? Color.green : Color.red)
+                .frame(width: 8, height: 8)
+                .offset(x: 6, y: -2)
+        }
+        .frame(width: 24, height: 24)
     }
 }

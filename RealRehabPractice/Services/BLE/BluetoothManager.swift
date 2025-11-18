@@ -9,6 +9,7 @@ final class BluetoothManager: NSObject, ObservableObject {
     @Published var isScanning = false
     @Published var peripherals: [DiscoveredPeripheral] = []
     @Published var lastError: String?
+    @Published var connectedPeripheral: CBPeripheral? = nil
 
     struct DiscoveredPeripheral: Identifiable, Equatable {
         let id: UUID
@@ -91,6 +92,7 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         peripheral.delegate = self
+        connectedPeripheral = peripheral
         print("✅ BLE connected to \(peripheral.identifier)")
     }
 
@@ -99,6 +101,7 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         didFailToConnect peripheral: CBPeripheral,
         error: Error?
     ) {
+        connectedPeripheral = nil
         lastError = error?.localizedDescription
     }
 
@@ -107,6 +110,9 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         didDisconnectPeripheral peripheral: CBPeripheral,
         error: Error?
     ) {
+        if connectedPeripheral?.identifier == peripheral.identifier {
+            connectedPeripheral = nil
+        }
         if let error {
             lastError = error.localizedDescription
         }

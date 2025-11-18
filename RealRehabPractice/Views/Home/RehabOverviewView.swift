@@ -188,6 +188,9 @@ This rehabilitation journey will take you through a series of lessons and benchm
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                BluetoothStatusIndicator()
+            }
         }
         .rrPageBackground()
 

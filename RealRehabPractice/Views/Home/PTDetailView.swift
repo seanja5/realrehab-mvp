@@ -108,6 +108,11 @@ struct PTDetailView: View {
         .navigationTitle("Your Physical Therapist")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                BluetoothStatusIndicator()
+            }
+        }
         .task {
             await vm.load()
         }

@@ -24,6 +24,11 @@ struct PatientSettingsView: View {
             .rrPageBackground()
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    BluetoothStatusIndicator()
+                }
+            }
 
             PatientTabBar(
                 selected: .settings,

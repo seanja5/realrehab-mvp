@@ -33,13 +33,19 @@ final class LessonEngine: ObservableObject {
     @Published var fill: Double = 0.0  // 0.0...1.0 for the green overlay fill
     @Published var statusText: String = "Waiting…"
     
-    let repTarget = 20
+    let repTarget: Int
+    let restDuration: TimeInterval  // Total time between repetitions (split evenly for upstroke/downstroke)
 
     private var inCooldown = false
     private var simulationTimer: Timer?
     private var guidedRunToken: UUID?
     private var animationTimer: Timer?
     var targets = LessonTargets()
+    
+    init(repTarget: Int = 20, restDuration: TimeInterval = 6.0) {
+        self.repTarget = repTarget
+        self.restDuration = restDuration
+    }
 
     func reset() {
         repCount = 0
@@ -157,9 +163,9 @@ final class LessonEngine: ObservableObject {
         // Start fill at 0.1 (10%)
         fill = 0.1
         
-        // Animate fill to 1.0 over 3 seconds using linear interpolation
+        // Animate fill to 1.0 over half of restDuration (split evenly with downstroke)
         let startTime = Date()
-        let duration: TimeInterval = 3.0
+        let duration: TimeInterval = restDuration / 2.0
         let startFill: Double = 0.1
         let endFill: Double = 1.0
         
@@ -210,9 +216,9 @@ final class LessonEngine: ObservableObject {
         statusText = "Keep it Coming!"
         lastEvaluation = .init(isCorrect: true, reason: nil)
         
-        // Animate fill from 1.0 to 0.0 over 3 seconds using linear interpolation
+        // Animate fill from 1.0 to 0.0 over half of restDuration (split evenly with upstroke)
         let startTime = Date()
-        let duration: TimeInterval = 3.0
+        let duration: TimeInterval = restDuration / 2.0
         let startFill: Double = 1.0
         let endFill: Double = 0.0
         

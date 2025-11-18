@@ -9,12 +9,16 @@ public struct JourneyNode: Identifiable {
     public let isLocked: Bool
     public let title: String
     public let yOffset: CGFloat
+    public let reps: Int
+    public let restSec: Int
     
-    public init(icon: String, isLocked: Bool, title: String, yOffset: CGFloat) {
+    public init(icon: String, isLocked: Bool, title: String, yOffset: CGFloat, reps: Int = 20, restSec: Int = 3) {
         self.icon = icon
         self.isLocked = isLocked
         self.title = title
         self.yOffset = yOffset
+        self.reps = reps
+        self.restSec = restSec
     }
 }
 
@@ -75,7 +79,7 @@ public final class JourneyMapViewModel: ObservableObject {
                     let iconName = dto.icon == "person" ? "figure.stand" : "video.fill"
                     // Calculate yOffset using 120pt intervals
                     let yOffset = CGFloat(index) * 120
-                    return JourneyNode(icon: iconName, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset)
+                    return JourneyNode(icon: iconName, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec)
                 }
                 print("✅ JourneyMapViewModel: loaded \(nodes.count) nodes from plan")
             } else {

@@ -10,8 +10,23 @@ import Combine
 
 struct LessonView: View {
     @EnvironmentObject var router: Router
-    @StateObject private var engine = LessonEngine()
+    let reps: Int?
+    let restSec: Int?
+    
+    @StateObject private var engine: LessonEngine
     @State private var hasStarted = false
+    
+    init(reps: Int? = nil, restSec: Int? = nil) {
+        self.reps = reps
+        self.restSec = restSec
+        // Initialize engine with parameters if provided (for Knee Extension only)
+        if let reps = reps, let restSec = restSec {
+            // Convert restSec (Int seconds) to TimeInterval
+            _engine = StateObject(wrappedValue: LessonEngine(repTarget: reps, restDuration: TimeInterval(restSec)))
+        } else {
+            _engine = StateObject(wrappedValue: LessonEngine())
+        }
+    }
 
     var body: some View {
         VStack(alignment: .center, spacing: 0) {
@@ -22,12 +37,12 @@ struct LessonView: View {
             
             // Progress (non-interactive)
             VStack(spacing: 8) {
-                ProgressView(value: min(Double(engine.repCount) / 20.0, 1.0))
+                ProgressView(value: min(Double(engine.repCount) / Double(engine.repTarget), 1.0))
                     .progressViewStyle(.linear)
                     .tint(Color.brandDarkBlue)
                     .padding(.horizontal, 16)
                 
-                Text("Repetitions: \(engine.repCount)/20")
+                Text("Repetitions: \(engine.repCount)/\(engine.repTarget)")
                     .font(.rrCallout)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
@@ -98,7 +113,7 @@ struct LessonView: View {
             // Bottom primary action
             PrimaryButton(
                 title: "Complete Session!",
-                isDisabled: engine.repCount < 20,
+                isDisabled: engine.repCount < engine.repTarget,
                 useLargeFont: true
             ) {
                 engine.stopGuidedSimulation()

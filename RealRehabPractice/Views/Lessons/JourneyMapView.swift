@@ -193,7 +193,13 @@ struct JourneyMapView: View {
                                     .foregroundStyle(.primary)
                                 
                                 PrimaryButton(title: "Go!") {
-                                    router.go(.lesson)
+                                    // Get the selected node's parameters if it's a Knee Extension lesson
+                                    let node = vm.nodes[selectedNodeIndex!]
+                                    if node.title.lowercased().contains("knee extension") {
+                                        router.go(.lesson(reps: node.reps, restSec: node.restSec))
+                                    } else {
+                                        router.go(.lesson())
+                                    }
                                     showCallout = false
                                     selectedNodeIndex = nil
                                 }

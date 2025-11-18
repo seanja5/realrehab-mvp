@@ -11,7 +11,7 @@ struct PatientTabBar: View {
     var onSelect: (PatientTab) -> Void
     var onAddTapped: () -> Void
 
-    private let tabHeight: CGFloat = 72
+    private let tabHeight: CGFloat = 60
     private let rrDarkBlue = Color.brandDarkBlue
 
     var body: some View {
@@ -53,13 +53,16 @@ struct PatientTabBar: View {
         Button(action: action) {
             VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .medium))
+                    .font(.system(size: icon == "doc.on.clipboard" ? 18 : 20, weight: .medium))
+                    .frame(width: 20, height: 20)
                 Text(label)
                     .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+                    .frame(height: 14)
             }
             .foregroundStyle(selected ? Color.primary : Color.secondary)
             .frame(maxWidth: .infinity)
-            .padding(.top, 12)
+            .padding(.top, 3)
             .contentShape(Rectangle())
         }
         .buttonStyle(ScaleButtonStyle())
@@ -72,13 +75,13 @@ struct PatientTabBar: View {
             ZStack {
                 Circle()
                     .fill(rrDarkBlue)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 66, height: 66)
                 Image(systemName: "plus")
                     .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(Color.white)
             }
+            .offset(x: -9, y: -25)
             .frame(maxWidth: .infinity)
-            .padding(.top, 12)
             .frame(height: tabHeight)
         }
         .buttonStyle(ScaleButtonStyle())

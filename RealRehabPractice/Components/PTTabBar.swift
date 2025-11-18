@@ -9,7 +9,7 @@ struct PTTabBar: View {
     var selected: PTTab
     var onSelect: (PTTab) -> Void
 
-    private let tabHeight: CGFloat = 72
+    private let tabHeight: CGFloat = 60
 
     var body: some View {
         VStack(spacing: 0) {
@@ -43,13 +43,16 @@ struct PTTabBar: View {
         Button(action: action) {
             VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .medium))
+                    .font(.system(size: icon == "doc.on.clipboard" ? 18 : 20, weight: .medium))
+                    .frame(width: 20, height: 20)
                 Text(label)
                     .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+                    .frame(height: 14)
             }
             .foregroundStyle(selected ? Color.primary : Color.secondary)
             .frame(maxWidth: .infinity)
-            .padding(.top, 12)
+            .padding(.top, 3)
             .contentShape(Rectangle())
         }
         .buttonStyle(ScaleButtonStyle())

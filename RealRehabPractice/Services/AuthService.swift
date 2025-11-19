@@ -293,9 +293,33 @@ private struct AnyCodingKey: CodingKey {
   }
 }
 
-private extension Date {
+extension Date {
   func iso8601String() -> String {
     ISO8601DateFormatter().string(from: self)
+  }
+  
+  /// Formats a date as "YYYY-MM-DD" using local calendar components
+  /// This prevents timezone shifts that can cause dates to appear one day earlier
+  func dateOnlyString() -> String {
+    let calendar = Calendar.current
+    let components = calendar.dateComponents([.year, .month, .day], from: self)
+    guard let year = components.year, let month = components.month, let day = components.day else {
+      // Fallback to ISO8601 if components can't be extracted
+      let df = ISO8601DateFormatter()
+      df.formatOptions = [.withFullDate]
+      return df.string(from: self)
+    }
+    return String(format: "%04d-%02d-%02d", year, month, day)
+  }
+  
+  /// Parses a "YYYY-MM-DD" date string as a local date (no timezone conversion)
+  /// This prevents dates from appearing one day earlier when displayed
+  static func fromDateOnlyString(_ dateString: String) -> Date? {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    formatter.timeZone = TimeZone.current
+    formatter.locale = Locale.current
+    return formatter.date(from: dateString)
   }
 }
 

@@ -105,15 +105,14 @@ struct PatientSettingsView: View {
             return "—"
         }
         
-        let inputFormatter = ISO8601DateFormatter()
-        inputFormatter.formatOptions = [.withFullDate]
-        
-        guard let date = inputFormatter.date(from: dateString) else {
+        // Parse as local date to avoid timezone shifts
+        guard let date = Date.fromDateOnlyString(dateString) else {
             return dateString
         }
         
         let outputFormatter = DateFormatter()
         outputFormatter.dateStyle = .medium
+        outputFormatter.timeZone = TimeZone.current
         return outputFormatter.string(from: date)
     }
 

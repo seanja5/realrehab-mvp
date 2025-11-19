@@ -16,6 +16,7 @@ struct PatientDetailView: View {
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
+        formatter.timeZone = TimeZone.current
         return formatter
     }
     
@@ -278,10 +279,8 @@ struct PatientDetailView: View {
         if let patient = patient {
             let dobString: String
             if let dateStr = patient.date_of_birth {
-                // Parse ISO8601 date string (YYYY-MM-DD)
-                let isoFormatter = ISO8601DateFormatter()
-                isoFormatter.formatOptions = [.withFullDate]
-                if let date = isoFormatter.date(from: dateStr) {
+                // Parse as local date to avoid timezone shifts
+                if let date = Date.fromDateOnlyString(dateStr) {
                     dobString = dateFormatter.string(from: date)
                 } else {
                     dobString = dateStr

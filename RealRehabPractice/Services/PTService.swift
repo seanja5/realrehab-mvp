@@ -161,9 +161,6 @@ enum PTService {
         dob: Date,
         gender: String
     ) async throws {
-        let df = ISO8601DateFormatter()
-        df.formatOptions = [.withFullDate]
-        
         print("🔍 PTService.addPatient: calling RPC function with firstName=\(firstName), lastName=\(lastName), gender=\(gender), ptProfileId=\(ptProfileId)")
         
         do {
@@ -182,7 +179,7 @@ enum PTService {
                 let params = RPCParams(
                     p_first_name: firstName,
                     p_last_name: lastName,
-                    p_date_of_birth: df.string(from: dob),
+                    p_date_of_birth: dob.dateOnlyString(),
                     p_gender: gender,
                     p_pt_profile_id: ptProfileId.uuidString
                 )

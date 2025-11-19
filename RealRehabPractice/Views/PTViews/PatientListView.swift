@@ -23,13 +23,11 @@ struct PatientListView: View {
     private func formatDate(_ dateString: String?) -> String {
         guard let dateString = dateString else { return "—" }
         
-        // Parse ISO8601 date string (YYYY-MM-DD)
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withFullDate]
-        
-        if let date = isoFormatter.date(from: dateString) {
+        // Parse as local date to avoid timezone shifts
+        if let date = Date.fromDateOnlyString(dateString) {
             let displayFormatter = DateFormatter()
             displayFormatter.dateStyle = .short
+            displayFormatter.timeZone = TimeZone.current
             return displayFormatter.string(from: date)
         }
         

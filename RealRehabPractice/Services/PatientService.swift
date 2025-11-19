@@ -294,11 +294,8 @@ enum PatientService {
     accessCode: String?,
     phone: String?
   ) async throws -> UUID {
-    let df = ISO8601DateFormatter()
-    df.formatOptions = [.withFullDate]
-
     func iso(_ date: Date?) -> String? {
-      date.map { df.string(from: $0) }
+      date.map { $0.dateOnlyString() }
     }
     
     let dobString = iso(dob)

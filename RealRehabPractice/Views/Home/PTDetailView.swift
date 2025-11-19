@@ -71,6 +71,14 @@ struct PTDetailView: View {
                             }
                             .padding(.horizontal, 16)
                             .padding(.top, 4)
+                            
+                            // Progress this week section
+                            RecoveryChartWeekView()
+                                .padding(.top, 16)
+                            
+                            // Activity section
+                            ActivityConsistencyCard()
+                                .padding(.top, 8)
                         } else {
                             Text("No rehab plan assigned")
                                 .font(.rrBody)

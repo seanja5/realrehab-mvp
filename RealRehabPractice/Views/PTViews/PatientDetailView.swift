@@ -103,6 +103,16 @@ struct PatientDetailView: View {
                     }
                     .padding(.horizontal, 16)
                     
+                    // Progress this week section (outside the if/else to ensure consistent width)
+                    if currentPlan != nil {
+                        RecoveryChartWeekView()
+                            .padding(.top, 16)
+                        
+                        // Activity section
+                        ActivityConsistencyCard()
+                            .padding(.top, 8)
+                    }
+                    
                     Rectangle()
                         .fill(Color.black.opacity(0.12))
                         .frame(height: 1)

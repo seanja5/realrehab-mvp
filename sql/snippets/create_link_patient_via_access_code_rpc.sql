@@ -28,6 +28,8 @@ DECLARE
   patient_phone text;
   patient_dob text;
   patient_gender text;
+  patient_surgery_date text;
+  patient_last_pt_visit text;
 BEGIN
   -- Step 1: Verify that the patient_profile_id belongs to the current user
   SELECT profile_id INTO current_profile_id
@@ -69,9 +71,23 @@ BEGIN
   END IF;
   
   -- Step 4: Get patient's data from their existing profile
-  -- Cast date_of_birth and gender to text to ensure type consistency
-  SELECT first_name, last_name, phone, date_of_birth::text, gender::text
-  INTO patient_first_name, patient_last_name, patient_phone, patient_dob, patient_gender
+  -- Cast date_of_birth, gender, surgery_date, and last_pt_visit to text to ensure type consistency
+  SELECT 
+    first_name, 
+    last_name, 
+    phone, 
+    date_of_birth::text, 
+    gender::text,
+    surgery_date::text,
+    last_pt_visit::text
+  INTO 
+    patient_first_name, 
+    patient_last_name, 
+    patient_phone, 
+    patient_dob, 
+    patient_gender,
+    patient_surgery_date,
+    patient_last_pt_visit
   FROM accounts.patient_profiles
   WHERE id = patient_profile_id_param;
   
@@ -85,7 +101,7 @@ BEGIN
   END IF;
   
   -- Step 6: Update the placeholder with patient's profile_id and data
-  -- Use CASE to handle date_of_birth and gender properly (cast to correct types)
+  -- Use CASE to handle date_of_birth, gender, surgery_date, and last_pt_visit properly (cast to correct types)
   UPDATE accounts.patient_profiles
   SET 
     profile_id = current_profile_id,
@@ -99,6 +115,14 @@ BEGIN
     gender = CASE 
       WHEN patient_gender IS NOT NULL THEN patient_gender::accounts.gender
       ELSE gender
+    END,
+    surgery_date = CASE 
+      WHEN patient_surgery_date IS NOT NULL THEN patient_surgery_date::date
+      ELSE surgery_date
+    END,
+    last_pt_visit = CASE 
+      WHEN patient_last_pt_visit IS NOT NULL THEN patient_last_pt_visit::date
+      ELSE last_pt_visit
     END
   WHERE id = placeholder_id;
   

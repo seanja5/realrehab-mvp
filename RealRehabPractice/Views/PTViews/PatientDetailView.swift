@@ -261,6 +261,10 @@ struct PatientDetailView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        .onDisappear {
+            // Clear error message when navigating away to prevent showing cancelled errors
+            errorMessage = nil
+        }
     }
     
     private var patientName: String {
@@ -308,6 +312,10 @@ struct PatientDetailView: View {
             // Load notes from plan
             self.notes = plan?.notes ?? ""
         } catch {
+            // Ignore cancellation errors when navigating quickly
+            if error is CancellationError || Task.isCancelled {
+                return
+            }
             print("❌ PatientDetailView.loadPatientData error: \(error)")
             errorMessage = error.localizedDescription
         }
@@ -328,6 +336,10 @@ struct PatientDetailView: View {
             )
             print("✅ PatientDetailView: saved notes")
         } catch {
+            // Ignore cancellation errors when navigating quickly
+            if error is CancellationError || Task.isCancelled {
+                return
+            }
             print("❌ PatientDetailView.saveNotes error: \(error)")
             errorMessage = "Failed to save notes: \(error.localizedDescription)"
         }

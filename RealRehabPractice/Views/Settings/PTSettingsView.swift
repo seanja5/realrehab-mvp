@@ -46,6 +46,10 @@ struct PTSettingsView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        .onDisappear {
+            // Clear error message when navigating away to prevent showing cancelled errors
+            errorMessage = nil
+        }
     }
 
     private var accountSection: some View {
@@ -229,6 +233,10 @@ struct PTSettingsView: View {
             let profile = try await PTService.myPTProfile()
             self.ptProfile = profile
         } catch {
+            // Ignore cancellation errors when navigating quickly
+            if error is CancellationError || Task.isCancelled {
+                return
+            }
             print("❌ PTSettingsView.loadProfile error: \(error)")
             errorMessage = error.localizedDescription
         }

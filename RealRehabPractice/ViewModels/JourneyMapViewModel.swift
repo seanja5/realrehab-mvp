@@ -86,6 +86,11 @@ public final class JourneyMapViewModel: ObservableObject {
                 print("ℹ️ JourneyMapViewModel: plan has no nodes")
             }
         } catch {
+            // Ignore cancellation errors when navigating quickly
+            if error is CancellationError || Task.isCancelled {
+                isLoading = false
+                return
+            }
             errorMessage = error.localizedDescription
             print("❌ JourneyMapViewModel.load error: \(error)")
         }

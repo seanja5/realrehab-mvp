@@ -193,6 +193,11 @@ public final class PatientPTViewModel: ObservableObject {
 
       isLoading = false
     } catch {
+      // Ignore cancellation errors when navigating quickly
+      if error is CancellationError || Task.isCancelled {
+        isLoading = false
+        return
+      }
       isLoading = false
       errorMessage = (error as NSError).localizedDescription
       print("❌ PatientPTViewModel load error: \(error)")

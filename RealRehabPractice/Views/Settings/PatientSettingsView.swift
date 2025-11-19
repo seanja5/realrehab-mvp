@@ -48,6 +48,10 @@ struct PatientSettingsView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        .onDisappear {
+            // Clear error message when navigating away to prevent showing cancelled errors
+            errorMessage = nil
+        }
     }
 
     private var accountSection: some View {
@@ -197,6 +201,10 @@ struct PatientSettingsView: View {
                 self.email = try await PatientService.getEmail(profileId: profileId)
             }
         } catch {
+            // Ignore cancellation errors when navigating quickly
+            if error is CancellationError || Task.isCancelled {
+                return
+            }
             print("❌ PatientSettingsView.loadProfile error: \(error)")
             errorMessage = error.localizedDescription
         }

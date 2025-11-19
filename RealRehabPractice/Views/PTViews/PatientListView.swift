@@ -105,6 +105,10 @@ struct PatientListView: View {
         } message: {
             Text(vm.errorMessage ?? "")
         }
+        .onDisappear {
+            // Clear error message when navigating away to prevent showing cancelled errors
+            vm.errorMessage = nil
+        }
     }
     
     private var addPatientOverlay: some View {

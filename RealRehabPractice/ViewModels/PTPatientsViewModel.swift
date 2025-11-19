@@ -32,6 +32,10 @@ final class PTPatientsViewModel: ObservableObject {
             self.patients = try await PTService.listMyPatients(ptProfileId: ptProfileId)
             print("✅ PTPatientsViewModel.load: loaded \(self.patients.count) patients for pt_profile_id=\(ptProfileId.uuidString)")
         } catch {
+            // Ignore cancellation errors when navigating quickly
+            if error is CancellationError || Task.isCancelled {
+                return
+            }
             errorMessage = error.localizedDescription
             print("❌ PTPatientsViewModel.load error: \(error)")
         }
@@ -70,6 +74,10 @@ final class PTPatientsViewModel: ObservableObject {
             // Reload list
             await load()
         } catch {
+            // Ignore cancellation errors when navigating quickly
+            if error is CancellationError || Task.isCancelled {
+                return
+            }
             errorMessage = error.localizedDescription
             print("❌ PTPatientsViewModel.addPatient error: \(error)")
         }
@@ -88,6 +96,10 @@ final class PTPatientsViewModel: ObservableObject {
             try await PTService.deletePatientMapping(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
             await load()
         } catch {
+            // Ignore cancellation errors when navigating quickly
+            if error is CancellationError || Task.isCancelled {
+                return
+            }
             errorMessage = error.localizedDescription
             print("❌ PTPatientsViewModel.delete error: \(error)")
         }

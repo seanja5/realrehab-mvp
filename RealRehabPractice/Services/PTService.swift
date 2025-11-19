@@ -164,10 +164,10 @@ enum PTService {
         let df = ISO8601DateFormatter()
         df.formatOptions = [.withFullDate]
         
-        print("🔍 PTService.addPatient: calling RPC function with firstName=\(firstName), lastName=\(lastName), gender=\(gender)")
+        print("🔍 PTService.addPatient: calling RPC function with firstName=\(firstName), lastName=\(lastName), gender=\(gender), ptProfileId=\(ptProfileId)")
         
         do {
-            // 1) Call RPC function to insert patient profile with NULL profile_id
+            // Call RPC function to create patient profile AND pt_patient_map entry
             // This bypasses RLS by using a SECURITY DEFINER function
             // Create params in a nonisolated context to avoid Sendable issues
             let uuidString: String = try await Task { @Sendable in
@@ -176,19 +176,21 @@ enum PTService {
                     let p_last_name: String
                     let p_date_of_birth: String
                     let p_gender: String
+                    let p_pt_profile_id: String
                 }
                 
                 let params = RPCParams(
                     p_first_name: firstName,
                     p_last_name: lastName,
                     p_date_of_birth: df.string(from: dob),
-                    p_gender: gender
+                    p_gender: gender,
+                    p_pt_profile_id: ptProfileId.uuidString
                 )
                 
                 // Call RPC function - PostgREST returns UUID as a string directly
                 // The function returns uuid type, which PostgREST serializes as a string
                 return try await client.database
-                    .rpc("insert_patient_profile_placeholder", params: params)
+                    .rpc("add_patient_with_mapping", params: params)
                     .single()
                     .execute()
                     .value
@@ -202,57 +204,7 @@ enum PTService {
                 )
             }
             
-            print("✅ PTService.addPatient: successfully created patient_profile \(pid) via RPC")
-            
-            // 2) Map to this PT
-            print("📝 PTService.addPatient: attempting to create pt_patient_map row (patient_profile_id=\(pid), pt_profile_id=\(ptProfileId))")
-            do {
-                _ = try await client
-                    .schema("accounts")
-                    .from("pt_patient_map")
-                    .upsert(AnyEncodable([
-                        "patient_profile_id": pid.uuidString,
-                        "pt_profile_id": ptProfileId.uuidString
-                    ]), onConflict: "patient_profile_id")
-                    .execute()
-                
-                print("✅ PTService.addPatient: upsert executed successfully")
-                
-                // Verify the mapping was actually created
-                struct MapVerifyRow: Decodable {
-                    let id: UUID
-                    let patient_profile_id: UUID
-                    let pt_profile_id: UUID
-                }
-                
-                let verifyRows: [MapVerifyRow] = try await client
-                    .schema("accounts")
-                    .from("pt_patient_map")
-                    .select("id,patient_profile_id,pt_profile_id")
-                    .eq("patient_profile_id", value: pid.uuidString)
-                    .eq("pt_profile_id", value: ptProfileId.uuidString)
-                    .limit(1)
-                    .decoded()
-                
-                if let verify = verifyRows.first {
-                    print("✅ PTService.addPatient: verified pt_patient_map row exists:")
-                    print("   - id: \(verify.id)")
-                    print("   - patient_profile_id: \(verify.patient_profile_id)")
-                    print("   - pt_profile_id: \(verify.pt_profile_id)")
-                } else {
-                    print("⚠️ PTService.addPatient: WARNING - upsert succeeded but verification query found no row!")
-                    print("⚠️ This suggests RLS is blocking the verification query, or the row wasn't actually created")
-                }
-                
-                print("✅ PTService.addPatient: successfully mapped patient \(pid) to PT \(ptProfileId)")
-            } catch {
-                print("❌ PTService.addPatient: failed to create pt_patient_map row: \(error)")
-                if let postgrestError = error as? PostgrestError {
-                    print("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
-                    print("❌ This is likely an RLS policy issue preventing the INSERT")
-                }
-                throw error
-            }
+            print("✅ PTService.addPatient: successfully created patient_profile \(pid) and pt_patient_map entry via RPC")
         } catch {
             print("❌ PTService.addPatient: RLS error or other failure: \(error)")
             if let postgrestError = error as? PostgrestError {
@@ -282,8 +234,8 @@ enum PTService {
         // DTO that matches database exactly - all nullable fields are Optional
         struct PatientCardDTO: Decodable {
             let id: UUID
-            let first_name: String
-            let last_name: String
+            let first_name: String?        // Can be NULL for placeholder patients
+            let last_name: String?         // Can be NULL for placeholder patients
             let date_of_birth: String?     // Decode as string "YYYY-MM-DD" (can be NULL)
             let gender: String?            // Can be NULL
             let phone: String?
@@ -364,8 +316,8 @@ enum PTService {
             
             return SimplePatient(
                 patient_profile_id: patient.id,
-                first_name: patient.first_name,
-                last_name: patient.last_name,
+                first_name: patient.first_name ?? "",  // Default to empty string if NULL
+                last_name: patient.last_name ?? "",    // Default to empty string if NULL
                 date_of_birth: patient.date_of_birth,  // Already string
                 gender: patient.gender,                 // Can be nil
                 email: emailValue,

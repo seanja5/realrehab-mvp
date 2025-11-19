@@ -271,7 +271,7 @@ struct PatientDetailView: View {
         if let patient = patient {
             return "\(patient.first_name) \(patient.last_name)"
         }
-        return "Sean Andrews" // Placeholder
+        return "Your Patient" // Placeholder
     }
     
     private var patientInfo: String {
@@ -292,7 +292,7 @@ struct PatientDetailView: View {
             let genderStr = patient.gender?.capitalized ?? "—"
             return "DOB: \(dobString)   •   Gender: \(genderStr)"
         }
-        return "DOB: 07/21/03   •   Gender: M" // Placeholder
+        return "DOB: --/--/--   •   Gender: --" // Placeholder
     }
     
     private func loadPatientData(patientProfileId: UUID) async {

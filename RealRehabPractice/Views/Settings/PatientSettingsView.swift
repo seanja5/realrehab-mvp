@@ -1,4 +1,6 @@
 import SwiftUI
+import Supabase
+import PostgREST
 
 struct PatientSettingsView: View {
     @EnvironmentObject private var router: Router
@@ -8,6 +10,10 @@ struct PatientSettingsView: View {
     @State private var email: String? = nil
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
+    @State private var hasPT: Bool = false
+    @State private var accessCode: String = ""
+    @State private var isPairing: Bool = false
+    @FocusState private var isAccessCodeFocused: Bool
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -15,12 +21,16 @@ struct PatientSettingsView: View {
                 VStack(spacing: 24) {
                     accountSection
                     notificationsSection
+                    if !hasPT {
+                        connectPTSection
+                    }
                     dangerZoneSection
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, RRSpace.pageTop)
                 .padding(.bottom, 120)
             }
+            .scrollDismissesKeyboard(.interactively)
             .rrPageBackground()
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -37,9 +47,11 @@ struct PatientSettingsView: View {
             )
             .ignoresSafeArea(.keyboard, edges: .bottom)
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .navigationBarBackButtonHidden(true)
         .task {
             await loadProfile()
+            await checkIfHasPT()
         }
         .alert("Error", isPresented: .constant(errorMessage != nil)) {
             Button("OK") {
@@ -122,6 +134,50 @@ struct PatientSettingsView: View {
         .toggleStyle(SwitchToggleStyle(tint: .brandDarkBlue))
     }
 
+    private var connectPTSection: some View {
+        settingsCard(title: "Connect with your PT") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("If your Physical Therapist provided you with an 8-digit access code, enter it here to link your account.")
+                    .font(.rrCaption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Access Code")
+                        .font(.rrCaption)
+                        .foregroundStyle(.secondary)
+                    
+                    TextField("Enter 8-digit code", text: $accessCode)
+                        .font(.rrBody)
+                        .padding(14)
+                        .background(Color(uiColor: .secondarySystemFill))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .focused($isAccessCodeFocused)
+                        .keyboardType(.numberPad)
+                        .onChange(of: accessCode) { oldValue, newValue in
+                            // Limit to 8 digits and only allow numbers
+                            let filtered = newValue.filter { $0.isNumber }
+                            if filtered.count <= 8 {
+                                accessCode = filtered
+                            } else {
+                                accessCode = String(filtered.prefix(8))
+                            }
+                        }
+                }
+                
+                PrimaryButton(
+                    title: isPairing ? "Connecting..." : "Connect",
+                    isDisabled: accessCode.count != 8 || isPairing,
+                    action: {
+                        Task {
+                            await connectWithPT()
+                        }
+                    }
+                )
+            }
+        }
+    }
+    
     private var dangerZoneSection: some View {
         settingsCard(title: "Sign out") {
             Button {
@@ -209,6 +265,91 @@ struct PatientSettingsView: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+    
+    private func checkIfHasPT() async {
+        do {
+            guard let profile = try await AuthService.myProfile() else {
+                hasPT = false
+                return
+            }
+            
+            // Check if patient has a PT by trying to get patient profile ID and checking for mapping
+            if let patientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id) {
+                // Check if there's a PT mapping
+                struct MapRow: Decodable {
+                    let pt_profile_id: UUID
+                }
+                
+                let mapRows: [MapRow] = try await SupabaseService.shared.client
+                    .schema("accounts")
+                    .from("pt_patient_map")
+                    .select("pt_profile_id")
+                    .eq("patient_profile_id", value: patientProfileId.uuidString)
+                    .limit(1)
+                    .decoded()
+                
+                hasPT = mapRows.first != nil
+            } else {
+                hasPT = false
+            }
+        } catch {
+            // Ignore cancellation errors when navigating quickly
+            if error is CancellationError || Task.isCancelled {
+                return
+            }
+            print("❌ PatientSettingsView.checkIfHasPT error: \(error)")
+            hasPT = false
+        }
+    }
+    
+    private func connectWithPT() async {
+        guard accessCode.count == 8 else {
+            errorMessage = "Please enter a valid 8-digit access code"
+            return
+        }
+        
+        isPairing = true
+        errorMessage = nil
+        
+        do {
+            // Get current patient's profile ID
+            guard let profile = try await AuthService.myProfile() else {
+                errorMessage = "Profile not found. Please try again."
+                isPairing = false
+                return
+            }
+            
+            guard let currentPatientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id) else {
+                // If patient profile doesn't exist, we need to create it first
+                // This shouldn't happen if they're in settings, but handle it anyway
+                errorMessage = "Patient profile not found. Please contact support."
+                isPairing = false
+                return
+            }
+            
+            // Link patient via access code - this updates the placeholder and prevents duplicates
+            try await PatientService.linkPatientViaAccessCode(
+                accessCode: accessCode,
+                patientProfileId: currentPatientProfileId
+            )
+            
+            // Success! Clear access code and update hasPT
+            accessCode = ""
+            hasPT = true
+            
+            print("✅ PatientSettingsView: Successfully connected patient to PT")
+        } catch {
+            // Ignore cancellation errors when navigating quickly
+            if error is CancellationError || Task.isCancelled {
+                isPairing = false
+                return
+            }
+            print("❌ PatientSettingsView.connectWithPT error: \(error)")
+            errorMessage = "Failed to connect: \(error.localizedDescription)"
+        }
+        
+        isPairing = false
     }
 }
 

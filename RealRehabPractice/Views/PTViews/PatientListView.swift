@@ -5,6 +5,21 @@ struct PatientListView: View {
     @EnvironmentObject var session: SessionContext
     @StateObject private var vm = PTPatientsViewModel()
     
+    private func formatPatientName(first: String, last: String) -> String {
+        let firstTrimmed = first.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lastTrimmed = last.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if firstTrimmed.isEmpty && lastTrimmed.isEmpty {
+            return "Unnamed Patient"
+        } else if firstTrimmed.isEmpty {
+            return lastTrimmed
+        } else if lastTrimmed.isEmpty {
+            return firstTrimmed
+        } else {
+            return "\(lastTrimmed), \(firstTrimmed)"
+        }
+    }
+    
     private func formatDate(_ dateString: String?) -> String {
         guard let dateString = dateString else { return "—" }
         
@@ -47,7 +62,7 @@ struct PatientListView: View {
                         LazyVStack(spacing: 24) {
                             ForEach(vm.patients) { patient in
                                 PatientCard(
-                                    name: "\(patient.last_name), \(patient.first_name)",
+                                    name: formatPatientName(first: patient.first_name, last: patient.last_name),
                                     dob: formatDate(patient.date_of_birth),
                                     gender: patient.gender?.capitalized ?? "—",
                                     email: patient.email,

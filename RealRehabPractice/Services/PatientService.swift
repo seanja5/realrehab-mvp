@@ -146,6 +146,7 @@ enum PatientService {
   }
 
   // Upsert the patient -> PT mapping (one PT per patient)
+  // Uses direct upsert for PT-initiated mappings, RPC for patient-initiated mappings
   static func upsertPTMapping(patientProfileId: UUID, ptProfileId: UUID) async throws {
     let payload = PTMapUpsert(patient_profile_id: patientProfileId, pt_profile_id: ptProfileId)
     _ = try await client
@@ -153,6 +154,99 @@ enum PatientService {
       .upsert(payload, onConflict: "patient_profile_id")
       .execute()
     print("PatientService.upsertPTMapping: linked patient_profile \(patientProfileId) to pt_profile \(ptProfileId)")
+  }
+  
+  // Link patient to PT using RPC function (bypasses RLS for patient-initiated linking)
+  // Use this when a patient is linking themselves to a PT (e.g., via access code)
+  static func linkPatientToPT(patientProfileId: UUID, ptProfileId: UUID) async throws {
+    print("🔗 PatientService.linkPatientToPT: linking patient_profile \(patientProfileId) to pt_profile \(ptProfileId)")
+    
+    // Create params in a nonisolated context to avoid Sendable issues
+    try await Task { @Sendable in
+      struct RPCParams: Encodable {
+        let patient_profile_id_param: String
+        let pt_profile_id_param: String
+      }
+      
+      let params = RPCParams(
+        patient_profile_id_param: patientProfileId.uuidString,
+        pt_profile_id_param: ptProfileId.uuidString
+      )
+      
+      // Call RPC function that bypasses RLS
+      try await client
+        .database
+        .rpc("link_patient_to_pt", params: params)
+        .execute()
+    }.value
+    
+    print("✅ PatientService.linkPatientToPT: successfully linked patient_profile \(patientProfileId) to pt_profile \(ptProfileId)")
+  }
+  
+  // Link patient to PT via access code - updates placeholder instead of creating duplicate
+  // This is the preferred method when linking via access code
+  static func linkPatientViaAccessCode(accessCode: String, patientProfileId: UUID) async throws {
+    print("🔗 PatientService.linkPatientViaAccessCode: linking patient_profile \(patientProfileId) via access code")
+    
+    let normalizedCode = accessCode.trimmingCharacters(in: .whitespacesAndNewlines)
+    
+    // Create params in a nonisolated context to avoid Sendable issues
+    try await Task { @Sendable in
+      struct RPCParams: Encodable {
+        let access_code_param: String
+        let patient_profile_id_param: String
+      }
+      
+      let params = RPCParams(
+        access_code_param: normalizedCode,
+        patient_profile_id_param: patientProfileId.uuidString
+      )
+      
+      // Call RPC function that updates placeholder and handles duplicates
+      try await client
+        .database
+        .rpc("link_patient_via_access_code", params: params)
+        .execute()
+    }.value
+    
+    print("✅ PatientService.linkPatientViaAccessCode: successfully linked patient_profile \(patientProfileId) via access code")
+  }
+
+  // Get PT profile ID by access code (for linking existing accounts)
+  // Uses RPC function to bypass RLS and get PT ID from placeholder mapping
+  static func getPTProfileIdByAccessCode(_ code: String) async throws -> UUID? {
+    let normalizedCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
+    
+    guard !normalizedCode.isEmpty else {
+      return nil
+    }
+    
+    print("🔍 PatientService.getPTProfileIdByAccessCode: searching for code '\(normalizedCode)'")
+    
+    // Create params in a nonisolated context to avoid Sendable issues
+    let uuidString: String? = try await Task { @Sendable in
+      struct RPCParams: Encodable {
+        let access_code_param: String
+      }
+      
+      let params = RPCParams(access_code_param: normalizedCode)
+      
+      // RPC returns UUID as string, or null if not found
+      return try await client
+        .database
+        .rpc("get_pt_profile_id_by_access_code", params: params)
+        .single()
+        .execute()
+        .value
+    }.value
+    
+    if let uuidString = uuidString, let ptProfileId = UUID(uuidString: uuidString) {
+      print("✅ PatientService.getPTProfileIdByAccessCode: found PT \(ptProfileId) for code '\(normalizedCode)'")
+      return ptProfileId
+    } else {
+      print("ℹ️ PatientService.getPTProfileIdByAccessCode: no PT found for code '\(normalizedCode)'")
+      return nil
+    }
   }
 
   // Find patient profile by access code

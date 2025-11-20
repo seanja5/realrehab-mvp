@@ -109,7 +109,17 @@ struct PairDeviceView: View {
                     isDisabled: isPairButtonDisabled,
                     useLargeFont: true,
                     action: {
-                        router.go(.calibrateDevice)
+                        // Connect to the first available RealRehab device
+                        if let firstDevice = ble.peripherals.first {
+                            print("🔵 PairDeviceView: Pair button tapped, connecting to '\(firstDevice.name)'")
+                            ble.connect(firstDevice)
+                            // Wait a moment for connection, then navigate
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                router.go(.calibrateDevice)
+                            }
+                        } else {
+                            print("⚠️ PairDeviceView: No devices available to connect")
+                        }
                     }
                 )
             }

@@ -1,9 +1,13 @@
 import SwiftUI
+import CoreBluetooth
 
 struct CalibrateDeviceView: View {
     @EnvironmentObject var router: Router
+    @StateObject private var ble = BluetoothManager.shared
     @State private var startSet = false
     @State private var maxSet = false
+    @State private var startingPositionValue: Int? = nil
+    @State private var maximumPositionValue: Int? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -19,13 +23,54 @@ struct CalibrateDeviceView: View {
                         .padding(.vertical, 4)
 
                     VStack(alignment: .leading, spacing: RRSpace.stack) {
+                        // Live flex sensor value display
+                        if let flexValue = ble.currentFlexSensorValue {
+                            HStack {
+                                Text("Current Flex Sensor Value:")
+                                    .font(.rrBody)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text("\(flexValue)")
+                                    .font(.rrTitle)
+                                    .foregroundStyle(.primary)
+                            }
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                        } else {
+                            HStack {
+                                Text("Waiting for flex sensor data...")
+                                    .font(.rrBody)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                            }
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                        
                         Text("Relax your leg until your knee is bent at roughly a 90-degree angle. When you're ready, tap Set Starting Position.")
                             .font(.rrBody)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.leading)
 
                         SecondaryButton(title: startSet ? "Starting Position ✓" : "Set Starting Position") {
-                            startSet = true
+                            if let currentValue = ble.currentFlexSensorValue {
+                                startingPositionValue = currentValue
+                                startSet = true
+                                print("✅ CalibrateDeviceView: Set Starting Position button clicked - Saved flex sensor value: \(currentValue)")
+                            } else {
+                                print("⚠️ CalibrateDeviceView: Set Starting Position button clicked - No flex sensor value available")
+                            }
+                        }
+                        
+                        if let startingValue = startingPositionValue {
+                            Text("Starting position: \(startingValue)")
+                                .font(.rrBody)
+                                .foregroundStyle(.primary)
+                                .padding(.leading, 16)
                         }
 
                         Text("Now slowly extend your leg as far as you comfortably can, then tap Set Maximum Position.")
@@ -34,7 +79,20 @@ struct CalibrateDeviceView: View {
                             .multilineTextAlignment(.leading)
 
                         SecondaryButton(title: maxSet ? "Maximum Position ✓" : "Set Maximum Position") {
-                            maxSet = true
+                            if let currentValue = ble.currentFlexSensorValue {
+                                maximumPositionValue = currentValue
+                                maxSet = true
+                                print("✅ CalibrateDeviceView: Set Maximum Position button clicked - Saved flex sensor value: \(currentValue)")
+                            } else {
+                                print("⚠️ CalibrateDeviceView: Set Maximum Position button clicked - No flex sensor value available")
+                            }
+                        }
+                        
+                        if let maximumValue = maximumPositionValue {
+                            Text("Maximum position: \(maximumValue)")
+                                .font(.rrBody)
+                                .foregroundStyle(.primary)
+                                .padding(.leading, 16)
                         }
                     }
                     Spacer()
@@ -66,6 +124,24 @@ struct CalibrateDeviceView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()
+            }
+        }
+        .onAppear {
+            print("📱 CalibrateDeviceView: View appeared")
+            if let peripheral = ble.connectedPeripheral {
+                print("✅ CalibrateDeviceView: Device is connected: \(peripheral.name ?? "Unknown")")
+            } else {
+                print("⚠️ CalibrateDeviceView: No device connected")
+            }
+            if let flexValue = ble.currentFlexSensorValue {
+                print("📊 CalibrateDeviceView: Current flex sensor value: \(flexValue)")
+            } else {
+                print("⚠️ CalibrateDeviceView: No flex sensor value available yet")
+            }
+        }
+        .onChange(of: ble.currentFlexSensorValue) { oldValue, newValue in
+            if let value = newValue {
+                print("📊 CalibrateDeviceView: Flex sensor value updated: \(value)")
             }
         }
     }

@@ -111,8 +111,8 @@
 		C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllSetView.swift; sourceTree = "<group>"; };
 		C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrateDeviceView.swift; sourceTree = "<group>"; };
-		C8AEECA12EB2D7A200720185 /* TestCalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestCalibrationView.swift; sourceTree = "<group>"; };
 		C8AEECA12EB2D7A200720184 /* CompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionView.swift; sourceTree = "<group>"; };
+		C8AEECA12EB2D7A200720185 /* TestCalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestCalibrationView.swift; sourceTree = "<group>"; };
 		C8AEECA22EB2D7A200720184 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C8AEECA32EB2D7A200720184 /* CreateAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateAccount.swift; sourceTree = "<group>"; };
 		C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSubCategoryView.swift; sourceTree = "<group>"; };
@@ -720,6 +720,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -751,6 +752,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

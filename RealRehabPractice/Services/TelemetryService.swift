@@ -89,5 +89,88 @@ enum TelemetryService {
       .decoded(as: [SessionRow].self)
   }
 
+  // MARK: - Calibration Functions
+  
+  struct DeviceRow: Decodable {
+    let id: UUID
+  }
+  
+  struct DeviceAssignmentRow: Decodable {
+    let id: UUID
+    let device_id: UUID
+    let patient_profile_id: UUID
+    let pt_profile_id: UUID?
+  }
+  
+  // Get or create device assignment
+  // Uses RPC for device creation (devices table blocks patients), but direct insert for device_assignments
+  private static func getOrCreateDeviceAssignment(bluetoothIdentifier: String) async throws -> UUID {
+    // Get current user's profile and patient profile ID
+    guard let profile = try await AuthService.myProfile() else {
+      throw NSError(domain: "TelemetryService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profile not found"])
+    }
+    
+    let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
+    
+    // Step 1: Get or create device using RPC (devices table RLS only allows admin)
+    // The RPC function handles device creation, but we need to extract device_id from the assignment
+    let assignmentIdString: String = try await Task { @Sendable in
+      struct RPCParams: Encodable {
+        let p_bluetooth_identifier: String
+      }
+      
+      let params = RPCParams(p_bluetooth_identifier: bluetoothIdentifier)
+      
+      return try await supabase
+        .database
+        .rpc("get_or_create_device_assignment", params: params)
+        .single()
+        .execute()
+        .value
+    }.value
+    
+    guard let assignmentId = UUID(uuidString: assignmentIdString) else {
+      throw NSError(domain: "TelemetryService", code: 500, userInfo: [NSLocalizedDescriptionKey: "Invalid device assignment ID returned from RPC"])
+    }
+    
+    return assignmentId
+  }
+  
+  // Save a calibration record
+  static func saveCalibration(
+    bluetoothIdentifier: String,
+    stage: String, // "starting_position" or "maximum_position"
+    flexValue: Int,
+    kneeAngleDeg: Double? = nil,
+    notes: String? = nil
+  ) async throws {
+    // Get or create device assignment using RPC (handles device creation too)
+    let assignmentId = try await getOrCreateDeviceAssignment(bluetoothIdentifier: bluetoothIdentifier)
+    
+    // Save calibration record
+    var payload: [String: AnyEncodable] = [
+      "device_assignment_id": AnyEncodable(assignmentId.uuidString),
+      "stage": AnyEncodable(stage),
+      "flex_value": AnyEncodable(Double(flexValue)),
+      "recorded_at": AnyEncodable(iso.string(from: Date()))
+    ]
+    
+    if let angle = kneeAngleDeg {
+      payload["knee_angle_deg"] = AnyEncodable(angle)
+    }
+    
+    if let notesValue = notes {
+      payload["notes"] = AnyEncodable(notesValue)
+    }
+    
+    _ = try await supabase
+      .schema("telemetry")
+      .from("calibrations")
+      .insert(payload)
+      .execute()
+    
+    print("✅ TelemetryService: Saved calibration - stage: \(stage), flex_value: \(flexValue)")
+  }
+
 }
 

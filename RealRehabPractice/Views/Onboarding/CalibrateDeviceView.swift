@@ -8,6 +8,9 @@ struct CalibrateDeviceView: View {
     @State private var maxSet = false
     @State private var startingPositionValue: Int? = nil
     @State private var maximumPositionValue: Int? = nil
+    @State private var isSavingStarting = false
+    @State private var isSavingMaximum = false
+    @State private var errorMessage: String? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -61,10 +64,17 @@ struct CalibrateDeviceView: View {
                                 startingPositionValue = currentValue
                                 startSet = true
                                 print("✅ CalibrateDeviceView: Set Starting Position button clicked - Saved flex sensor value: \(currentValue)")
+                                
+                                // Save to database
+                                Task {
+                                    await saveCalibration(stage: "starting_position", flexValue: currentValue)
+                                }
                             } else {
                                 print("⚠️ CalibrateDeviceView: Set Starting Position button clicked - No flex sensor value available")
+                                errorMessage = "No flex sensor value available. Please ensure your device is connected."
                             }
                         }
+                        .disabled(isSavingStarting)
                         
                         if let startingValue = startingPositionValue {
                             Text("Starting position: \(startingValue)")
@@ -83,16 +93,31 @@ struct CalibrateDeviceView: View {
                                 maximumPositionValue = currentValue
                                 maxSet = true
                                 print("✅ CalibrateDeviceView: Set Maximum Position button clicked - Saved flex sensor value: \(currentValue)")
+                                
+                                // Save to database
+                                Task {
+                                    await saveCalibration(stage: "maximum_position", flexValue: currentValue)
+                                }
                             } else {
                                 print("⚠️ CalibrateDeviceView: Set Maximum Position button clicked - No flex sensor value available")
+                                errorMessage = "No flex sensor value available. Please ensure your device is connected."
                             }
                         }
+                        .disabled(isSavingMaximum)
                         
                         if let maximumValue = maximumPositionValue {
                             Text("Maximum position: \(maximumValue)")
                                 .font(.rrBody)
                                 .foregroundStyle(.primary)
                                 .padding(.leading, 16)
+                        }
+                        
+                        // Error message display
+                        if let error = errorMessage {
+                            Text(error)
+                                .font(.rrCaption)
+                                .foregroundStyle(.red)
+                                .padding(.top, 8)
                         }
                     }
                     Spacer()
@@ -142,6 +167,65 @@ struct CalibrateDeviceView: View {
         .onChange(of: ble.currentFlexSensorValue) { oldValue, newValue in
             if let value = newValue {
                 print("📊 CalibrateDeviceView: Flex sensor value updated: \(value)")
+            }
+        }
+        .alert("Error", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") {
+                errorMessage = nil
+            }
+        } message: {
+            if let error = errorMessage {
+                Text(error)
+            }
+        }
+    }
+    
+    // Save calibration to database
+    private func saveCalibration(stage: String, flexValue: Int) async {
+        // Get Bluetooth peripheral identifier
+        guard let peripheral = ble.connectedPeripheral else {
+            await MainActor.run {
+                errorMessage = "No device connected. Please pair a device first."
+            }
+            return
+        }
+        
+        let bluetoothIdentifier = peripheral.identifier.uuidString
+        
+        // Set saving state
+        await MainActor.run {
+            if stage == "starting_position" {
+                isSavingStarting = true
+            } else {
+                isSavingMaximum = true
+            }
+            errorMessage = nil
+        }
+        
+        do {
+            try await TelemetryService.saveCalibration(
+                bluetoothIdentifier: bluetoothIdentifier,
+                stage: stage,
+                flexValue: flexValue
+            )
+            
+            await MainActor.run {
+                if stage == "starting_position" {
+                    isSavingStarting = false
+                } else {
+                    isSavingMaximum = false
+                }
+                print("✅ CalibrateDeviceView: Successfully saved \(stage) calibration with flex_value: \(flexValue)")
+            }
+        } catch {
+            await MainActor.run {
+                if stage == "starting_position" {
+                    isSavingStarting = false
+                } else {
+                    isSavingMaximum = false
+                }
+                errorMessage = "Failed to save calibration: \(error.localizedDescription)"
+                print("❌ CalibrateDeviceView: Failed to save \(stage) calibration: \(error)")
             }
         }
     }

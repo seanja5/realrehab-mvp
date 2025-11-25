@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct PatientDetailView: View {
     let patientProfileId: UUID
@@ -12,6 +13,7 @@ struct PatientDetailView: View {
     @State private var showDeleteConfirmation = false
     @State private var errorMessage: String? = nil
     @State private var notesSaveTask: Task<Void, Never>? = nil
+    @State private var isKeyboardVisible = false
     
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -209,18 +211,25 @@ struct PatientDetailView: View {
                     
                     Spacer(minLength: 24)
                 }
-                .padding(.bottom, 120)
+                .padding(.bottom, isKeyboardVisible ? 16 : 80)
             }
             
-            PTTabBar(selected: .dashboard) { tab in
-                switch tab {
-                case .dashboard:
-                    router.goWithoutAnimation(.patientList)
-                case .settings:
-                    router.goWithoutAnimation(.ptSettings)
+            // Tab bar - only show when keyboard is hidden
+            if !isKeyboardVisible {
+                VStack {
+                    Spacer()
+                    PTTabBar(selected: .dashboard) { tab in
+                        switch tab {
+                        case .dashboard:
+                            router.goWithoutAnimation(.patientList)
+                        case .settings:
+                            router.goWithoutAnimation(.ptSettings)
+                        }
+                    }
+                    .background(Color.white)
                 }
+                .ignoresSafeArea(.keyboard, edges: .bottom)
             }
-            .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)
@@ -265,6 +274,16 @@ struct PatientDetailView: View {
         .onDisappear {
             // Clear error message when navigating away to prevent showing cancelled errors
             errorMessage = nil
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            withAnimation(.easeInOut(duration: 0.25)) {
+                isKeyboardVisible = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.easeInOut(duration: 0.25)) {
+                isKeyboardVisible = false
+            }
         }
     }
     

@@ -17,7 +17,6 @@ enum Route: Hashable {
     case patientSettings
     case lesson(reps: Int? = nil, restSec: Int? = nil)
     case completion
-    case login
     case ptSettings
     case patientList
     case ptPatientDetail(patientProfileId: UUID)

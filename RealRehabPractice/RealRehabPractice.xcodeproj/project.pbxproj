@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 90;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -22,7 +22,6 @@
 		C82D702A2EBEB10C004D9347 /* LessonSessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70232EBEB10C004D9347 /* LessonSessionViewModel.swift */; };
 		C82D702C2ED00153004D9347 /* PatientService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D702B2ED00153004D9347 /* PatientService.swift */; };
 		C82D70302ED0841A004D9347 /* PatientPTViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */; };
-		C82D70362ED09AC7004D9348 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70352ED09AC7004D9348 /* LoginView.swift */; };
 		C82D70372ED09AC7004D9349 /* PTPatientsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70362ED09AC7004D9349 /* PTPatientsViewModel.swift */; };
 		C82D70382ED09AC7004D9350 /* GenderMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70372ED09AC7004D9350 /* GenderMapper.swift */; };
 		C82D70382ED0AB17004D9347 /* PTSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70372ED0AB17004D9347 /* PTSettingsView.swift */; };
@@ -61,6 +60,7 @@
 		C8F4A8202ED2F3B500BADF02 /* PTService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8212ED2F3B500BADF02 /* PTService.swift */; };
 		C8F4A8222ED2F3B500BADF02 /* SelectSignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8232ED2F3B500BADF02 /* SelectSignUpView.swift */; };
 		C8F4A8242ED2F3B500BADF02 /* PTCreateAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8252ED2F3B500BADF02 /* PTCreateAccountView.swift */; };
+		C8FF08ED2ED68CB6007FE9DC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -95,7 +95,6 @@
 		C82D70252EBEB10C004D9347 /* PTProgramEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTProgramEditorViewModel.swift; sourceTree = "<group>"; };
 		C82D702B2ED00153004D9347 /* PatientService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientService.swift; sourceTree = "<group>"; };
 		C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientPTViewModel.swift; sourceTree = "<group>"; };
-		C82D70352ED09AC7004D9348 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C82D70362ED09AC7004D9349 /* PTPatientsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPatientsViewModel.swift; sourceTree = "<group>"; };
 		C82D70372ED09AC7004D9350 /* GenderMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenderMapper.swift; sourceTree = "<group>"; };
 		C82D70372ED0AB17004D9347 /* PTSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSettingsView.swift; sourceTree = "<group>"; };
@@ -138,6 +137,7 @@
 		C8F4A8212ED2F3B500BADF02 /* PTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTService.swift; sourceTree = "<group>"; };
 		C8F4A8232ED2F3B500BADF02 /* SelectSignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectSignUpView.swift; sourceTree = "<group>"; };
 		C8F4A8252ED2F3B500BADF02 /* PTCreateAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCreateAccountView.swift; sourceTree = "<group>"; };
+		C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -156,25 +156,19 @@
 /* Begin PBXFrameworksBuildPhase section */
 		C89A84AE2EB138150074B855 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				C8003FAD2EB441F1008DC812 /* Supabase in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C89A84BB2EB138170074B855 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C89A84C52EB138170074B855 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -220,6 +214,7 @@
 		C89A84A82EB138150074B855 = {
 			isa = PBXGroup;
 			children = (
+				C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */,
 				C82D707D2EC17F97004D9347 /* info.plist */,
 				C82D70262EBEB10C004D9347 /* ViewModels */,
 				C82D700D2EBE91D3004D9347 /* Services */,
@@ -316,7 +311,6 @@
 				C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */,
 				C8AEECA12EB2D7A200720185 /* TestCalibrationView.swift */,
 				C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */,
-				C82D70352ED09AC7004D9348 /* LoginView.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -377,8 +371,6 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			name = RealRehabPractice;
 			packageProductDependencies = (
 				C8003FAC2EB441F1008DC812 /* Supabase */,
@@ -404,8 +396,6 @@
 				C89A84C12EB138170074B855 /* RealRehabPracticeTests */,
 			);
 			name = RealRehabPracticeTests;
-			packageProductDependencies = (
-			);
 			productName = RealRehabPracticeTests;
 			productReference = C89A84BE2EB138170074B855 /* RealRehabPracticeTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -427,8 +417,6 @@
 				C89A84CB2EB138170074B855 /* RealRehabPracticeUITests */,
 			);
 			name = RealRehabPracticeUITests;
-			packageProductDependencies = (
-			);
 			productName = RealRehabPracticeUITests;
 			productReference = C89A84C82EB138170074B855 /* RealRehabPracticeUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -441,7 +429,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2610;
 				TargetAttributes = {
 					C89A84B02EB138150074B855 = {
 						CreatedOnToolsVersion = 26.0.1;
@@ -469,7 +457,7 @@
 			packageReferences = (
 				C8003FAB2EB441F1008DC812 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 90;
 			productRefGroup = C89A84B22EB138150074B855 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -484,33 +472,27 @@
 /* Begin PBXResourcesBuildPhase section */
 		C89A84AF2EB138150074B855 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
+				C8FF08ED2ED68CB6007FE9DC /* LaunchScreen.storyboard in Resources */,
 				C826BD3F2ECC23CB00B500DC /* Assets.xcassets in Resources */,
 				C8003FA22EB42E72008DC812 /* SupabaseConfig.plist in Resources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C89A84BC2EB138170074B855 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C89A84C62EB138170074B855 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		C89A84AD2EB138150074B855 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				C82D700E2EBE91D3004D9347 /* RehabService.swift in Sources */,
 				C82D700F2EBE91D3004D9347 /* SupabaseService.swift in Sources */,
@@ -546,7 +528,6 @@
 				C82D70302ED0841A004D9347 /* PatientPTViewModel.swift in Sources */,
 				C82D70372ED09AC7004D9349 /* PTPatientsViewModel.swift in Sources */,
 				C82D703A2ED09AC7004D9351 /* JourneyMapViewModel.swift in Sources */,
-				C82D70362ED09AC7004D9348 /* LoginView.swift in Sources */,
 				C82D70382ED0AB17004D9347 /* PTSettingsView.swift in Sources */,
 				C82D703C2ED0B4BE004D9347 /* PatientSettingsView.swift in Sources */,
 				C82D702C2ED00153004D9347 /* PatientService.swift in Sources */,
@@ -564,21 +545,16 @@
 				C8F4A8222ED2F3B500BADF02 /* SelectSignUpView.swift in Sources */,
 				C8F4A8242ED2F3B500BADF02 /* PTCreateAccountView.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C89A84BA2EB138170074B855 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C89A84C42EB138170074B855 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -596,7 +572,7 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		C89A84D02EB138170074B855 /* Debug */ = {
+		C89A84D02EB138170074B855 /* Debug configuration for PBXProject "RealRehabPractice" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -654,12 +630,13 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		C89A84D12EB138170074B855 /* Release */ = {
+		C89A84D12EB138170074B855 /* Release configuration for PBXProject "RealRehabPractice" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -710,12 +687,13 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
-		C89A84D32EB138170074B855 /* Debug */ = {
+		C89A84D32EB138170074B855 /* Debug configuration for PBXNativeTarget "RealRehabPractice" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -747,7 +725,7 @@
 			};
 			name = Debug;
 		};
-		C89A84D42EB138170074B855 /* Release */ = {
+		C89A84D42EB138170074B855 /* Release configuration for PBXNativeTarget "RealRehabPractice" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -778,7 +756,7 @@
 			};
 			name = Release;
 		};
-		C89A84D62EB138170074B855 /* Debug */ = {
+		C89A84D62EB138170074B855 /* Debug configuration for PBXNativeTarget "RealRehabPracticeTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -799,7 +777,7 @@
 			};
 			name = Debug;
 		};
-		C89A84D72EB138170074B855 /* Release */ = {
+		C89A84D72EB138170074B855 /* Release configuration for PBXNativeTarget "RealRehabPracticeTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -820,7 +798,7 @@
 			};
 			name = Release;
 		};
-		C89A84D92EB138170074B855 /* Debug */ = {
+		C89A84D92EB138170074B855 /* Debug configuration for PBXNativeTarget "RealRehabPracticeUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -839,7 +817,7 @@
 			};
 			name = Debug;
 		};
-		C89A84DA2EB138170074B855 /* Release */ = {
+		C89A84DA2EB138170074B855 /* Release configuration for PBXNativeTarget "RealRehabPracticeUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -864,37 +842,33 @@
 		C89A84AC2EB138150074B855 /* Build configuration list for PBXProject "RealRehabPractice" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C89A84D02EB138170074B855 /* Debug */,
-				C89A84D12EB138170074B855 /* Release */,
+				C89A84D02EB138170074B855 /* Debug configuration for PBXProject "RealRehabPractice" */,
+				C89A84D12EB138170074B855 /* Release configuration for PBXProject "RealRehabPractice" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		C89A84D22EB138170074B855 /* Build configuration list for PBXNativeTarget "RealRehabPractice" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C89A84D32EB138170074B855 /* Debug */,
-				C89A84D42EB138170074B855 /* Release */,
+				C89A84D32EB138170074B855 /* Debug configuration for PBXNativeTarget "RealRehabPractice" */,
+				C89A84D42EB138170074B855 /* Release configuration for PBXNativeTarget "RealRehabPractice" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		C89A84D52EB138170074B855 /* Build configuration list for PBXNativeTarget "RealRehabPracticeTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C89A84D62EB138170074B855 /* Debug */,
-				C89A84D72EB138170074B855 /* Release */,
+				C89A84D62EB138170074B855 /* Debug configuration for PBXNativeTarget "RealRehabPracticeTests" */,
+				C89A84D72EB138170074B855 /* Release configuration for PBXNativeTarget "RealRehabPracticeTests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		C89A84D82EB138170074B855 /* Build configuration list for PBXNativeTarget "RealRehabPracticeUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C89A84D92EB138170074B855 /* Debug */,
-				C89A84DA2EB138170074B855 /* Release */,
+				C89A84D92EB138170074B855 /* Debug configuration for PBXNativeTarget "RealRehabPracticeUITests" */,
+				C89A84DA2EB138170074B855 /* Release configuration for PBXNativeTarget "RealRehabPracticeUITests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */

@@ -39,7 +39,6 @@ struct RealRehabPracticeApp: App {
                                 case .patientSettings: PatientSettingsView()
                                 case .lesson(let reps, let restSec): LessonView(reps: reps, restSec: restSec)                // ← single lesson screen
                                 case .completion: CompletionView()
-                                case .login: LoginView()
                                 case .ptSettings: PTSettingsView()
                                 case .patientList: PatientListView()
                                 case .ptPatientDetail(let patientProfileId): PatientDetailView(patientProfileId: patientProfileId)

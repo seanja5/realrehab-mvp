@@ -93,6 +93,16 @@ struct LessonView: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
             
+            // Instructions text below the feedback square
+            Text(hasStarted 
+                 ? "Extend your knee as the bar fills; rest as it empties.\n\nTop = full extension. Bottom = resting position."
+                 : "Brace on → Press Begin.\n\nExtend your knee as the bar fills; rest as it empties.\n\nTop = full extension. Bottom = resting position.")
+                .font(.rrBody)
+                .foregroundStyle(.black)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+            
             Spacer(minLength: 16)
             
             // Controls row (secondary begin button)

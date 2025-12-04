@@ -171,6 +171,60 @@ enum TelemetryService {
     
     print("✅ TelemetryService: Saved calibration - stage: \(stage), flex_value: \(flexValue)")
   }
+  
+  // MARK: - Calibration Retrieval
+  
+  struct CalibrationRow: Decodable {
+    let id: UUID
+    let device_assignment_id: UUID
+    let stage: String
+    let flex_value: Double
+    let knee_angle_deg: Double?
+    let recorded_at: String
+  }
+  
+  struct MostRecentCalibration {
+    let restDegrees: Int?  // starting_position value
+    let maxDegrees: Int?   // maximum_position value
+  }
+  
+  // Get most recent calibration values for current user
+  static func getMostRecentCalibration(bluetoothIdentifier: String) async throws -> MostRecentCalibration {
+    // Get or create device assignment to ensure we have the assignment ID
+    let assignmentId = try await getOrCreateDeviceAssignment(bluetoothIdentifier: bluetoothIdentifier)
+    
+    // Fetch all calibrations for this device assignment, ordered by most recent
+    let calibrations: [CalibrationRow] = try await supabase
+      .schema("telemetry")
+      .from("calibrations")
+      .select("*")
+      .eq("device_assignment_id", value: assignmentId.uuidString)
+      .order("recorded_at", ascending: false)
+      .limit(100) // Get enough to find both stages
+      .decoded(as: [CalibrationRow].self)
+    
+    // Find most recent starting_position and maximum_position
+    var restDegrees: Int? = nil
+    var maxDegrees: Int? = nil
+    
+    for calibration in calibrations {
+      // flex_value is stored as degrees (as saved by CalibrateDeviceView)
+      let flexValue = Int(calibration.flex_value)
+      
+      if calibration.stage == "starting_position" && restDegrees == nil {
+        restDegrees = flexValue
+      } else if calibration.stage == "maximum_position" && maxDegrees == nil {
+        maxDegrees = flexValue
+      }
+      
+      // Once we have both, we can stop
+      if restDegrees != nil && maxDegrees != nil {
+        break
+      }
+    }
+    
+    return MostRecentCalibration(restDegrees: restDegrees, maxDegrees: maxDegrees)
+  }
 
 }
 

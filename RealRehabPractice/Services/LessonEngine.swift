@@ -32,6 +32,7 @@ final class LessonEngine: ObservableObject {
     @Published var phase: Phase = .idle
     @Published var fill: Double = 0.0  // 0.0...1.0 for the green overlay fill
     @Published var statusText: String = "Waiting…"
+    @Published var isPaused: Bool = false  // For pausing animation during errors
     
     let repTarget: Int
     let restDuration: TimeInterval  // Total time between repetitions (split evenly for upstroke/downstroke)
@@ -40,7 +41,11 @@ final class LessonEngine: ObservableObject {
     private var simulationTimer: Timer?
     private var guidedRunToken: UUID?
     private var animationTimer: Timer?
+    private var pausedFill: Double = 0.0  // Store fill level when paused
     var targets = LessonTargets()
+    
+    // Callback to check if rep should be counted (returns true if valid)
+    var shouldCountRepCallback: (() -> Bool)? = nil
     
     init(repTarget: Int = 20, restDuration: TimeInterval = 6.0) {
         self.repTarget = repTarget
@@ -54,7 +59,116 @@ final class LessonEngine: ObservableObject {
         phase = .idle
         fill = 0.0
         statusText = "Waiting…"
+        isPaused = false
+        pausedFill = 0.0
         stopGuidedSimulation()
+    }
+    
+    // Pause animation at current fill level
+    func pauseAnimation() {
+        guard !isPaused else { return }
+        isPaused = true
+        pausedFill = fill
+        animationTimer?.invalidate()
+        animationTimer = nil
+    }
+    
+    // Resume animation from paused fill level
+    func resumeAnimation() {
+        guard isPaused, let token = guidedRunToken else { return }
+        isPaused = false
+        
+        // Continue animation from where we paused
+        if phase == .upstroke {
+            let totalDuration = restDuration / 2.0
+            let elapsedFill = pausedFill - 0.1  // Started at 0.1
+            let elapsedTime = (elapsedFill / 0.9) * totalDuration
+            let remainingTime = totalDuration - elapsedTime
+            
+            continueUpstroke(fromFill: pausedFill, remainingTime: remainingTime, token: token)
+        } else if phase == .downstroke {
+            let totalDuration = restDuration / 2.0
+            let elapsedFill = 1.0 - pausedFill
+            let elapsedTime = elapsedFill * totalDuration
+            let remainingTime = totalDuration - elapsedTime
+            
+            continueDownstroke(fromFill: pausedFill, remainingTime: remainingTime, token: token)
+        }
+    }
+    
+    private func continueUpstroke(fromFill: Double, remainingTime: TimeInterval, token: UUID) {
+        guard guidedRunToken == token else { return }
+        let startTime = Date()
+        let startFill = fromFill
+        let endFill = 1.0
+        
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: true) { [weak self] timer in
+            guard let self = self, self.guidedRunToken == token, !self.isPaused else {
+                timer.invalidate()
+                return
+            }
+            
+            DispatchQueue.main.async {
+                let elapsed = Date().timeIntervalSince(startTime)
+                let progress = min(elapsed / remainingTime, 1.0)
+                self.fill = startFill + (endFill - startFill) * progress
+                
+                if progress >= 1.0 {
+                    timer.invalidate()
+                    self.animationTimer = nil
+                    
+                    let shouldCount = self.shouldCountRepCallback?() ?? true
+                    if shouldCount {
+                        self.repCount += 1
+                    }
+                    
+                    if self.repCount >= self.repTarget {
+                        self.phase = .idle
+                        self.statusText = "Great work!"
+                        self.fill = 1.0
+                        return
+                    }
+                    
+                    self.runDownstroke(token: token)
+                }
+            }
+        }
+        RunLoop.main.add(animationTimer!, forMode: .common)
+    }
+    
+    private func continueDownstroke(fromFill: Double, remainingTime: TimeInterval, token: UUID) {
+        guard guidedRunToken == token else { return }
+        let startTime = Date()
+        let startFill = fromFill
+        let endFill = 0.0
+        
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: true) { [weak self] timer in
+            guard let self = self, self.guidedRunToken == token, !self.isPaused else {
+                timer.invalidate()
+                return
+            }
+            
+            DispatchQueue.main.async {
+                let elapsed = Date().timeIntervalSince(startTime)
+                let progress = min(elapsed / remainingTime, 1.0)
+                self.fill = startFill + (endFill - startFill) * progress
+                
+                if progress >= 1.0 {
+                    timer.invalidate()
+                    self.animationTimer = nil
+                    
+                    if self.repCount >= self.repTarget {
+                        self.phase = .idle
+                        self.statusText = "Great work!"
+                        self.fill = 1.0
+                        return
+                    }
+                    
+                    self.runUpstroke(token: token)
+                }
+            }
+        }
+        RunLoop.main.add(animationTimer!, forMode: .common)
     }
     
     func startRandomSimulation() {
@@ -110,13 +224,18 @@ final class LessonEngine: ObservableObject {
         simulationTimer = nil
     }
     
-    func startGuidedSimulation() {
+    func startGuidedSimulation(skipInitialWait: Bool = false) {
         stopGuidedSimulation()
         let token = UUID()
         guidedRunToken = token
         
-        // Start with incorrectHold for 3 seconds
-        runIncorrectHold(duration: 3.0, token: token)
+        if skipInitialWait {
+            // Start directly with upstroke (when movement is detected)
+            runUpstroke(token: token)
+        } else {
+            // Start with incorrectHold for 3 seconds
+            runIncorrectHold(duration: 3.0, token: token)
+        }
     }
     
     func stopGuidedSimulation() {
@@ -127,6 +246,19 @@ final class LessonEngine: ObservableObject {
         fill = 0.0
         statusText = "Waiting…"
         lastEvaluation = .init(isCorrect: false, reason: "Waiting…")
+        isPaused = false
+    }
+    
+    // Restart animation from the bottom (beginning of upstroke)
+    func restartFromBottom() {
+        guard let token = guidedRunToken else { return }
+        // Stop current animation
+        animationTimer?.invalidate()
+        animationTimer = nil
+        isPaused = false
+        // Reset fill and start new upstroke
+        fill = 0.1
+        runUpstroke(token: token)
     }
     
     private func runIncorrectHold(duration: TimeInterval, token: UUID) {
@@ -185,8 +317,11 @@ final class LessonEngine: ObservableObject {
                     timer.invalidate()
                     self.animationTimer = nil
                     
-                    // Increment rep count when fill reaches top
-                    self.repCount += 1
+                    // Check if rep should be counted (via callback from LessonView)
+                    let shouldCount = self.shouldCountRepCallback?() ?? true
+                    if shouldCount {
+                        self.repCount += 1
+                    }
                     
                     // Check if we've reached target
                     if self.repCount >= self.repTarget {
@@ -197,12 +332,8 @@ final class LessonEngine: ObservableObject {
                         return
                     }
                     
-                    // Check if we need a 4-rep pause
-                    if self.repCount % 4 == 0 {
-                        self.runIncorrectHold(duration: 2.0, token: token)
-                    } else {
-                        self.runDownstroke(token: token)
-                    }
+                    // Continue to downstroke (removed 4-rep pause logic)
+                    self.runDownstroke(token: token)
                 }
             }
         }
@@ -230,6 +361,11 @@ final class LessonEngine: ObservableObject {
             }
             
             DispatchQueue.main.async {
+                // Check if paused
+                guard !self.isPaused else {
+                    return
+                }
+                
                 let elapsed = Date().timeIntervalSince(startTime)
                 let progress = min(elapsed / duration, 1.0)
                 self.fill = startFill + (endFill - startFill) * progress

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import CoreBluetooth
 
 struct LessonView: View {
     @EnvironmentObject var router: Router
@@ -14,7 +15,60 @@ struct LessonView: View {
     let restSec: Int?
     
     @StateObject private var engine: LessonEngine
+    @StateObject private var ble = BluetoothManager.shared
     @State private var hasStarted = false
+    @State private var waitingForMovement = false  // Waiting for user to start moving before animation begins
+    @State private var initialRestDegrees: Int? = nil  // Rest position when Begin is clicked
+    
+    // Calibration values
+    @State private var maxCalibrationValue: Int? = nil
+    @State private var restCalibrationValue: Int? = nil
+    @State private var isLoadingCalibration = false
+    @State private var calibrationError: String? = nil
+    
+    // Sensor tracking state
+    @State private var currentDegreeValue: Int? = nil
+    @State private var errorMessage: String? = nil
+    @State private var errorEndTime: Date? = nil
+    @State private var previousDegreeValue: Int? = nil
+    @State private var previousTimestamp: Date? = nil
+    @State private var lastRepWasValid: Bool = true
+    @State private var hasSpeedError: Bool = false
+    @State private var validationTimer: Timer? = nil
+    @State private var phaseBeforeError: Phase? = nil  // Store phase before error
+    
+    // Countdown state after error
+    @State private var isCountingDown: Bool = false
+    @State private var countdownValue: Int = 3
+    @State private var countdownTimer: Timer? = nil
+    @State private var showGoMessage: Bool = false
+    @State private var goMessageStartTime: Date? = nil
+    
+    // Calibration constants for degree conversion (same as CalibrateDeviceView)
+    private let minSensorValue: Int = 205  // 90 degrees (rest position)
+    private let sensorRange: Int = 128  // 333 - 205 = 128
+    private let minDegrees: Double = 90.0
+    private let degreeRange: Double = 90.0  // 180 - 90 = 90
+    
+    // Convert raw flex sensor value to degrees
+    private func convertToDegrees(_ sensorValue: Int) -> Int {
+        let degrees = minDegrees + (Double(sensorValue - minSensorValue) / Double(sensorRange)) * degreeRange
+        return Int(degrees.rounded())
+    }
+    
+    // Computed property for current degree value
+    private var currentDegrees: Int? {
+        guard let flexValue = ble.currentFlexSensorValue else { return nil }
+        return convertToDegrees(flexValue)
+    }
+    
+    // Calculate expected degrees based on box fill percentage
+    private func expectedDegreesForFill(_ fill: Double) -> Int? {
+        guard let rest = restCalibrationValue,
+              let max = maxCalibrationValue else { return nil }
+        let range = max - rest
+        return rest + Int(Double(range) * fill)
+    }
     
     init(reps: Int? = nil, restSec: Int? = nil) {
         self.reps = reps
@@ -22,10 +76,77 @@ struct LessonView: View {
         // Initialize engine with parameters if provided (for Knee Extension only)
         if let reps = reps, let restSec = restSec {
             // Convert restSec (Int seconds) to TimeInterval
-            _engine = StateObject(wrappedValue: LessonEngine(repTarget: reps, restDuration: TimeInterval(restSec)))
+            let engine = LessonEngine(repTarget: reps, restDuration: TimeInterval(restSec))
+            _engine = StateObject(wrappedValue: engine)
         } else {
             _engine = StateObject(wrappedValue: LessonEngine())
         }
+    }
+    
+    // Set up rep counting callback when engine is available
+    private func setupRepCountingCallback() {
+        engine.shouldCountRepCallback = {
+            // Only count if: max was reached and no speed errors occurred during this rep
+            return self.lastRepWasValid && !self.hasSpeedError
+        }
+    }
+    
+    // Helper function to determine display text
+    private func displayText() -> String {
+        // Show error message if present
+        if let error = errorMessage {
+            return error
+        }
+        
+        // Show countdown message
+        if isCountingDown {
+            return "Starting from rest, begin next rep in \(countdownValue)"
+        }
+        
+        // Normal phase-based messages
+        switch engine.phase {
+        case .idle:
+            return "Waiting…"
+        case .incorrectHold:
+            return "Not Quite!"
+        case .upstroke, .downstroke:
+            // Show "Go!" message for first 5 seconds after animation starts
+            if showGoMessage, let startTime = goMessageStartTime {
+                let elapsed = Date().timeIntervalSince(startTime)
+                if elapsed < 5.0 {
+                    return "Go!"
+                }
+            }
+            return "You've Got It!"
+        }
+    }
+    
+    // Helper function to determine text color
+    private func textColor() -> Color {
+        if errorMessage != nil {
+            return .white
+        }
+        if isCountingDown {
+            return .primary
+        }
+        if engine.phase == .incorrectHold {
+            return .white
+        }
+        return .primary
+    }
+    
+    // Helper function to determine background color
+    private func backgroundColor() -> Color {
+        if isCountingDown {
+            return Color.gray.opacity(0.3)
+        }
+        if engine.phase == .incorrectHold {
+            return Color.red
+        }
+        if engine.phase == .idle {
+            return Color.gray.opacity(0.3)
+        }
+        return Color.green.opacity(0.25)
     }
 
     var body: some View {
@@ -55,9 +176,7 @@ struct LessonView: View {
             ZStack {
                 // Base rounded panel
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(engine.phase == .incorrectHold
-                          ? Color.red
-                          : (engine.phase == .idle ? Color.gray.opacity(0.3) : Color.green.opacity(0.25)))
+                    .fill(backgroundColor())
                 
                 // Green fill overlay only during strokes
                 if engine.phase == .upstroke || engine.phase == .downstroke {
@@ -79,14 +198,10 @@ struct LessonView: View {
                     .allowsHitTesting(false)
                 }
                 
-                // Center text
-                Text(
-                    engine.phase == .idle ? "Waiting…" :
-                    (engine.phase == .incorrectHold ? "Not Quite!" :
-                     (engine.phase == .upstroke || engine.phase == .downstroke ? "You've Got It!" : "Keep it Coming!"))
-                )
-                .font(.rrTitle)
-                .foregroundStyle(engine.phase == .incorrectHold ? .white : .primary)
+                // Center text - show countdown, error messages, "Go!", or default text
+                Text(displayText())
+                    .font(.rrTitle)
+                    .foregroundStyle(textColor())
             }
             .frame(maxWidth: .infinity)
             .frame(height: 260)
@@ -105,6 +220,45 @@ struct LessonView: View {
             
             Spacer(minLength: 16)
             
+            // Bottom section with calibration reference and live data
+            HStack(alignment: .bottom, spacing: 12) {
+                // Left: Calibration reference box
+                if let maxCal = maxCalibrationValue, let restCal = restCalibrationValue {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Max(degrees): \(maxCal)")
+                            .font(.rrCaption)
+                            .foregroundStyle(.secondary)
+                        Text("Rest(degrees): \(restCal)")
+                            .font(.rrCaption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                
+                Spacer()
+                
+                // Right: Live sensor data box (only visible after lesson starts)
+                if hasStarted, let degrees = currentDegrees {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("Current Knee Bend Angle")
+                            .font(.rrCaption)
+                            .foregroundStyle(.secondary)
+                        Text("\(degrees)")
+                            .font(.rrBody)
+                            .foregroundStyle(.primary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 12)
+            
             // Controls row (secondary begin button)
             HStack {
                 SecondaryButton(
@@ -113,8 +267,13 @@ struct LessonView: View {
                 ) {
                     guard !hasStarted else { return }
                     hasStarted = true
+                    waitingForMovement = true
                     engine.reset()
-                    engine.startGuidedSimulation()
+                    setupRepCountingCallback()
+                    // Don't start animation yet - wait for movement detection
+                    // Store initial rest position for movement detection
+                    initialRestDegrees = currentDegrees ?? restCalibrationValue
+                    startSensorValidation()
                 }
             }
             .padding(.horizontal, 24)
@@ -149,8 +308,251 @@ struct LessonView: View {
                 BluetoothStatusIndicator()
             }
         }
+        .onAppear {
+            loadCalibrationData()
+        }
         .onDisappear {
             engine.stopGuidedSimulation()
+            stopSensorValidation()
+            countdownTimer?.invalidate()
+            countdownTimer = nil
+        }
+        .onChange(of: ble.currentFlexSensorValue) { oldValue, newValue in
+            if let value = newValue {
+                let degrees = convertToDegrees(value)
+                currentDegreeValue = degrees
+                
+                // Check if we're waiting for movement to start
+                if waitingForMovement, let initialRest = initialRestDegrees {
+                    let degreeChange = abs(degrees - initialRest)
+                    if degreeChange >= 5 {
+                        // User has started moving - start the animation directly with upstroke
+                        waitingForMovement = false
+                        engine.startGuidedSimulation(skipInitialWait: true)
+                    }
+                }
+            }
+        }
+        .onChange(of: engine.phase) { oldPhase, newPhase in
+            // Reset validation flags at start of new upstroke
+            if newPhase == .upstroke && oldPhase != .upstroke {
+                lastRepWasValid = false
+                hasSpeedError = false
+            }
+        }
+        .onChange(of: engine.fill) { oldValue, newValue in
+            // Check when box reaches full for max validation
+            if newValue >= 0.99 && oldValue < 0.99 && engine.phase == .upstroke {
+                if let currentDegrees = currentDegreeValue, let maxDegrees = maxCalibrationValue {
+                    validateMaxReached(currentDegrees: currentDegrees, maxDegrees: maxDegrees)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Calibration Loading
+    
+    private func loadCalibrationData() {
+        guard let peripheral = ble.connectedPeripheral else {
+            calibrationError = "No device connected. Please pair a device first."
+            return
+        }
+        
+        let bluetoothIdentifier = peripheral.identifier.uuidString
+        
+        isLoadingCalibration = true
+        Task {
+            do {
+                let calibration = try await TelemetryService.getMostRecentCalibration(bluetoothIdentifier: bluetoothIdentifier)
+                await MainActor.run {
+                    maxCalibrationValue = calibration.maxDegrees
+                    restCalibrationValue = calibration.restDegrees
+                    isLoadingCalibration = false
+                    
+                    if calibration.maxDegrees == nil || calibration.restDegrees == nil {
+                        calibrationError = "No calibration data found. Please calibrate your device first."
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    calibrationError = "Failed to load calibration: \(error.localizedDescription)"
+                    isLoadingCalibration = false
+                }
+            }
+        }
+    }
+    
+    // MARK: - Sensor Validation
+    
+    private func startSensorValidation() {
+        stopSensorValidation()
+        validationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            guard self.hasStarted else { return }
+            self.validateMovement()
+        }
+    }
+    
+    private func stopSensorValidation() {
+        validationTimer?.invalidate()
+        validationTimer = nil
+    }
+    
+    private func validateMovement() {
+        // Check if error display time has expired
+        if let errorEnd = errorEndTime, Date() >= errorEnd {
+            clearError()
+        }
+        
+        // Only validate if lesson is running, not waiting for movement, and not paused
+        guard hasStarted,
+              !waitingForMovement,
+              !engine.isPaused,
+              errorMessage == nil,
+              let currentDegrees = currentDegreeValue,
+              let rest = restCalibrationValue,
+              let max = maxCalibrationValue,
+              (engine.phase == .upstroke || engine.phase == .downstroke) else {
+            return
+        }
+        
+        let expectedDegrees = expectedDegreesForFill(engine.fill)
+        
+        // Validate movement speed only if we have previous data
+        if let expected = expectedDegrees, let previous = previousDegreeValue, let prevTime = previousTimestamp {
+            let timeElapsed = Date().timeIntervalSince(prevTime)
+            if timeElapsed > 0 {
+                validateMovementSpeed(currentDegrees: currentDegrees, expectedDegrees: expected, previousDegrees: previous, timeElapsed: timeElapsed, rest: rest, max: max)
+            }
+        }
+        
+        // Update previous values
+        previousDegreeValue = currentDegrees
+        previousTimestamp = Date()
+    }
+    
+    private func validateMovementSpeed(currentDegrees: Int, expectedDegrees: Int, previousDegrees: Int, timeElapsed: TimeInterval, rest: Int, max: Int) {
+        // Calculate expected rate: total range divided by time (using dynamic restDuration from engine)
+        // restDuration is split evenly between upstroke and downstroke, so each stroke takes restDuration / 2.0 seconds
+        let strokeDuration = engine.restDuration / 2.0
+        let totalRange = Double(abs(max - rest))
+        let expectedRate = totalRange / strokeDuration // degrees per second
+        
+        // Calculate actual rate of change
+        let actualDegreeChange = abs(currentDegrees - previousDegrees)
+        let actualRate = Double(actualDegreeChange) / timeElapsed
+        
+        // Calculate position error (how far off from expected position)
+        let positionError = Double(abs(currentDegrees - expectedDegrees))
+        let toleranceRange = 25.0 // 25-degree tolerance
+        
+        // Check if position is way off (beyond tolerance)
+        if positionError > toleranceRange {
+            // Check direction of error to determine if too fast or too slow
+            if currentDegrees > expectedDegrees + Int(toleranceRange) {
+                // Ahead of schedule - moving too fast
+                if actualRate > expectedRate * 1.5 {
+                    showError("Slow down your movement!", duration: 4.0)
+                    hasSpeedError = true
+                }
+            } else if currentDegrees < expectedDegrees - Int(toleranceRange) {
+                // Behind schedule - moving too slow
+                if actualRate < expectedRate * 0.5 {
+                    showError("Speed up your Rep!", duration: 4.0)
+                    hasSpeedError = true
+                }
+            }
+        } else {
+            // Within acceptable range
+            hasSpeedError = false
+        }
+    }
+    
+    private func validateMaxReached(currentDegrees: Int, maxDegrees: Int) {
+        let tolerance = 10 // 10 degree tolerance (can be 10 degrees below or above)
+        if currentDegrees < (maxDegrees - tolerance) || currentDegrees > (maxDegrees + tolerance) {
+            showError("Extend your leg further!", duration: 4.0)
+            lastRepWasValid = false
+        } else {
+            lastRepWasValid = true
+        }
+    }
+    
+    private func showError(_ message: String, duration: TimeInterval) {
+        guard errorMessage == nil else { return } // Don't override existing error
+        
+        errorMessage = message
+        errorEndTime = Date().addingTimeInterval(duration)
+        
+        // Store current phase before showing error
+        if phaseBeforeError == nil {
+            phaseBeforeError = engine.phase
+        }
+        
+        engine.phase = .incorrectHold
+        engine.pauseAnimation()
+        
+        // Auto-resume after duration
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+            self.clearError()
+        }
+    }
+    
+    private func clearError() {
+        errorMessage = nil
+        errorEndTime = nil
+        phaseBeforeError = nil
+        
+        // Start countdown instead of immediately restarting
+        startCountdown()
+        
+        // Reset speed error flag after a delay to allow new validation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.hasSpeedError = false
+        }
+    }
+    
+    // Start 3-second countdown before restarting animation
+    private func startCountdown() {
+        // Stop any existing countdown timer
+        countdownTimer?.invalidate()
+        
+        isCountingDown = true
+        countdownValue = 3
+        engine.phase = .idle  // Set to idle to show gray box
+        
+        // Use a timer that updates every second for live countdown
+        var remainingSeconds = 3
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            remainingSeconds -= 1
+            
+            if remainingSeconds > 0 {
+                // Update countdown value on main thread to trigger view update
+                DispatchQueue.main.async {
+                    self.countdownValue = remainingSeconds
+                }
+            } else {
+                // Countdown finished
+                timer.invalidate()
+                
+                DispatchQueue.main.async {
+                    self.countdownTimer = nil
+                    self.isCountingDown = false
+                    // Start animation with "Go!" message
+                    self.showGoMessage = true
+                    self.goMessageStartTime = Date()
+                    self.engine.restartFromBottom()
+                    
+                    // Clear "Go!" message after 5 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                        self.showGoMessage = false
+                    }
+                }
+            }
+        }
+        
+        // Add timer to run loop to ensure it fires even during scrolling
+        if let timer = countdownTimer {
+            RunLoop.main.add(timer, forMode: .common)
         }
     }
 }

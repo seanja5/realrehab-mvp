@@ -17,8 +17,6 @@ struct LessonView: View {
     @StateObject private var engine: LessonEngine
     @StateObject private var ble = BluetoothManager.shared
     @State private var hasStarted = false
-    @State private var waitingForMovement = false  // Waiting for user to start moving before animation begins
-    @State private var initialRestDegrees: Int? = nil  // Rest position when Begin is clicked
     
     // Calibration values
     @State private var maxCalibrationValue: Int? = nil
@@ -43,6 +41,7 @@ struct LessonView: View {
     @State private var countdownTimer: Timer? = nil
     @State private var showGoMessage: Bool = false
     @State private var goMessageStartTime: Date? = nil
+    @State private var isInitialCountdown: Bool = false  // Track if this is initial countdown or after error
     
     // Calibration constants for degree conversion (same as CalibrateDeviceView)
     private let minSensorValue: Int = 205  // 90 degrees (rest position)
@@ -68,6 +67,23 @@ struct LessonView: View {
               let max = maxCalibrationValue else { return nil }
         let range = max - rest
         return rest + Int(Double(range) * fill)
+    }
+    
+    // Calculate vertical position (0.0 = bottom, 1.0 = top) for the user's current degree value
+    private func userLinePosition() -> CGFloat? {
+        guard let currentDegrees = currentDegreeValue,
+              let rest = restCalibrationValue,
+              let max = maxCalibrationValue else { return nil }
+        
+        let range = max - rest
+        guard range > 0 else { return nil }
+        
+        // Calculate position: 0.0 = bottom (rest), 1.0 = top (max)
+        let normalizedPosition = Double(currentDegrees - rest) / Double(range)
+        // Clamp between 0 and 1
+        let clampedPosition = Swift.max(0.0, Swift.min(1.0, normalizedPosition))
+        
+        return CGFloat(clampedPosition)
     }
     
     init(reps: Int? = nil, restSec: Int? = nil) {
@@ -198,6 +214,21 @@ struct LessonView: View {
                     .allowsHitTesting(false)
                 }
                 
+                // Horizontal blue line indicator showing user's current position (always visible)
+                if let linePosition = userLinePosition() {
+                    GeometryReader { geo in
+                        let boxHeight = geo.size.height
+                        let yPosition = boxHeight * (1.0 - linePosition) // Flip Y axis (0 = bottom)
+                        
+                        Rectangle()
+                            .fill(Color.brandDarkBlue)
+                            .frame(width: geo.size.width * 0.9) // 90% of box width
+                            .frame(height: 3) // 3 point thick line
+                            .position(x: geo.size.width / 2, y: yPosition)
+                    }
+                    .allowsHitTesting(false)
+                }
+                
                 // Center text - show countdown, error messages, "Go!", or default text
                 Text(displayText())
                     .font(.rrTitle)
@@ -240,8 +271,8 @@ struct LessonView: View {
                 
                 Spacer()
                 
-                // Right: Live sensor data box (only visible after lesson starts)
-                if hasStarted, let degrees = currentDegrees {
+                // Right: Live sensor data box (always visible when values are available)
+                if let degrees = currentDegrees {
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("Current Knee Bend Angle")
                             .font(.rrCaption)
@@ -267,13 +298,11 @@ struct LessonView: View {
                 ) {
                     guard !hasStarted else { return }
                     hasStarted = true
-                    waitingForMovement = true
                     engine.reset()
                     setupRepCountingCallback()
-                    // Don't start animation yet - wait for movement detection
-                    // Store initial rest position for movement detection
-                    initialRestDegrees = currentDegrees ?? restCalibrationValue
                     startSensorValidation()
+                    // Start countdown immediately (initial countdown)
+                    startCountdown(isInitial: true)
                 }
             }
             .padding(.horizontal, 24)
@@ -321,16 +350,6 @@ struct LessonView: View {
             if let value = newValue {
                 let degrees = convertToDegrees(value)
                 currentDegreeValue = degrees
-                
-                // Check if we're waiting for movement to start
-                if waitingForMovement, let initialRest = initialRestDegrees {
-                    let degreeChange = abs(degrees - initialRest)
-                    if degreeChange >= 5 {
-                        // User has started moving - start the animation directly with upstroke
-                        waitingForMovement = false
-                        engine.startGuidedSimulation(skipInitialWait: true)
-                    }
-                }
             }
         }
         .onChange(of: engine.phase) { oldPhase, newPhase in
@@ -403,9 +422,8 @@ struct LessonView: View {
             clearError()
         }
         
-        // Only validate if lesson is running, not waiting for movement, and not paused
+        // Only validate if lesson is running and not paused
         guard hasStarted,
-              !waitingForMovement,
               !engine.isPaused,
               errorMessage == nil,
               let currentDegrees = currentDegreeValue,
@@ -512,11 +530,12 @@ struct LessonView: View {
     }
     
     // Start 3-second countdown before restarting animation
-    private func startCountdown() {
+    private func startCountdown(isInitial: Bool = false) {
         // Stop any existing countdown timer
         countdownTimer?.invalidate()
         
         isCountingDown = true
+        isInitialCountdown = isInitial
         countdownValue = 3
         engine.phase = .idle  // Set to idle to show gray box
         
@@ -540,7 +559,13 @@ struct LessonView: View {
                     // Start animation with "Go!" message
                     self.showGoMessage = true
                     self.goMessageStartTime = Date()
-                    self.engine.restartFromBottom()
+                    
+                    // Use different start method based on whether this is initial or after error
+                    if self.isInitialCountdown {
+                        self.engine.startGuidedSimulation(skipInitialWait: true)
+                    } else {
+                        self.engine.restartFromBottom()
+                    }
                     
                     // Clear "Go!" message after 5 seconds
                     DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {

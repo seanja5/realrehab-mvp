@@ -11,6 +11,31 @@ struct CalibrateDeviceView: View {
     @State private var isSavingStarting = false
     @State private var isSavingMaximum = false
     @State private var errorMessage: String? = nil
+    
+    // Calibration constants for degree conversion
+    private let minSensorValue: Int = 205  // 90 degrees (rest position)
+    private let maxSensorValue: Int = 333  // 180 degrees (full extension)
+    private let minDegrees: Double = 90.0
+    private let maxDegrees: Double = 180.0
+    private let sensorRange: Int = 128  // 333 - 205 = 128
+    private let degreeRange: Double = 90.0  // 180 - 90 = 90
+    
+    // Convert raw flex sensor value to degrees
+    // Allows extrapolation beyond calibrated range (below 90° and above 180°)
+    private func convertToDegrees(_ sensorValue: Int) -> Int {
+        // Convert: degrees = 90 + ((value - 205) / 128) * 90
+        // This formula works for any input value, allowing values below 90° and above 180°
+        let degrees = minDegrees + (Double(sensorValue - minSensorValue) / Double(sensorRange)) * degreeRange
+        
+        // Round to nearest integer degree
+        return Int(degrees.rounded())
+    }
+    
+    // Computed property for current degree value
+    private var currentDegrees: Int? {
+        guard let flexValue = ble.currentFlexSensorValue else { return nil }
+        return convertToDegrees(flexValue)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,14 +51,14 @@ struct CalibrateDeviceView: View {
                         .padding(.vertical, 4)
 
                     VStack(alignment: .leading, spacing: RRSpace.stack) {
-                        // Live flex sensor value display
-                        if let flexValue = ble.currentFlexSensorValue {
+                        // Live knee bend angle display
+                        if let degrees = currentDegrees {
                             HStack {
-                                Text("Current Flex Sensor Value:")
+                                Text("Current Knee Bend Angle (Degrees):")
                                     .font(.rrBody)
                                     .foregroundStyle(.secondary)
                                 Spacer()
-                                Text("\(flexValue)")
+                                Text("\(degrees)")
                                     .font(.rrTitle)
                                     .foregroundStyle(.primary)
                             }
@@ -61,13 +86,14 @@ struct CalibrateDeviceView: View {
 
                         SecondaryButton(title: startSet ? "Starting Position ✓" : "Set Starting Position") {
                             if let currentValue = ble.currentFlexSensorValue {
-                                startingPositionValue = currentValue
+                                let degrees = convertToDegrees(currentValue)
+                                startingPositionValue = degrees
                                 startSet = true
-                                print("✅ CalibrateDeviceView: Set Starting Position button clicked - Saved flex sensor value: \(currentValue)")
+                                print("✅ CalibrateDeviceView: Set Starting Position button clicked - Saved flex sensor value: \(currentValue) → \(degrees) degrees")
                                 
-                                // Save to database
+                                // Save to database (save degrees, not raw value)
                                 Task {
-                                    await saveCalibration(stage: "starting_position", flexValue: currentValue)
+                                    await saveCalibration(stage: "starting_position", flexValue: degrees)
                                 }
                             } else {
                                 print("⚠️ CalibrateDeviceView: Set Starting Position button clicked - No flex sensor value available")
@@ -90,13 +116,14 @@ struct CalibrateDeviceView: View {
 
                         SecondaryButton(title: maxSet ? "Maximum Position ✓" : "Set Maximum Position") {
                             if let currentValue = ble.currentFlexSensorValue {
-                                maximumPositionValue = currentValue
+                                let degrees = convertToDegrees(currentValue)
+                                maximumPositionValue = degrees
                                 maxSet = true
-                                print("✅ CalibrateDeviceView: Set Maximum Position button clicked - Saved flex sensor value: \(currentValue)")
+                                print("✅ CalibrateDeviceView: Set Maximum Position button clicked - Saved flex sensor value: \(currentValue) → \(degrees) degrees")
                                 
-                                // Save to database
+                                // Save to database (save degrees, not raw value)
                                 Task {
-                                    await saveCalibration(stage: "maximum_position", flexValue: currentValue)
+                                    await saveCalibration(stage: "maximum_position", flexValue: degrees)
                                 }
                             } else {
                                 print("⚠️ CalibrateDeviceView: Set Maximum Position button clicked - No flex sensor value available")
@@ -159,14 +186,16 @@ struct CalibrateDeviceView: View {
                 print("⚠️ CalibrateDeviceView: No device connected")
             }
             if let flexValue = ble.currentFlexSensorValue {
-                print("📊 CalibrateDeviceView: Current flex sensor value: \(flexValue)")
+                let degrees = convertToDegrees(flexValue)
+                print("📊 CalibrateDeviceView: Current flex sensor value: \(flexValue) → \(degrees)°")
             } else {
                 print("⚠️ CalibrateDeviceView: No flex sensor value available yet")
             }
         }
         .onChange(of: ble.currentFlexSensorValue) { oldValue, newValue in
             if let value = newValue {
-                print("📊 CalibrateDeviceView: Flex sensor value updated: \(value)")
+                let degrees = convertToDegrees(value)
+                print("📊 CalibrateDeviceView: Flex sensor value updated: \(value) → \(degrees)°")
             }
         }
         .alert("Error", isPresented: .constant(errorMessage != nil)) {

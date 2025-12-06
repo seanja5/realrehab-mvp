@@ -267,6 +267,7 @@ struct JourneyMapView: View {
         .task {
             await vm.load()
         }
+        .bluetoothPopupOverlay()
     }
     
     // MARK: - Header Card

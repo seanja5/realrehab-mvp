@@ -108,11 +108,11 @@ struct PatientDetailView: View {
                     
                     // Progress this week section (outside the if/else to ensure consistent width)
                     if currentPlan != nil {
-                        RecoveryChartWeekView()
+                        RecoveryChartWeekView(patientProfileId: patientProfileId)
                             .padding(.top, 16)
                         
-                        // Activity section
-                        ActivityConsistencyCard()
+                        // Activity section - show 0 days for PT view
+                        ActivityConsistencyCard(completedDays: 0)
                             .padding(.top, 8)
                     }
                     

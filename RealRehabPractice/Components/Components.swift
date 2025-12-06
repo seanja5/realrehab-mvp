@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 // MARK: - Brand Colors (shared)
 extension Color {
@@ -206,37 +207,189 @@ struct BodyPartCard: View {
 }
 
 // MARK: - Bluetooth Status Indicator
+// MARK: - Bluetooth Popup Manager
+class BluetoothPopupManager: ObservableObject {
+    static let shared = BluetoothPopupManager()
+    @Published var showPopup = false
+    
+    private init() {}
+}
+
 struct BluetoothStatusIndicator: View {
     @StateObject private var ble = BluetoothManager.shared
+    @StateObject private var popupManager = BluetoothPopupManager.shared
+    
+    private var isConnected: Bool {
+        ble.connectedPeripheral != nil
+    }
+    
+    private var deviceName: String {
+        ble.connectedDeviceName ?? "Unknown Device"
+    }
     
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            // Main icon - using "link" icon which is generic for connectivity
-            Image(systemName: "link")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(.primary)
-            
-            // Status dot
-            Circle()
-                .fill(ble.connectedPeripheral != nil ? Color.green : Color.red)
-                .frame(width: 8, height: 8)
-                .offset(x: 6, y: -2)
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                popupManager.showPopup.toggle()
+            }
+        }) {
+            ZStack(alignment: .topTrailing) {
+                // Main icon - using "link" icon which is generic for connectivity
+                Image(systemName: "link")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(.primary)
+                
+                // Status dot - reduced size by 50% (from 10 to 5)
+                Circle()
+                    .fill(isConnected ? Color.green : Color.red)
+                    .frame(width: 5, height: 5)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white, lineWidth: 1.0)
+                    )
+                    .offset(x: 2, y: -1) // Moved left to prevent cutoff
+            }
+            .frame(width: 32, height: 32) // Larger frame to prevent cutoff
         }
-        .frame(width: 24, height: 24)
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Bluetooth Popup Overlay Modifier
+struct BluetoothPopupOverlay: ViewModifier {
+    @StateObject private var popupManager = BluetoothPopupManager.shared
+    @StateObject private var ble = BluetoothManager.shared
+    
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if popupManager.showPopup {
+                    BluetoothPopupView()
+                }
+            }
+    }
+}
+
+private struct BluetoothPopupView: View {
+    @StateObject private var popupManager = BluetoothPopupManager.shared
+    @StateObject private var ble = BluetoothManager.shared
+    
+    private var isConnected: Bool {
+        ble.connectedPeripheral != nil
+    }
+    
+    private var deviceName: String {
+        "RealRehab Knee Brace"
+    }
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Background overlay to capture taps outside
+                Color.black.opacity(0.2)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            popupManager.showPopup = false
+                        }
+                    }
+                
+                // Popup content positioned below navigation bar
+                VStack(spacing: 0) {
+                    Spacer()
+                        .frame(height: geometry.safeAreaInsets.top + 44) // Navigation bar height + safe area
+                    
+                    popupContent
+                        .padding(.horizontal, 16)
+                    
+                    Spacer()
+                }
+            }
+        }
+        .transition(.opacity)
+    }
+    
+    private var popupContent: some View {
+        RoundedRectangle(cornerRadius: 16)
+            .fill(.white)
+            .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+            .overlay {
+                VStack(spacing: 16) {
+                    if isConnected {
+                        // Show kneebrace image when connected
+                        Image("kneebrace")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 120, height: 120)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        
+                        Text(deviceName)
+                            .font(.rrBody)
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                    } else {
+                        Text("No Device Connected")
+                            .font(.rrBody)
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                .padding(20)
+            }
+            .frame(maxWidth: .infinity) // Same width as PTDetailView rounded rectangles (screen width - 32px padding)
+            .frame(height: isConnected ? 200 : 100)
+    }
+}
+
+extension View {
+    func bluetoothPopupOverlay() -> some View {
+        modifier(BluetoothPopupOverlay())
     }
 }
 
 // MARK: - Recovery Chart (Week View)
 struct RecoveryChartWeekView: View {
-    // Hardcoded data for December 2-5 (4 consecutive days, +5 degrees each)
-    private let weekData: [(day: Int, degrees: Double)] = [
-        (2, 45.0),
-        (3, 50.0),
-        (4, 55.0),
-        (5, 60.0)
-    ]
+    let patientProfileId: UUID?  // Optional: if provided, fetch for specific patient (PT view)
     
-    private let weekRange = "Dec 2-8"
+    @State private var calibrationPoints: [TelemetryService.MaximumCalibrationPoint] = []
+    @State private var isLoading = true
+    @State private var errorMessage: String? = nil
+    
+    init(patientProfileId: UUID? = nil) {
+        self.patientProfileId = patientProfileId
+    }
+    
+    // Convert calibration points to chart data format with proper spacing based on timestamps
+    // Points are already sorted chronologically by TelemetryService
+    private var chartData: [(day: Int, degrees: Double)] {
+        let calendar = Calendar.current
+        
+        return calibrationPoints.map { point in
+            let day = calendar.component(.day, from: point.recordedAt)
+            return (day: day, degrees: Double(point.degrees))
+        }
+    }
+    
+    // Calculate week range string from calibration data
+    private var weekRange: String {
+        guard !calibrationPoints.isEmpty else { return "No data" }
+        
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        
+        let earliestDate = calibrationPoints.map { $0.recordedAt }.min() ?? Date()
+        let latestDate = calibrationPoints.map { $0.recordedAt }.max() ?? Date()
+        
+        // If all points are on the same day
+        if calendar.isDate(earliestDate, inSameDayAs: latestDate) {
+            return formatter.string(from: earliestDate)
+        }
+        
+        // Otherwise show range
+        return "\(formatter.string(from: earliestDate))-\(formatter.string(from: latestDate))"
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -250,13 +403,53 @@ struct RecoveryChartWeekView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 240)
                 .overlay {
-                    ChartContentView(
-                        data: weekData,
-                        isWeekView: true,
-                        weekRange: weekRange
-                    )
+                    if isLoading {
+                        ProgressView()
+                    } else if chartData.isEmpty {
+                        // Show "No Data" overlay in gray text
+                        Text("No Data")
+                            .font(.rrBody)
+                            .foregroundStyle(.gray)
+                            .multilineTextAlignment(.center)
+                    } else {
+                        ChartContentView(
+                            data: chartData,
+                            isWeekView: true,
+                            weekRange: weekRange,
+                            timestamps: calibrationPoints.map { $0.recordedAt }
+                        )
+                    }
                 }
                 .padding(.horizontal, 16)
+        }
+        .task {
+            await loadCalibrationData()
+        }
+    }
+    
+    private func loadCalibrationData() async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            let points: [TelemetryService.MaximumCalibrationPoint]
+            if let patientProfileId = patientProfileId {
+                // Fetch for specific patient (PT view)
+                points = try await TelemetryService.getAllMaximumCalibrationsForPatient(patientProfileId: patientProfileId)
+            } else {
+                // Fetch for current patient (patient view)
+                points = try await TelemetryService.getAllMaximumCalibrationsForPatient()
+            }
+            
+            await MainActor.run {
+                calibrationPoints = points
+                isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to load calibration data: \(error.localizedDescription)"
+                isLoading = false
+            }
         }
     }
 }
@@ -290,7 +483,8 @@ struct RecoveryChartMonthView: View {
                         ChartContentView(
                             data: monthData,
                             isWeekView: false,
-                            weekRange: nil
+                            weekRange: nil,
+                            timestamps: nil
                         )
                     }
                 
@@ -314,6 +508,7 @@ struct ChartContentView: View {
     let data: [(day: Int, degrees: Double)]
     let isWeekView: Bool
     let weekRange: String?
+    let timestamps: [Date]?  // Optional timestamps for proper spacing
     
     private var minDegrees: Double {
         data.map { $0.degrees }.min() ?? 0
@@ -325,6 +520,40 @@ struct ChartContentView: View {
     
     private var degreesRange: Double {
         maxDegrees - minDegrees
+    }
+    
+    // Calculate X positions based on timestamps if available, otherwise evenly space
+    private func xPosition(for index: Int, in chartWidth: CGFloat) -> CGFloat {
+        guard let timestamps = timestamps,
+              timestamps.count == data.count,
+              timestamps.count > 1 else {
+            // Fall back to even spacing
+            let dayLabelWidth = (chartWidth - 30) / CGFloat(data.count)
+            let firstDayX = 30 + (dayLabelWidth / 2)
+            return firstDayX + CGFloat(index) * dayLabelWidth
+        }
+        
+        // Calculate positions based on actual time intervals
+        let earliestDate = timestamps.min() ?? Date()
+        let latestDate = timestamps.max() ?? Date()
+        let timeRange = latestDate.timeIntervalSince(earliestDate)
+        
+        guard timeRange > 0 else {
+            // All points at same time, space evenly
+            let dayLabelWidth = (chartWidth - 30) / CGFloat(data.count)
+            let firstDayX = 30 + (dayLabelWidth / 2)
+            return firstDayX + CGFloat(index) * dayLabelWidth
+        }
+        
+        // Map timestamp to X position
+        let currentTimestamp = timestamps[index]
+        let timeOffset = currentTimestamp.timeIntervalSince(earliestDate)
+        let relativePosition = timeOffset / timeRange
+        
+        // Map to chart width (with padding)
+        let usableWidth = chartWidth - 30  // 30px padding on left
+        let x = 30 + (CGFloat(relativePosition) * usableWidth)
+        return x
     }
     
     var body: some View {
@@ -373,14 +602,10 @@ struct ChartContentView: View {
                             .offset(y: y)
                         }
                         
-                        // Calculate x positions to align with day labels
-                        let dayLabelWidth = (chartWidth - 30) / CGFloat(data.count)
-                        let firstDayX = 30 + (dayLabelWidth / 2)
-                        
                         // Plot line
                         Path { path in
                             for (index, point) in data.enumerated() {
-                                let x = firstDayX + CGFloat(index) * dayLabelWidth
+                                let x = xPosition(for: index, in: chartWidth)
                                 let normalizedDegrees = degreesRange > 0 ? (point.degrees - minDegrees) / degreesRange : 0.5
                                 let y = CGFloat(normalizedDegrees) * chartHeight
                                 
@@ -393,9 +618,9 @@ struct ChartContentView: View {
                         }
                         .stroke(Color.brandDarkBlue, lineWidth: 2)
                         
-                        // Plot points - aligned with day labels
+                        // Plot points - positioned based on timestamps
                         ForEach(Array(data.enumerated()), id: \.offset) { index, point in
-                            let x = firstDayX + CGFloat(index) * dayLabelWidth
+                            let x = xPosition(for: index, in: chartWidth)
                             let normalizedDegrees = degreesRange > 0 ? (point.degrees - minDegrees) / degreesRange : 0.5
                             let y = CGFloat(normalizedDegrees) * chartHeight
                             
@@ -416,16 +641,17 @@ struct ChartContentView: View {
                         .frame(width: yAxisLabelWidth)
                     
                     if isWeekView {
-                        // Week view: show day numbers - aligned with plot points
-                        HStack(spacing: 0) {
-                            ForEach(data, id: \.day) { point in
+                        // Week view: show day numbers or dates - aligned with plot points
+                        ZStack {
+                            ForEach(Array(data.enumerated()), id: \.offset) { index, point in
+                                let x = xPosition(for: index, in: chartWidth)
                                 Text("\(point.day)")
                                     .font(.system(size: 10))
                                     .foregroundStyle(.secondary)
-                                    .frame(maxWidth: .infinity)
+                                    .position(x: x, y: 10)
                             }
                         }
-                        .frame(width: chartWidth - 30)
+                        .frame(width: chartWidth - 30, height: 20)
                     } else {
                         // Month view: show day numbers (scrollable)
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -465,9 +691,16 @@ struct ChartContentView: View {
 
 // MARK: - Activity Consistency Card
 struct ActivityConsistencyCard: View {
-    // Hardcoded: 4 days completed this month
-    private let completedDays = 4
-    private let totalDaysInMonth = 31
+    let completedDays: Int  // Allow customization, default 1 for patient view
+    
+    init(completedDays: Int = 1) {
+        self.completedDays = completedDays
+    }
+    
+    private var totalDaysInMonth: Int {
+        // Always show 31 dots (full calendar grid)
+        return 31
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

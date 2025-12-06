@@ -67,8 +67,10 @@ struct PairDeviceView: View {
                                         .fill(Color.gray.opacity(0.25))
                                         .frame(width: 72, height: 72)
                                         .overlay(
-                                            Image(systemName: "photo")
-                                                .foregroundStyle(.gray)
+                                            Image("kneebrace")
+                                                .resizable()
+                                                .scaledToFill()
+                                                .clipShape(RoundedRectangle(cornerRadius: 10))
                                         )
 
                                     VStack(alignment: .leading, spacing: 4) {

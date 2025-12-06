@@ -367,6 +367,7 @@ struct LessonView: View {
                 }
             }
         }
+        .bluetoothPopupOverlay()
     }
     
     // MARK: - Calibration Loading

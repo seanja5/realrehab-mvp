@@ -76,8 +76,8 @@ struct PTDetailView: View {
                             RecoveryChartWeekView()
                                 .padding(.top, 16)
                             
-                            // Activity section
-                            ActivityConsistencyCard()
+                            // Activity section - show 1 day for patient view
+                            ActivityConsistencyCard(completedDays: 1)
                                 .padding(.top, 8)
                         } else {
                             Text("No rehab plan assigned")
@@ -124,6 +124,7 @@ struct PTDetailView: View {
         .task {
             await vm.load()
         }
+        .bluetoothPopupOverlay()
     }
 }
 

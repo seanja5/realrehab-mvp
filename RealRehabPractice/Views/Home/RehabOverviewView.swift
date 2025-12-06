@@ -253,6 +253,7 @@ This rehabilitation journey will take you through a series of lessons and benchm
             }
             .presentationDetents([.medium])
         }
+        .bluetoothPopupOverlay()
     }
 }
 

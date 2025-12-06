@@ -225,6 +225,108 @@ enum TelemetryService {
     
     return MostRecentCalibration(restDegrees: restDegrees, maxDegrees: maxDegrees)
   }
+  
+  // MARK: - Fetch All Maximum Calibrations for Patient
+  
+  struct MaximumCalibrationPoint: Identifiable {
+    let id: UUID
+    let degrees: Int
+    let recordedAt: Date
+  }
+  
+  // Fetch all maximum calibration values for the current patient
+  static func getAllMaximumCalibrationsForPatient() async throws -> [MaximumCalibrationPoint] {
+    // Get current user's profile and patient profile ID
+    guard let profile = try await AuthService.myProfile() else {
+      throw NSError(domain: "TelemetryService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profile not found"])
+    }
+    
+    let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
+    return try await getAllMaximumCalibrationsForPatient(patientProfileId: patientProfileId)
+  }
+  
+  // Fetch all maximum calibration values for a specific patient by patientProfileId
+  static func getAllMaximumCalibrationsForPatient(patientProfileId: UUID) async throws -> [MaximumCalibrationPoint] {
+    // Fetch all device assignments for this patient
+    let assignments: [DeviceAssignmentRow] = try await supabase
+      .schema("telemetry")
+      .from("device_assignments")
+      .select("*")
+      .eq("patient_profile_id", value: patientProfileId.uuidString)
+      .decoded(as: [DeviceAssignmentRow].self)
+    
+    guard !assignments.isEmpty else {
+      return [] // No device assignments, so no calibrations
+    }
+    
+    // Get all assignment IDs
+    let assignmentIds = assignments.map { $0.id }
+    
+    // Fetch all maximum_position calibrations for these device assignments
+    // We need to query each assignment separately and combine results
+    var allCalibrations: [CalibrationRow] = []
+    
+    for assignmentId in assignmentIds {
+      let calibrations: [CalibrationRow] = try await supabase
+        .schema("telemetry")
+        .from("calibrations")
+        .select("*")
+        .eq("device_assignment_id", value: assignmentId.uuidString)
+        .eq("stage", value: "maximum_position")
+        .order("recorded_at", ascending: true)
+        .decoded(as: [CalibrationRow].self)
+      
+      allCalibrations.append(contentsOf: calibrations)
+    }
+    
+    // Convert to MaximumCalibrationPoint array with degrees conversion
+    // Note: flex_value in DB might be stored as raw sensor value or already converted to degrees
+    // We'll check and convert if needed (if value is in raw sensor range 200-400, convert it)
+    let calibrationPoints = allCalibrations.compactMap { calibration -> MaximumCalibrationPoint? in
+      // Parse the recorded_at timestamp
+      guard let recordedDate = iso.date(from: calibration.recorded_at) else {
+        return nil
+      }
+      
+      // Get the stored value
+      let storedValue = Int(calibration.flex_value)
+      
+      // Check if value looks like a raw sensor value (200-400 range) or already in degrees (0-200 range)
+      // If it's in the raw sensor range, convert it. Otherwise, use it as-is (already in degrees)
+      let degrees: Int
+      if storedValue >= 200 && storedValue <= 400 {
+        // Looks like raw sensor value, convert it
+        degrees = convertRawSensorToDegrees(storedValue)
+      } else {
+        // Already in degrees, use directly
+        degrees = storedValue
+      }
+      
+      return MaximumCalibrationPoint(
+        id: calibration.id,
+        degrees: degrees,
+        recordedAt: recordedDate
+      )
+    }
+    
+    // Sort by recorded_at to ensure chronological order
+    return calibrationPoints.sorted { $0.recordedAt < $1.recordedAt }
+  }
+  
+  // Convert raw flex sensor value to degrees (same formula as CalibrateDeviceView)
+  private static func convertRawSensorToDegrees(_ sensorValue: Int) -> Int {
+    let minSensorValue = 205  // 90 degrees (rest position)
+    let minDegrees = 90.0
+    let sensorRange = 128  // 333 - 205 = 128
+    let degreeRange = 90.0  // 180 - 90 = 90
+    
+    // Convert: degrees = 90 + ((value - 205) / 128) * 90
+    // This formula works for any input value, allowing values below 90° and above 180°
+    let degrees = minDegrees + (Double(sensorValue - minSensorValue) / Double(sensorRange)) * degreeRange
+    
+    // Round to nearest integer degree
+    return Int(degrees.rounded())
+  }
 
 }
 

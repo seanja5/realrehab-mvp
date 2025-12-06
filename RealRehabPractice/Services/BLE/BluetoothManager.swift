@@ -11,6 +11,11 @@ final class BluetoothManager: NSObject, ObservableObject {
     @Published var lastError: String?
     @Published var connectedPeripheral: CBPeripheral? = nil
     @Published var currentFlexSensorValue: Int? = nil // Current flex sensor reading (2 digits)
+    
+    // Computed property for connected device name
+    var connectedDeviceName: String? {
+        connectedPeripheral?.name
+    }
 
     struct DiscoveredPeripheral: Identifiable, Equatable {
         let id: UUID

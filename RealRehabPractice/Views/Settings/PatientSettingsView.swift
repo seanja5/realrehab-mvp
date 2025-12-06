@@ -64,6 +64,7 @@ struct PatientSettingsView: View {
             // Clear error message when navigating away to prevent showing cancelled errors
             errorMessage = nil
         }
+        .bluetoothPopupOverlay()
     }
 
     private var accountSection: some View {

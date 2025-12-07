@@ -294,8 +294,8 @@ enum TelemetryService {
       // Check if value looks like a raw sensor value (200-400 range) or already in degrees (0-200 range)
       // If it's in the raw sensor range, convert it. Otherwise, use it as-is (already in degrees)
       let degrees: Int
-      if storedValue >= 200 && storedValue <= 400 {
-        // Looks like raw sensor value, convert it
+      if storedValue >= 180 && storedValue <= 400 {
+        // Looks like raw sensor value, convert it (new range: 180-305 typical, allow up to 400 for safety)
         degrees = convertRawSensorToDegrees(storedValue)
       } else {
         // Already in degrees, use directly
@@ -315,12 +315,12 @@ enum TelemetryService {
   
   // Convert raw flex sensor value to degrees (same formula as CalibrateDeviceView)
   private static func convertRawSensorToDegrees(_ sensorValue: Int) -> Int {
-    let minSensorValue = 205  // 90 degrees (rest position)
+    let minSensorValue = 185  // 90 degrees (midpoint of 180-190 range)
     let minDegrees = 90.0
-    let sensorRange = 128  // 333 - 205 = 128
+    let sensorRange = 115  // 300 - 185 = 115
     let degreeRange = 90.0  // 180 - 90 = 90
     
-    // Convert: degrees = 90 + ((value - 205) / 128) * 90
+    // Convert: degrees = 90 + ((value - 185) / 115) * 90
     // This formula works for any input value, allowing values below 90° and above 180°
     let degrees = minDegrees + (Double(sensorValue - minSensorValue) / Double(sensorRange)) * degreeRange
     

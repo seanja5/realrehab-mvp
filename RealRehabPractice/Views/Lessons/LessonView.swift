@@ -44,8 +44,8 @@ struct LessonView: View {
     @State private var isInitialCountdown: Bool = false  // Track if this is initial countdown or after error
     
     // Calibration constants for degree conversion (same as CalibrateDeviceView)
-    private let minSensorValue: Int = 205  // 90 degrees (rest position)
-    private let sensorRange: Int = 128  // 333 - 205 = 128
+    private let minSensorValue: Int = 185  // 90 degrees (midpoint of 180-190 range)
+    private let sensorRange: Int = 115  // 300 - 185 = 115
     private let minDegrees: Double = 90.0
     private let degreeRange: Double = 90.0  // 180 - 90 = 90
     

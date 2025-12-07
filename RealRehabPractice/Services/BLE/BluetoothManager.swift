@@ -73,6 +73,16 @@ final class BluetoothManager: NSObject, ObservableObject {
         print("🔵 BluetoothManager: Attempting to connect to '\(dp.name)' (UUID: \(dp.id))")
         central.connect(dp.peripheral, options: nil)
     }
+    
+    func disconnect() {
+        guard let peripheral = connectedPeripheral else {
+            print("⚠️ BluetoothManager: No device connected to disconnect")
+            return
+        }
+        print("🔵 BluetoothManager: Disconnecting from '\(peripheral.name ?? "Unknown Device")'")
+        central.cancelPeripheralConnection(peripheral)
+        // The didDisconnectPeripheral delegate method will handle cleanup
+    }
 }
 
 extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {

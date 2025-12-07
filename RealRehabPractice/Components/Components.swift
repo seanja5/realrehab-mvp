@@ -328,6 +328,26 @@ private struct BluetoothPopupView: View {
                             .foregroundStyle(.primary)
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
+                        
+                        // Disconnect button
+                        Button {
+                            ble.disconnect()
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                popupManager.showPopup = false
+                            }
+                        } label: {
+                            Text("Disconnect")
+                                .font(.rrBody)
+                                .foregroundStyle(.red)
+                                .frame(maxWidth: .infinity)
+                                .padding(.horizontal, 32)
+                                .padding(.vertical, 16)
+                                .background(Color.clear)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(Color.red, lineWidth: 1)
+                                )
+                        }
                     } else {
                         Text("No Device Connected")
                             .font(.rrBody)
@@ -338,7 +358,7 @@ private struct BluetoothPopupView: View {
                 .padding(20)
             }
             .frame(maxWidth: .infinity) // Same width as PTDetailView rounded rectangles (screen width - 32px padding)
-            .frame(height: isConnected ? 200 : 100)
+            .frame(height: isConnected ? 260 : 100) // Increased height to accommodate button
     }
 }
 
@@ -522,38 +542,117 @@ struct ChartContentView: View {
         maxDegrees - minDegrees
     }
     
-    // Calculate X positions based on timestamps if available, otherwise evenly space
+    // Calculate the full day range (from earliest to latest day, including all days in between)
+    // Also includes one extra day after the latest day for spacing points on the last day
+    private var fullDayRange: [Int] {
+        let uniqueDays = Set(data.map { $0.day }).sorted()
+        guard let firstDay = uniqueDays.first,
+              let lastDay = uniqueDays.last else {
+            return uniqueDays
+        }
+        // Return all days from first to last, inclusive, plus one extra day for spacing
+        var days = Array(firstDay...lastDay)
+        days.append(lastDay + 1) // Add next day for spacing points on the last day
+        return days
+    }
+    
+    // Calculate X positions with points positioned AFTER their day label
     private func xPosition(for index: Int, in chartWidth: CGFloat) -> CGFloat {
-        guard let timestamps = timestamps,
-              timestamps.count == data.count,
-              timestamps.count > 1 else {
-            // Fall back to even spacing
-            let dayLabelWidth = (chartWidth - 30) / CGFloat(data.count)
-            let firstDayX = 30 + (dayLabelWidth / 2)
-            return firstDayX + CGFloat(index) * dayLabelWidth
+        guard data.count > 1 else {
+            // Fall back to center
+            return 30 + (chartWidth - 60) / 2
         }
         
-        // Calculate positions based on actual time intervals
-        let earliestDate = timestamps.min() ?? Date()
-        let latestDate = timestamps.max() ?? Date()
-        let timeRange = latestDate.timeIntervalSince(earliestDate)
-        
-        guard timeRange > 0 else {
-            // All points at same time, space evenly
-            let dayLabelWidth = (chartWidth - 30) / CGFloat(data.count)
-            let firstDayX = 30 + (dayLabelWidth / 2)
-            return firstDayX + CGFloat(index) * dayLabelWidth
+        // Get full day range (includes all days from earliest to latest)
+        let allDays = fullDayRange
+        guard !allDays.isEmpty else {
+            // Fallback
+            let dayLabelWidth = (chartWidth - 60) / CGFloat(data.count)
+            return 30 + (CGFloat(index) * dayLabelWidth)
         }
         
-        // Map timestamp to X position
-        let currentTimestamp = timestamps[index]
-        let timeOffset = currentTimestamp.timeIntervalSince(earliestDate)
-        let relativePosition = timeOffset / timeRange
+        // Group points by day
+        var dayGroups: [Int: [Int]] = [:] // day -> array of indices
+        for (idx, point) in data.enumerated() {
+            if dayGroups[point.day] == nil {
+                dayGroups[point.day] = []
+            }
+            dayGroups[point.day]?.append(idx)
+        }
         
-        // Map to chart width (with padding)
-        let usableWidth = chartWidth - 30  // 30px padding on left
-        let x = 30 + (CGFloat(relativePosition) * usableWidth)
-        return x
+        // Calculate spacing: evenly distribute all days across the chart
+        let numDays = CGFloat(allDays.count)
+        let usableWidth = chartWidth - 60  // 30px padding on left and right
+        let dayLabelSpacing = usableWidth / (numDays > 1 ? numDays - 1 : 1) // Space between day labels
+        
+        // Find which day this point belongs to
+        let currentDay = data[index].day
+        guard let dayIndex = allDays.firstIndex(of: currentDay),
+              let dayIndices = dayGroups[currentDay] else {
+            // Fallback
+            let dayLabelWidth = (chartWidth - 60) / CGFloat(data.count)
+            return 30 + (CGFloat(index) * dayLabelWidth)
+        }
+        
+        // Find position within the day's group
+        let sortedDayIndices = dayIndices.sorted()
+        guard let positionInDay = sortedDayIndices.firstIndex(of: index) else {
+            // Fallback
+            let dayLabelWidth = (chartWidth - 60) / CGFloat(data.count)
+            return 30 + (CGFloat(index) * dayLabelWidth)
+        }
+        
+        // Position of the day's label (at origin for first day, evenly spaced for others)
+        let dayLabelX = 30 + (CGFloat(dayIndex) * dayLabelSpacing)
+        
+        // Calculate segment width: all days use the same spacing to next day's label
+        // This includes the last day which now has an extra day label after it for spacing
+        let daySegmentWidth = dayLabelSpacing
+        
+        // Position points AFTER the day label using formula: 1/(1+v), 2/(1+v), ..., v/(1+v)
+        // where v is the number of values (points) on that day
+        let numPointsOnDay = CGFloat(dayIndices.count) // This is v
+        let spacingRatio = 1.0 / (1.0 + numPointsOnDay) // This is 1/(1+v)
+        
+        // Calculate position: (positionInDay + 1) * spacingRatio
+        // For v=2: positions at 1/3 and 2/3
+        // For v=3: positions at 1/4, 2/4, 3/4
+        let relativePositionInDay = CGFloat(positionInDay + 1) * spacingRatio
+        
+        // Calculate x position: day label position + offset into the segment
+        let x = dayLabelX + (relativePositionInDay * daySegmentWidth)
+        
+        // Ensure we don't exceed chart boundaries (with padding)
+        let chartRightEdge = 30 + usableWidth
+        return min(x, chartRightEdge - 10) // Leave 10px padding from right edge
+    }
+    
+    // Get all days in range and their positions for x-axis labels (evenly spaced)
+    // Excludes the extra day added for spacing (only show actual data days)
+    private func uniqueDayPositions(in chartWidth: CGFloat) -> [(day: Int, x: CGFloat)] {
+        // Get full day range (includes all days from earliest to latest, plus extra day)
+        let allDays = fullDayRange
+        guard !allDays.isEmpty else {
+            return []
+        }
+        
+        // Remove the extra day (last item) for display purposes
+        let displayDays = Array(allDays.dropLast())
+        
+        // Calculate spacing: evenly distribute all days (including the extra one for spacing calculations)
+        let numDays = CGFloat(allDays.count)
+        let usableWidth = chartWidth - 60  // 30px padding on left and right
+        let dayLabelSpacing = usableWidth / (numDays > 1 ? numDays - 1 : 1) // Space between day labels
+        
+        // Position labels evenly: first day at origin (30), others evenly spaced
+        // Only show actual data days, not the extra spacing day
+        var result: [(day: Int, x: CGFloat)] = []
+        for (dayIndex, day) in displayDays.enumerated() {
+            let x = 30 + (CGFloat(dayIndex) * dayLabelSpacing)
+            result.append((day: day, x: x))
+        }
+        
+        return result
     }
     
     var body: some View {
@@ -641,17 +740,16 @@ struct ChartContentView: View {
                         .frame(width: yAxisLabelWidth)
                     
                     if isWeekView {
-                        // Week view: show day numbers or dates - aligned with plot points
+                        // Week view: show unique day numbers only (one per day)
                         ZStack {
-                            ForEach(Array(data.enumerated()), id: \.offset) { index, point in
-                                let x = xPosition(for: index, in: chartWidth)
-                                Text("\(point.day)")
+                            ForEach(uniqueDayPositions(in: chartWidth), id: \.day) { dayPosition in
+                                Text("\(dayPosition.day)")
                                     .font(.system(size: 10))
                                     .foregroundStyle(.secondary)
-                                    .position(x: x, y: 10)
+                                    .position(x: dayPosition.x, y: 10)
                             }
                         }
-                        .frame(width: chartWidth - 30, height: 20)
+                        .frame(width: chartWidth, height: 20)
                     } else {
                         // Month view: show day numbers (scrollable)
                         ScrollView(.horizontal, showsIndicators: false) {

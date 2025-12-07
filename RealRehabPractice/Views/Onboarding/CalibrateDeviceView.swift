@@ -13,17 +13,17 @@ struct CalibrateDeviceView: View {
     @State private var errorMessage: String? = nil
     
     // Calibration constants for degree conversion
-    private let minSensorValue: Int = 205  // 90 degrees (rest position)
-    private let maxSensorValue: Int = 333  // 180 degrees (full extension)
+    private let minSensorValue: Int = 185  // 90 degrees (midpoint of 180-190 range)
+    private let maxSensorValue: Int = 300  // 180 degrees
     private let minDegrees: Double = 90.0
     private let maxDegrees: Double = 180.0
-    private let sensorRange: Int = 128  // 333 - 205 = 128
+    private let sensorRange: Int = 115  // 300 - 185 = 115
     private let degreeRange: Double = 90.0  // 180 - 90 = 90
     
     // Convert raw flex sensor value to degrees
     // Allows extrapolation beyond calibrated range (below 90° and above 180°)
     private func convertToDegrees(_ sensorValue: Int) -> Int {
-        // Convert: degrees = 90 + ((value - 205) / 128) * 90
+        // Convert: degrees = 90 + ((value - 185) / 115) * 90
         // This formula works for any input value, allowing values below 90° and above 180°
         let degrees = minDegrees + (Double(sensorValue - minSensorValue) / Double(sensorRange)) * degreeRange
         

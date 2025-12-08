@@ -44,6 +44,7 @@
 		C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA12EB2D7A200720184 /* CompletionView.swift */; };
 		C8AEECC62EB2D7A200720186 /* DirectionsView1.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC42EB2D7A200720186 /* DirectionsView1.swift */; };
 		C8AEECC72EB2D7A200720187 /* DirectionsView2.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC52EB2D7A200720187 /* DirectionsView2.swift */; };
+		C8AEECC92EB2D7A200720188 /* AssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC82EB2D7A200720188 /* AssessmentView.swift */; };
 		C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA52EB2D7A200720184 /* HomeView.swift */; };
 		C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */; };
 		C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */; };
@@ -122,6 +123,7 @@
 		C8AEECA82EB2D7A200720184 /* LessonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonView.swift; sourceTree = "<group>"; };
 		C8AEECC42EB2D7A200720186 /* DirectionsView1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectionsView1.swift; sourceTree = "<group>"; };
 		C8AEECC52EB2D7A200720187 /* DirectionsView2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectionsView2.swift; sourceTree = "<group>"; };
+		C8AEECC82EB2D7A200720188 /* AssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssessmentView.swift; sourceTree = "<group>"; };
 		C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeSensorSimulator.swift; sourceTree = "<group>"; };
 		C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealRehabPracticeApp.swift; sourceTree = "<group>"; };
 		C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RehabOverviewView.swift; sourceTree = "<group>"; };
@@ -338,6 +340,7 @@
 				C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */,
 				C8AEECC42EB2D7A200720186 /* DirectionsView1.swift */,
 				C8AEECC52EB2D7A200720187 /* DirectionsView2.swift */,
+				C8AEECC82EB2D7A200720188 /* AssessmentView.swift */,
 			);
 			path = Lessons;
 			sourceTree = "<group>";
@@ -526,6 +529,7 @@
 				C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */,
 				C8AEECC62EB2D7A200720186 /* DirectionsView1.swift in Sources */,
 				C8AEECC72EB2D7A200720187 /* DirectionsView2.swift in Sources */,
+				C8AEECC92EB2D7A200720188 /* AssessmentView.swift in Sources */,
 				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
 				C8003FB52EB7FD57008DC812 /* Components.swift in Sources */,
 				C8D677C92EB839FC00829144 /* Theme.swift in Sources */,

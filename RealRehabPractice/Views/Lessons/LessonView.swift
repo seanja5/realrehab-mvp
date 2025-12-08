@@ -137,6 +137,11 @@ struct LessonView: View {
     
     // Helper function to determine display text
     private func displayText() -> String {
+        // Check if all reps are completed - show completion message
+        if engine.repCount >= engine.repTarget {
+            return "You're Done!"
+        }
+        
         // Show error message if present (including IMU errors)
         if let error = errorMessage {
             return error
@@ -183,6 +188,11 @@ struct LessonView: View {
     
     // Helper function to determine background color
     private func backgroundColor() -> Color {
+        // If all reps are completed, show full green
+        if engine.repCount >= engine.repTarget {
+            return Color.green.opacity(0.25)
+        }
+        
         // Show red if there's an error (IMU error or any other error)
         if hasIMUError || errorMessage != nil {
             return Color.red
@@ -228,11 +238,12 @@ struct LessonView: View {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(backgroundColor())
                 
-                // Green fill overlay only during strokes
-                if engine.phase == .upstroke || engine.phase == .downstroke {
+                // Green fill overlay during strokes or when completed
+                if engine.phase == .upstroke || engine.phase == .downstroke || engine.repCount >= engine.repTarget {
                     GeometryReader { geo in
                         let h = geo.size.height
                         // Bottom-anchored fill whose height animates with engine.fill
+                        // When completed, fill stays at 1.0 (fully green)
                         VStack {
                             Spacer()
                             LinearGradient(
@@ -365,7 +376,7 @@ struct LessonView: View {
                 useLargeFont: true
             ) {
                 engine.stopGuidedSimulation()
-                router.go(.completion)
+                router.go(.assessment)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
@@ -470,6 +481,11 @@ struct LessonView: View {
     }
     
     private func validateMovement() {
+        // Stop validation if all reps are completed
+        guard engine.repCount < engine.repTarget else {
+            return
+        }
+        
         // Check if error display time has expired (only for non-IMU errors)
         if let errorEnd = errorEndTime, Date() >= errorEnd, !hasIMUError {
             clearError()
@@ -507,6 +523,11 @@ struct LessonView: View {
     }
     
     private func validateIMU() {
+        // Stop IMU validation if all reps are completed
+        guard engine.repCount < engine.repTarget else {
+            return
+        }
+        
         guard let imuValue = currentIMUValue else { return }
         
         let absIMUValue = abs(imuValue)

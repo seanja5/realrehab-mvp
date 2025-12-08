@@ -2,6 +2,8 @@ import SwiftUI
 
 struct CompletionView: View {
     @EnvironmentObject var router: Router
+    @State private var rangeGained: Int? = nil
+    @State private var isLoadingRange: Bool = true
     
     var body: some View {
         ScrollView {
@@ -21,7 +23,7 @@ struct CompletionView: View {
                         Image(systemName: "clock")
                             .font(.rrBody)
                             .foregroundStyle(.primary)
-                        Text("Session: 7 min")
+                        Text("Session: 3 min")
                             .font(.rrTitle)
                             .foregroundStyle(.primary)
                     }
@@ -40,7 +42,7 @@ struct CompletionView: View {
                         Image(systemName: "chart.pie")
                             .font(.rrBody)
                             .foregroundStyle(.primary)
-                        Text("Range: +8°")
+                        Text(rangeText)
                             .font(.rrTitle)
                             .foregroundStyle(.primary)
                     }
@@ -76,6 +78,11 @@ struct CompletionView: View {
                 .frame(maxWidth: 360)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 40)
+                
+                // Progress graph section (same as dashboard)
+                RecoveryChartWeekView()
+                    .padding(.top, 16)
+                    .padding(.bottom, 40)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -100,6 +107,53 @@ struct CompletionView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()
+            }
+        }
+        .task {
+            await loadRangeGained()
+        }
+    }
+    
+    private var rangeText: String {
+        if isLoadingRange {
+            return "Range: Loading..."
+        } else if let range = rangeGained {
+            return "Range: +\(range)°"
+        } else {
+            return "Range: --"
+        }
+    }
+    
+    private func loadRangeGained() async {
+        isLoadingRange = true
+        do {
+            let points = try await TelemetryService.getAllMaximumCalibrationsForPatient()
+            
+            // Get the two most recent maximum calibration values
+            // Points are sorted chronologically, so last two are most recent
+            guard points.count >= 2 else {
+                await MainActor.run {
+                    rangeGained = nil
+                    isLoadingRange = false
+                }
+                return
+            }
+            
+            let mostRecent = points[points.count - 1].degrees
+            let secondMostRecent = points[points.count - 2].degrees
+            
+            let difference = mostRecent - secondMostRecent
+            
+            await MainActor.run {
+                rangeGained = difference
+                isLoadingRange = false
+                print("✅ CompletionView: Range gained calculated - Most recent: \(mostRecent)°, Second most recent: \(secondMostRecent)°, Difference: \(difference)°")
+            }
+        } catch {
+            await MainActor.run {
+                rangeGained = nil
+                isLoadingRange = false
+                print("❌ CompletionView: Failed to load range gained: \(error)")
             }
         }
     }

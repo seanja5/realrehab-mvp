@@ -11,6 +11,7 @@ final class BluetoothManager: NSObject, ObservableObject {
     @Published var lastError: String?
     @Published var connectedPeripheral: CBPeripheral? = nil
     @Published var currentFlexSensorValue: Int? = nil // Current flex sensor reading (2 digits)
+    @Published var currentIMUValue: Float? = nil // Current IMU reading (float, zeroed)
     
     // Computed property for connected device name
     var connectedDeviceName: String? {
@@ -29,13 +30,16 @@ final class BluetoothManager: NSObject, ObservableObject {
     private var targetPrefix: String?
     
     // BLE Service and Characteristic UUIDs
-    // Common Arduino BLE UUIDs - adjust these if your Arduino uses different ones
-    // If you're using HM-10 or similar, these are common defaults
-    private let flexSensorServiceUUID = CBUUID(string: "FFE0") // Common service UUID
-    private let flexSensorCharacteristicUUID = CBUUID(string: "FFE1") // Common characteristic UUID
+    // Flex sensor: uint16_t over characteristic 2A56
+    // IMU: float over characteristic 2A57
+    private let flexSensorCharacteristicUUID = CBUUID(string: "2A56") // Flex sensor characteristic UUID
+    private let imuCharacteristicUUID = CBUUID(string: "2A57") // IMU characteristic UUID
     
     private var flexSensorCharacteristic: CBCharacteristic?
+    private var imuCharacteristic: CBCharacteristic?
     private var readTimer: Timer?
+    private var rawIMUValue: Float? = nil // Raw IMU value before offset
+    private var imuZeroOffset: Float = 0.0 // Offset to zero IMU when lesson begins
 
     override init() {
         super.init()
@@ -82,6 +86,20 @@ final class BluetoothManager: NSObject, ObservableObject {
         print("🔵 BluetoothManager: Disconnecting from '\(peripheral.name ?? "Unknown Device")'")
         central.cancelPeripheralConnection(peripheral)
         // The didDisconnectPeripheral delegate method will handle cleanup
+    }
+    
+    func zeroIMUValue() {
+        // Store current raw IMU value as offset to zero it out
+        if let rawValue = rawIMUValue {
+            imuZeroOffset = rawValue
+            // Update current IMU value to be zero (or close to zero)
+            currentIMUValue = rawValue - imuZeroOffset
+            print("📊 BluetoothManager: Zeroing IMU value. Raw value: \(rawValue), offset set to: \(imuZeroOffset), zeroed value: \(currentIMUValue ?? 0)")
+        } else {
+            imuZeroOffset = 0.0
+            currentIMUValue = 0.0
+            print("📊 BluetoothManager: Zeroing IMU value. No current value, offset set to 0")
+        }
     }
 }
 
@@ -217,14 +235,13 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         
         print("✅ BluetoothManager: Discovered \(characteristics.count) characteristic(s) for service \(service.uuid)")
         
-        // Only use the first suitable characteristic to avoid conflicts
-        // Look for characteristics that support notify (preferred) or read
+        // Look for both flex sensor and IMU characteristics
         for characteristic in characteristics {
             print("📡 BluetoothManager: Characteristic UUID: \(characteristic.uuid)")
             print("   Properties: \(characteristic.properties.rawValue)")
             
-            // If we haven't found a characteristic yet, use this one if it supports data
-            if flexSensorCharacteristic == nil {
+            // Check if this is the flex sensor characteristic (2A56)
+            if characteristic.uuid == flexSensorCharacteristicUUID && flexSensorCharacteristic == nil {
                 if characteristic.properties.contains(.notify) || characteristic.properties.contains(.read) {
                     flexSensorCharacteristic = characteristic
                     
@@ -236,7 +253,22 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
                         print("📖 BluetoothManager: Characteristic supports read, starting periodic reads...")
                         startReadingFlexSensor(peripheral: peripheral, characteristic: characteristic)
                     }
-                    break // Use only the first suitable characteristic
+                }
+            }
+            
+            // Check if this is the IMU characteristic (2A57)
+            if characteristic.uuid == imuCharacteristicUUID && imuCharacteristic == nil {
+                if characteristic.properties.contains(.notify) || characteristic.properties.contains(.read) {
+                    imuCharacteristic = characteristic
+                    
+                    // Try to subscribe to notifications first (preferred for continuous data)
+                    if characteristic.properties.contains(.notify) {
+                        print("🔔 BluetoothManager: Subscribing to notifications for IMU data...")
+                        peripheral.setNotifyValue(true, for: characteristic)
+                    } else if characteristic.properties.contains(.read) {
+                        print("📖 BluetoothManager: IMU characteristic supports read, starting periodic reads...")
+                        startReadingIMU(peripheral: peripheral, characteristic: characteristic)
+                    }
                 }
             }
         }
@@ -253,12 +285,28 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
             return
         }
         
-        // Parse flex sensor data (expecting 2-digit number)
-        if let flexValue = parseFlexSensorData(data) {
-            currentFlexSensorValue = flexValue
-            print("📊 BluetoothManager: Flex sensor value read: \(flexValue)")
-        } else {
-            print("⚠️ BluetoothManager: Failed to parse flex sensor data. Raw data: \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
+        // Check if this is the flex sensor characteristic
+        if characteristic.uuid == flexSensorCharacteristicUUID {
+            // Parse flex sensor data (expecting 2-digit number)
+            if let flexValue = parseFlexSensorData(data) {
+                currentFlexSensorValue = flexValue
+                print("📊 BluetoothManager: Flex sensor value read: \(flexValue)")
+            } else {
+                print("⚠️ BluetoothManager: Failed to parse flex sensor data. Raw data: \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
+            }
+        }
+        // Check if this is the IMU characteristic
+        else if characteristic.uuid == imuCharacteristicUUID {
+            // Parse IMU data (expecting float)
+            if let imuValue = parseIMUData(data) {
+                // Store raw value
+                rawIMUValue = imuValue
+                // Apply zero offset
+                currentIMUValue = imuValue - imuZeroOffset
+                print("📊 BluetoothManager: IMU value read: \(imuValue), zeroed: \(currentIMUValue ?? 0)")
+            } else {
+                print("⚠️ BluetoothManager: Failed to parse IMU data. Raw data: \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
+            }
         }
     }
     
@@ -269,7 +317,11 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         }
         
         if characteristic.isNotifying {
-            print("✅ BluetoothManager: Successfully subscribed to notifications for flex sensor")
+            if characteristic.uuid == flexSensorCharacteristicUUID {
+                print("✅ BluetoothManager: Successfully subscribed to notifications for flex sensor")
+            } else if characteristic.uuid == imuCharacteristicUUID {
+                print("✅ BluetoothManager: Successfully subscribed to notifications for IMU")
+            }
         } else {
             print("⚠️ BluetoothManager: Notifications disabled for characteristic")
         }
@@ -278,23 +330,25 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
     // MARK: - Flex Sensor Data Reading
     
     private func parseFlexSensorData(_ data: Data) -> Int? {
-        // Try parsing as UTF-8 string first (common for Arduino Serial.println)
+        // Flex sensor sends uint16_t (2 bytes, little-endian)
+        // Prioritize 2-byte parsing since that's the expected format
+        if data.count >= 2 {
+            // Parse as little-endian uint16_t
+            let value = Int(data[0]) | (Int(data[1]) << 8)
+            return value
+        }
+        
+        // Fallback: Try parsing as single byte
+        if data.count == 1 {
+            return Int(data[0])
+        }
+        
+        // Fallback: Try parsing as UTF-8 string (for debugging)
         if let string = String(data: data, encoding: .utf8) {
             let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
             if let value = Int(trimmed) {
                 return value
             }
-        }
-        
-        // Try parsing as single byte (if Arduino sends raw byte value)
-        if data.count == 1 {
-            return Int(data[0])
-        }
-        
-        // Try parsing as 2-byte integer (little-endian)
-        if data.count >= 2 {
-            let value = Int(data[0]) | (Int(data[1]) << 8)
-            return value
         }
         
         return nil
@@ -318,5 +372,58 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         readTimer = nil
         flexSensorCharacteristic = nil
         currentFlexSensorValue = nil
+        imuCharacteristic = nil
+        currentIMUValue = nil
+        rawIMUValue = nil
+        imuZeroOffset = 0.0
+    }
+    
+    // MARK: - IMU Data Reading
+    
+    private func parseIMUData(_ data: Data) -> Float? {
+        // IMU sends float (4 bytes)
+        guard data.count >= 4 else {
+            print("⚠️ BluetoothManager: IMU data too short: \(data.count) bytes")
+            return nil
+        }
+        
+        // Try parsing as little-endian float (common for Arduino)
+        var floatValue: Float = 0.0
+        let littleEndianData = Data(data.prefix(4))
+        _ = withUnsafeMutableBytes(of: &floatValue) { buffer in
+            littleEndianData.copyBytes(to: buffer)
+        }
+        
+        // Check if value is valid (not NaN or infinite)
+        if floatValue.isNaN || floatValue.isInfinite {
+            // Try big-endian instead
+            let bigEndianData = Data(littleEndianData.reversed())
+            _ = withUnsafeMutableBytes(of: &floatValue) { buffer in
+                bigEndianData.copyBytes(to: buffer)
+            }
+        }
+        
+        // Validate the float value
+        if floatValue.isNaN || floatValue.isInfinite {
+            print("⚠️ BluetoothManager: Invalid IMU float value (NaN or Infinite)")
+            return nil
+        }
+        
+        return floatValue
+    }
+    
+    private func startReadingIMU(peripheral: CBPeripheral, characteristic: CBCharacteristic) {
+        // Start periodic reads if notifications aren't available
+        // Note: This may conflict with the flex sensor timer, so we'll use notifications primarily
+        readTimer?.invalidate()
+        readTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self, 
+                  let peripheral = self.connectedPeripheral,
+                  peripheral.state == .connected else {
+                self?.readTimer?.invalidate()
+                return
+            }
+            peripheral.readValue(for: characteristic)
+        }
     }
 }

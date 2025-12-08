@@ -43,6 +43,9 @@ struct LessonView: View {
     @State private var goMessageStartTime: Date? = nil
     @State private var isInitialCountdown: Bool = false  // Track if this is initial countdown or after error
     
+    // IMU state
+    @State private var hasIMUError: Bool = false
+    
     // Calibration constants for degree conversion (same as CalibrateDeviceView)
     private let minSensorValue: Int = 185  // 90 degrees (midpoint of 180-190 range)
     private let sensorRange: Int = 115  // 300 - 185 = 115
@@ -86,6 +89,31 @@ struct LessonView: View {
         return CGFloat(clampedPosition)
     }
     
+    // Computed property for current zeroed IMU value
+    private var currentIMUValue: Float? {
+        ble.currentIMUValue
+    }
+    
+    // Calculate horizontal position of IMU circle on the line
+    // Center (0.5) = IMU value of 0
+    // Left edge (0.0) = IMU value of +10
+    // Right edge (1.0) = IMU value of -10
+    private func imuCirclePosition() -> CGFloat? {
+        // If lesson hasn't started, keep circle centered (steady and constant)
+        guard hasStarted else { return 0.5 }
+        
+        guard let imuValue = currentIMUValue else { return 0.5 } // Default to center if no value
+        
+        // Formula: position = 0.5 - (imuValue / 20.0)
+        // This maps: +10 -> 0.0 (left), 0 -> 0.5 (center), -10 -> 1.0 (right)
+        let position = 0.5 - (Double(imuValue) / 20.0)
+        
+        // Clamp between 0.0 and 1.0
+        let clampedPosition = Swift.max(0.0, Swift.min(1.0, position))
+        
+        return CGFloat(clampedPosition)
+    }
+    
     init(reps: Int? = nil, restSec: Int? = nil) {
         self.reps = reps
         self.restSec = restSec
@@ -109,7 +137,7 @@ struct LessonView: View {
     
     // Helper function to determine display text
     private func displayText() -> String {
-        // Show error message if present
+        // Show error message if present (including IMU errors)
         if let error = errorMessage {
             return error
         }
@@ -119,20 +147,22 @@ struct LessonView: View {
             return "Starting from rest, begin next rep in \(countdownValue)"
         }
         
+        // Show "Go!" message for first 5 seconds after animation starts (even if phase is idle)
+        if showGoMessage, let startTime = goMessageStartTime {
+            let elapsed = Date().timeIntervalSince(startTime)
+            if elapsed < 5.0 {
+                return "Go!"
+            }
+        }
+        
         // Normal phase-based messages
         switch engine.phase {
         case .idle:
-            return "Waiting…"
+            // Only show "Waiting…" if lesson hasn't started yet
+            return hasStarted ? "You've Got It!" : "Waiting…"
         case .incorrectHold:
             return "Not Quite!"
         case .upstroke, .downstroke:
-            // Show "Go!" message for first 5 seconds after animation starts
-            if showGoMessage, let startTime = goMessageStartTime {
-                let elapsed = Date().timeIntervalSince(startTime)
-                if elapsed < 5.0 {
-                    return "Go!"
-                }
-            }
             return "You've Got It!"
         }
     }
@@ -225,6 +255,30 @@ struct LessonView: View {
                             .frame(width: geo.size.width * 0.9) // 90% of box width
                             .frame(height: 3) // 3 point thick line
                             .position(x: geo.size.width / 2, y: yPosition)
+                        
+                        // IMU circle indicator on the horizontal line
+                        if let circlePosition = imuCirclePosition() {
+                            let xPosition = geo.size.width * 0.05 + (geo.size.width * 0.9 * circlePosition)
+                            Circle()
+                                .fill(Color.brandDarkBlue)
+                                .frame(width: 14, height: 14)
+                                .position(x: xPosition, y: yPosition)
+                        }
+                    }
+                    .allowsHitTesting(false)
+                } else {
+                    // Show IMU circle even when no flex sensor line is visible (default to center)
+                    GeometryReader { geo in
+                        let boxHeight = geo.size.height
+                        let yPosition = boxHeight * 0.5 // Center vertically
+                        
+                        if let circlePosition = imuCirclePosition() {
+                            let xPosition = geo.size.width * 0.05 + (geo.size.width * 0.9 * circlePosition)
+                            Circle()
+                                .fill(Color.brandDarkBlue)
+                                .frame(width: 14, height: 14)
+                                .position(x: xPosition, y: yPosition)
+                        }
                     }
                     .allowsHitTesting(false)
                 }
@@ -298,6 +352,8 @@ struct LessonView: View {
                 ) {
                     guard !hasStarted else { return }
                     hasStarted = true
+                    // Zero IMU value when lesson begins
+                    ble.zeroIMUValue()
                     engine.reset()
                     setupRepCountingCallback()
                     startSensorValidation()
@@ -418,12 +474,17 @@ struct LessonView: View {
     }
     
     private func validateMovement() {
-        // Check if error display time has expired
-        if let errorEnd = errorEndTime, Date() >= errorEnd {
+        // Check if error display time has expired (only for non-IMU errors)
+        if let errorEnd = errorEndTime, Date() >= errorEnd, !hasIMUError {
             clearError()
         }
         
-        // Only validate if lesson is running and not paused
+        // Validate IMU continuously when lesson is running
+        if hasStarted {
+            validateIMU()
+        }
+        
+        // Only validate flex sensor movement if lesson is running and not paused
         guard hasStarted,
               !engine.isPaused,
               errorMessage == nil,
@@ -447,6 +508,59 @@ struct LessonView: View {
         // Update previous values
         previousDegreeValue = currentDegrees
         previousTimestamp = Date()
+    }
+    
+    private func validateIMU() {
+        guard let imuValue = currentIMUValue else { return }
+        
+        let absIMUValue = abs(imuValue)
+        let threshold: Float = 10.0
+        
+        // Check if IMU is out of range
+        if absIMUValue > threshold {
+            // Trigger error if not already showing
+            if !hasIMUError {
+                showIMUError()
+            }
+        } else {
+            // Clear error immediately if back in range
+            if hasIMUError {
+                clearIMUError()
+            }
+        }
+    }
+    
+    private func showIMUError() {
+        guard !hasIMUError else { return } // Don't override if already showing
+        
+        hasIMUError = true
+        errorMessage = "Keep your thigh centered"
+        errorEndTime = Date().addingTimeInterval(4.0) // Set timeout, but clear immediately when back in range
+        
+        // Store current phase before showing error
+        if phaseBeforeError == nil {
+            phaseBeforeError = engine.phase
+        }
+        
+        engine.phase = .incorrectHold
+        engine.pauseAnimation()
+    }
+    
+    private func clearIMUError() {
+        guard hasIMUError else { return }
+        
+        hasIMUError = false
+        errorMessage = nil
+        errorEndTime = nil
+        phaseBeforeError = nil
+        
+        // Start countdown like other errors
+        startCountdown()
+        
+        // Reset after a delay to allow new validation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Animation will resume after countdown
+        }
     }
     
     private func validateMovementSpeed(currentDegrees: Int, expectedDegrees: Int, previousDegrees: Int, timeElapsed: TimeInterval, rest: Int, max: Int) {
@@ -497,7 +611,7 @@ struct LessonView: View {
     }
     
     private func showError(_ message: String, duration: TimeInterval) {
-        guard errorMessage == nil else { return } // Don't override existing error
+        guard errorMessage == nil && !hasIMUError else { return } // Don't override existing error
         
         errorMessage = message
         errorEndTime = Date().addingTimeInterval(duration)
@@ -517,6 +631,8 @@ struct LessonView: View {
     }
     
     private func clearError() {
+        guard !hasIMUError else { return } // Don't clear if IMU error is active
+        
         errorMessage = nil
         errorEndTime = nil
         phaseBeforeError = nil

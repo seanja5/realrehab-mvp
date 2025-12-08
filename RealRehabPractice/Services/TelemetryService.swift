@@ -245,73 +245,88 @@ enum TelemetryService {
     return try await getAllMaximumCalibrationsForPatient(patientProfileId: patientProfileId)
   }
   
-  // Fetch all maximum calibration values for a specific patient by patientProfileId
-  static func getAllMaximumCalibrationsForPatient(patientProfileId: UUID) async throws -> [MaximumCalibrationPoint] {
-    // Fetch all device assignments for this patient
-    let assignments: [DeviceAssignmentRow] = try await supabase
-      .schema("telemetry")
-      .from("device_assignments")
-      .select("*")
-      .eq("patient_profile_id", value: patientProfileId.uuidString)
-      .decoded(as: [DeviceAssignmentRow].self)
-    
-    guard !assignments.isEmpty else {
-      return [] // No device assignments, so no calibrations
-    }
-    
-    // Get all assignment IDs
-    let assignmentIds = assignments.map { $0.id }
-    
-    // Fetch all maximum_position calibrations for these device assignments
-    // We need to query each assignment separately and combine results
-    var allCalibrations: [CalibrationRow] = []
-    
-    for assignmentId in assignmentIds {
-      let calibrations: [CalibrationRow] = try await supabase
+    // Fetch all maximum calibration values for a specific patient by patientProfileId
+    static func getAllMaximumCalibrationsForPatient(patientProfileId: UUID) async throws -> [MaximumCalibrationPoint] {
+      // Fetch all device assignments for this patient
+      let assignments: [DeviceAssignmentRow] = try await supabase
         .schema("telemetry")
-        .from("calibrations")
+        .from("device_assignments")
         .select("*")
-        .eq("device_assignment_id", value: assignmentId.uuidString)
-        .eq("stage", value: "maximum_position")
-        .order("recorded_at", ascending: true)
-        .decoded(as: [CalibrationRow].self)
+        .eq("patient_profile_id", value: patientProfileId.uuidString)
+        .decoded(as: [DeviceAssignmentRow].self)
       
-      allCalibrations.append(contentsOf: calibrations)
-    }
-    
-    // Convert to MaximumCalibrationPoint array with degrees conversion
-    // Note: flex_value in DB might be stored as raw sensor value or already converted to degrees
-    // We'll check and convert if needed (if value is in raw sensor range 200-400, convert it)
-    let calibrationPoints = allCalibrations.compactMap { calibration -> MaximumCalibrationPoint? in
-      // Parse the recorded_at timestamp
-      guard let recordedDate = iso.date(from: calibration.recorded_at) else {
-        return nil
+      guard !assignments.isEmpty else {
+        return [] // No device assignments, so no calibrations
       }
       
-      // Get the stored value
-      let storedValue = Int(calibration.flex_value)
+      // Get all assignment IDs
+      let assignmentIds = assignments.map { $0.id }
       
-      // Check if value looks like a raw sensor value (200-400 range) or already in degrees (0-200 range)
-      // If it's in the raw sensor range, convert it. Otherwise, use it as-is (already in degrees)
-      let degrees: Int
-      if storedValue >= 180 && storedValue <= 400 {
-        // Looks like raw sensor value, convert it (new range: 180-305 typical, allow up to 400 for safety)
-        degrees = convertRawSensorToDegrees(storedValue)
-      } else {
-        // Already in degrees, use directly
-        degrees = storedValue
+      // Fetch all maximum_position calibrations for these device assignments
+      // We need to query each assignment separately and combine results
+      // IMPORTANT: Only fetch "maximum_position" stage, explicitly exclude "starting_position"
+      var allCalibrations: [CalibrationRow] = []
+      
+      for assignmentId in assignmentIds {
+        let calibrations: [CalibrationRow] = try await supabase
+          .schema("telemetry")
+          .from("calibrations")
+          .select("*")
+          .eq("device_assignment_id", value: assignmentId.uuidString)
+          .eq("stage", value: "maximum_position")  // Only maximum_position, not starting_position
+          .neq("stage", value: "starting_position")  // Explicitly exclude starting_position as safety check
+          .order("recorded_at", ascending: true)
+          .decoded(as: [CalibrationRow].self)
+        
+        allCalibrations.append(contentsOf: calibrations)
       }
       
-      return MaximumCalibrationPoint(
-        id: calibration.id,
-        degrees: degrees,
-        recordedAt: recordedDate
-      )
+      // Convert to MaximumCalibrationPoint array with degrees conversion
+      // Note: flex_value in DB might be stored as raw sensor value or already converted to degrees
+      // We'll check and convert if needed (if value is in raw sensor range 200-400, convert it)
+      let calibrationPoints = allCalibrations.compactMap { calibration -> MaximumCalibrationPoint? in
+        // SAFETY CHECK: Only process maximum_position calibrations
+        // Double-check stage field to ensure we don't accidentally include rest values
+        guard calibration.stage == "maximum_position" else {
+          print("⚠️ TelemetryService: Skipping calibration with stage '\(calibration.stage)' - expected 'maximum_position'")
+          return nil
+        }
+        
+        // Parse the recorded_at timestamp
+        guard let recordedDate = iso.date(from: calibration.recorded_at) else {
+          return nil
+        }
+        
+        // Get the stored value
+        let storedValue = Int(calibration.flex_value)
+        
+        // Check if value looks like a raw sensor value (200-400 range) or already in degrees (0-200 range)
+        // If it's in the raw sensor range, convert it. Otherwise, use it as-is (already in degrees)
+        let degrees: Int
+        if storedValue >= 180 && storedValue <= 400 {
+          // Looks like raw sensor value, convert it (new range: 180-305 typical, allow up to 400 for safety)
+          degrees = convertRawSensorToDegrees(storedValue)
+        } else {
+          // Already in degrees, use directly
+          degrees = storedValue
+        }
+        
+        // Additional validation: maximum values should typically be above 90 degrees (rest position)
+        // If we get a value that's suspiciously low (like rest position), log a warning
+        if degrees < 100 {
+          print("⚠️ TelemetryService: Warning - maximum calibration value is very low (\(degrees) degrees). This might be a rest position value.")
+        }
+        
+        return MaximumCalibrationPoint(
+          id: calibration.id,
+          degrees: degrees,
+          recordedAt: recordedDate
+        )
+      }
+      
+      // Sort by recorded_at to ensure chronological order
+      return calibrationPoints.sorted { $0.recordedAt < $1.recordedAt }
     }
-    
-    // Sort by recorded_at to ensure chronological order
-    return calibrationPoints.sorted { $0.recordedAt < $1.recordedAt }
-  }
   
   // Convert raw flex sensor value to degrees (same formula as CalibrateDeviceView)
   private static func convertRawSensorToDegrees(_ sensorValue: Int) -> Int {

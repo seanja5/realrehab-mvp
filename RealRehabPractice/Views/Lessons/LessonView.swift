@@ -96,17 +96,17 @@ struct LessonView: View {
     
     // Calculate horizontal position of IMU circle on the line
     // Center (0.5) = IMU value of 0
-    // Left edge (0.0) = IMU value of +10
-    // Right edge (1.0) = IMU value of -10
+    // Left edge (0.0) = IMU value of +7
+    // Right edge (1.0) = IMU value of -7
     private func imuCirclePosition() -> CGFloat? {
         // If lesson hasn't started, keep circle centered (steady and constant)
         guard hasStarted else { return 0.5 }
         
         guard let imuValue = currentIMUValue else { return 0.5 } // Default to center if no value
         
-        // Formula: position = 0.5 - (imuValue / 20.0)
-        // This maps: +10 -> 0.0 (left), 0 -> 0.5 (center), -10 -> 1.0 (right)
-        let position = 0.5 - (Double(imuValue) / 20.0)
+        // Formula: position = 0.5 - (imuValue / 14.0)
+        // This maps: +7 -> 0.0 (left), 0 -> 0.5 (center), -7 -> 1.0 (right)
+        let position = 0.5 - (Double(imuValue) / 14.0)
         
         // Clamp between 0.0 and 1.0
         let clampedPosition = Swift.max(0.0, Swift.min(1.0, position))
@@ -183,6 +183,10 @@ struct LessonView: View {
     
     // Helper function to determine background color
     private func backgroundColor() -> Color {
+        // Show red if there's an error (IMU error or any other error)
+        if hasIMUError || errorMessage != nil {
+            return Color.red
+        }
         if isCountingDown {
             return Color.gray.opacity(0.3)
         }
@@ -293,16 +297,6 @@ struct LessonView: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
             
-            // Instructions text below the feedback square
-            Text(hasStarted 
-                 ? "Extend your knee as the bar fills; rest as it empties.\n\nTop = full extension. Bottom = resting position."
-                 : "Brace on → Press Begin.\n\nExtend your knee as the bar fills; rest as it empties.\n\nTop = full extension. Bottom = resting position.")
-                .font(.rrBody)
-                .foregroundStyle(.black)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-            
             Spacer(minLength: 16)
             
             // Bottom section with calibration reference and live data
@@ -383,10 +377,12 @@ struct LessonView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton {
-                    // Clean up running session before going back
+                    // Clean up running session before going back to JourneyMapView
                     if hasStarted {
                         engine.stopGuidedSimulation()
                     }
+                    // Navigate to JourneyMapView instead of going back through directions
+                    router.reset(to: .journeyMap)
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -514,7 +510,7 @@ struct LessonView: View {
         guard let imuValue = currentIMUValue else { return }
         
         let absIMUValue = abs(imuValue)
-        let threshold: Float = 10.0
+        let threshold: Float = 7.0  // Range is now -7 to +7
         
         // Check if IMU is out of range
         if absIMUValue > threshold {

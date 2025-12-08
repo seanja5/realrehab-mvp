@@ -37,9 +37,11 @@ final class BluetoothManager: NSObject, ObservableObject {
     
     private var flexSensorCharacteristic: CBCharacteristic?
     private var imuCharacteristic: CBCharacteristic?
-    private var readTimer: Timer?
+    private var flexSensorReadTimer: Timer?
+    private var imuReadTimer: Timer?
     private var rawIMUValue: Float? = nil // Raw IMU value before offset
     private var imuZeroOffset: Float = 0.0 // Offset to zero IMU when lesson begins
+    private var isIMUZeroed: Bool = false // Flag to track if IMU has been zeroed
 
     override init() {
         super.init()
@@ -89,17 +91,33 @@ final class BluetoothManager: NSObject, ObservableObject {
     }
     
     func zeroIMUValue() {
-        // Store current raw IMU value as offset to zero it out
+        // Only zero once - if already zeroed, don't do it again
+        guard !isIMUZeroed else {
+            print("📊 BluetoothManager: IMU already zeroed, skipping")
+            return
+        }
+        
+        // Store current raw IMU value as offset to zero it out (ONE TIME ONLY)
         if let rawValue = rawIMUValue {
             imuZeroOffset = rawValue
+            isIMUZeroed = true
             // Update current IMU value to be zero (or close to zero)
             currentIMUValue = rawValue - imuZeroOffset
-            print("📊 BluetoothManager: Zeroing IMU value. Raw value: \(rawValue), offset set to: \(imuZeroOffset), zeroed value: \(currentIMUValue ?? 0)")
+            print("📊 BluetoothManager: Zeroing IMU value ONCE. Raw value: \(rawValue), offset set to: \(imuZeroOffset), zeroed value: \(currentIMUValue ?? 0)")
         } else {
             imuZeroOffset = 0.0
             currentIMUValue = 0.0
-            print("📊 BluetoothManager: Zeroing IMU value. No current value, offset set to 0")
+            isIMUZeroed = true
+            print("📊 BluetoothManager: Zeroing IMU value ONCE. No current value, offset set to 0")
         }
+    }
+    
+    func resetIMUZero() {
+        // Reset zero flag (for when lesson ends or resets)
+        isIMUZeroed = false
+        imuZeroOffset = 0.0
+        rawIMUValue = nil
+        currentIMUValue = nil
     }
 }
 
@@ -287,10 +305,11 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         
         // Check if this is the flex sensor characteristic
         if characteristic.uuid == flexSensorCharacteristicUUID {
-            // Parse flex sensor data (expecting 2-digit number)
+            // Parse flex sensor data (expecting uint16_t)
             if let flexValue = parseFlexSensorData(data) {
                 currentFlexSensorValue = flexValue
-                print("📊 BluetoothManager: Flex sensor value read: \(flexValue)")
+                // Reduced logging for performance - only log occasionally
+                // print("📊 BluetoothManager: Flex sensor value read: \(flexValue)")
             } else {
                 print("⚠️ BluetoothManager: Failed to parse flex sensor data. Raw data: \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
             }
@@ -299,11 +318,20 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         else if characteristic.uuid == imuCharacteristicUUID {
             // Parse IMU data (expecting float)
             if let imuValue = parseIMUData(data) {
-                // Store raw value
+                // Always store raw value (needed for zeroing calculation)
                 rawIMUValue = imuValue
-                // Apply zero offset
-                currentIMUValue = imuValue - imuZeroOffset
-                print("📊 BluetoothManager: IMU value read: \(imuValue), zeroed: \(currentIMUValue ?? 0)")
+                
+                // Apply zero offset only if IMU has been zeroed
+                // This happens once when "Begin Lesson" is clicked
+                // After that, we just subtract the fixed offset from each new reading (fast!)
+                if isIMUZeroed {
+                    currentIMUValue = imuValue - imuZeroOffset
+                } else {
+                    // Before zeroing, just store the raw value
+                    currentIMUValue = imuValue
+                }
+                // Reduced logging for performance - only log occasionally
+                // print("📊 BluetoothManager: IMU raw: \(imuValue), zeroed: \(currentIMUValue ?? 0)")
             } else {
                 print("⚠️ BluetoothManager: Failed to parse IMU data. Raw data: \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
             }
@@ -355,12 +383,12 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
     }
     
     private func startReadingFlexSensor(peripheral: CBPeripheral, characteristic: CBCharacteristic) {
-        readTimer?.invalidate()
-        readTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        flexSensorReadTimer?.invalidate()
+        flexSensorReadTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, 
                   let peripheral = self.connectedPeripheral,
                   peripheral.state == .connected else {
-                self?.readTimer?.invalidate()
+                self?.flexSensorReadTimer?.invalidate()
                 return
             }
             peripheral.readValue(for: characteristic)
@@ -368,14 +396,14 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
     }
     
     private func stopReadingFlexSensor() {
-        readTimer?.invalidate()
-        readTimer = nil
+        flexSensorReadTimer?.invalidate()
+        flexSensorReadTimer = nil
+        imuReadTimer?.invalidate()
+        imuReadTimer = nil
         flexSensorCharacteristic = nil
         currentFlexSensorValue = nil
         imuCharacteristic = nil
-        currentIMUValue = nil
-        rawIMUValue = nil
-        imuZeroOffset = 0.0
+        resetIMUZero()
     }
     
     // MARK: - IMU Data Reading
@@ -414,13 +442,13 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
     
     private func startReadingIMU(peripheral: CBPeripheral, characteristic: CBCharacteristic) {
         // Start periodic reads if notifications aren't available
-        // Note: This may conflict with the flex sensor timer, so we'll use notifications primarily
-        readTimer?.invalidate()
-        readTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        // Use separate timer so both sensors can read simultaneously
+        imuReadTimer?.invalidate()
+        imuReadTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, 
                   let peripheral = self.connectedPeripheral,
                   peripheral.state == .connected else {
-                self?.readTimer?.invalidate()
+                self?.imuReadTimer?.invalidate()
                 return
             }
             peripheral.readValue(for: characteristic)

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PTCreateAccountView: View {
     @EnvironmentObject var router: Router
+    @EnvironmentObject var session: SessionContext
 
     @State private var firstName = ""
     @State private var lastName = ""
@@ -175,7 +176,9 @@ struct PTCreateAccountView: View {
             let practiceNameValue = practiceName.trimmingCharacters(in: .whitespaces).isEmpty ? nil : practiceName
             let practiceAddressValue = practiceAddress.trimmingCharacters(in: .whitespaces).isEmpty ? nil : practiceAddress
 
-            _ = try await PTService.ensurePTProfile(
+            // Capture the PT profile ID and set it in session immediately
+            // This prevents "PT profile not found" errors when navigating
+            let ptProfileId = try await PTService.ensurePTProfile(
                 firstName: firstName,
                 lastName: lastName,
                 email: email,
@@ -186,6 +189,10 @@ struct PTCreateAccountView: View {
                 practiceAddress: practiceAddressValue,
                 specialization: specializationValue
             )
+            
+            // Set the ptProfileId in session context immediately
+            session.ptProfileId = ptProfileId
+            print("✅ PTCreateAccountView: Set session.ptProfileId=\(ptProfileId.uuidString)")
 
             router.go(.patientList)
         } catch {

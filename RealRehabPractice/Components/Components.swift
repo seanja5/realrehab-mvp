@@ -372,43 +372,129 @@ extension View {
 struct RecoveryChartWeekView: View {
     let patientProfileId: UUID?  // Optional: if provided, fetch for specific patient (PT view)
     
-    @State private var calibrationPoints: [TelemetryService.MaximumCalibrationPoint] = []
+    @State private var allCalibrationPoints: [TelemetryService.MaximumCalibrationPoint] = []
     @State private var isLoading = true
     @State private var errorMessage: String? = nil
+    @State private var showFullHistory = false
     
     init(patientProfileId: UUID? = nil) {
         self.patientProfileId = patientProfileId
     }
     
-    // Convert calibration points to chart data format with proper spacing based on timestamps
-    // Points are already sorted chronologically by TelemetryService
-    private var chartData: [(day: Int, degrees: Double)] {
-        let calendar = Calendar.current
+    // Miami, Florida timezone calendar helper
+    private var miamiCalendar: Calendar {
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone.current
+        return calendar
+    }
+    
+    // Get current week range (Sunday to Saturday) in Miami timezone
+    private var currentWeekRange: (start: Date, end: Date) {
+        let calendar = miamiCalendar
+        let now = Date()
         
-        return calibrationPoints.map { point in
-            let day = calendar.component(.day, from: point.recordedAt)
-            return (day: day, degrees: Double(point.degrees))
+        // Get current date components in Miami timezone
+        let components = calendar.dateComponents([.year, .month, .day, .weekday], from: now)
+        
+        // Find the start of the week (Sunday) in Miami timezone
+        guard let weekday = components.weekday else {
+            // Fallback
+            let fallbackCalendar = Calendar.current
+            let weekday = fallbackCalendar.component(.weekday, from: now)
+            let daysFromSunday = (weekday == 1) ? 0 : (weekday - 1)
+            let startOfWeek = fallbackCalendar.date(byAdding: .day, value: -daysFromSunday, to: now)!
+            let startOfWeekStart = fallbackCalendar.startOfDay(for: startOfWeek)
+            let endOfWeek = fallbackCalendar.date(byAdding: .day, value: 6, to: startOfWeekStart)!
+            let endOfWeekEnd = fallbackCalendar.date(bySettingHour: 23, minute: 59, second: 59, of: endOfWeek)!
+            return (start: startOfWeekStart, end: endOfWeekEnd)
+        }
+        
+        let daysFromSunday = (weekday == 1) ? 0 : (weekday - 1) // Sunday is 1
+        guard let startOfWeek = calendar.date(byAdding: .day, value: -daysFromSunday, to: now) else {
+            // Fallback
+            let fallbackCalendar = Calendar.current
+            let weekday = fallbackCalendar.component(.weekday, from: now)
+            let daysFromSunday = (weekday == 1) ? 0 : (weekday - 1)
+            let startOfWeek = fallbackCalendar.date(byAdding: .day, value: -daysFromSunday, to: now)!
+            let startOfWeekStart = fallbackCalendar.startOfDay(for: startOfWeek)
+            let endOfWeek = fallbackCalendar.date(byAdding: .day, value: 6, to: startOfWeekStart)!
+            let endOfWeekEnd = fallbackCalendar.date(bySettingHour: 23, minute: 59, second: 59, of: endOfWeek)!
+            return (start: startOfWeekStart, end: endOfWeekEnd)
+        }
+        
+        let startOfWeekStart = calendar.startOfDay(for: startOfWeek)
+        
+        // Find the end of the week (Saturday) in Miami timezone
+        guard let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeekStart),
+              let endOfWeekEnd = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endOfWeek) else {
+            // Fallback
+            let fallbackCalendar = Calendar.current
+            let weekday = fallbackCalendar.component(.weekday, from: now)
+            let daysFromSunday = (weekday == 1) ? 0 : (weekday - 1)
+            let startOfWeek = fallbackCalendar.date(byAdding: .day, value: -daysFromSunday, to: now)!
+            let startOfWeekStart = fallbackCalendar.startOfDay(for: startOfWeek)
+            let endOfWeek = fallbackCalendar.date(byAdding: .day, value: 6, to: startOfWeekStart)!
+            let endOfWeekEnd = fallbackCalendar.date(bySettingHour: 23, minute: 59, second: 59, of: endOfWeek)!
+            return (start: startOfWeekStart, end: endOfWeekEnd)
+        }
+        
+        return (start: startOfWeekStart, end: endOfWeekEnd)
+    }
+    
+    // Filter calibration points to current week only
+    // Stage filtering already done in TelemetryService - rely on database stage column
+    private var weekCalibrationPoints: [TelemetryService.MaximumCalibrationPoint] {
+        let weekRange = currentWeekRange
+        return allCalibrationPoints.filter { point in
+            // Filter by week range only - stage filtering already done in TelemetryService
+            point.recordedAt >= weekRange.start && point.recordedAt <= weekRange.end
         }
     }
     
-    // Calculate week range string from calibration data
-    private var weekRange: String {
-        guard !calibrationPoints.isEmpty else { return "No data" }
+    // Get all 7 days of the week with their day of month labels (Miami timezone)
+    private var weekDayLabels: [(dayOfWeek: Int, dayOfMonth: Int, date: Date)] {
+        let calendar = miamiCalendar
+        let weekRange = currentWeekRange
+        var labels: [(dayOfWeek: Int, dayOfMonth: Int, date: Date)] = []
         
-        let calendar = Calendar.current
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        
-        let earliestDate = calibrationPoints.map { $0.recordedAt }.min() ?? Date()
-        let latestDate = calibrationPoints.map { $0.recordedAt }.max() ?? Date()
-        
-        // If all points are on the same day
-        if calendar.isDate(earliestDate, inSameDayAs: latestDate) {
-            return formatter.string(from: earliestDate)
+        for dayOffset in 0..<7 {
+            if let dayDate = calendar.date(byAdding: .day, value: dayOffset, to: weekRange.start) {
+                let dayOfWeek = calendar.component(.weekday, from: dayDate) - 1 // Convert to 0-6 (Sunday=0)
+                let dayOfMonth = calendar.component(.day, from: dayDate)
+                labels.append((dayOfWeek: dayOfWeek, dayOfMonth: dayOfMonth, date: dayDate))
+            }
         }
         
-        // Otherwise show range
-        return "\(formatter.string(from: earliestDate))-\(formatter.string(from: latestDate))"
+        return labels.sorted { $0.dayOfWeek < $1.dayOfWeek }
+    }
+    
+    // Convert calibration points to chart data format for current week (Miami timezone)
+    // Show ALL points, not just one per day
+    private var chartData: [(dayOfMonth: Int, degrees: Double, date: Date)] {
+        let calendar = miamiCalendar
+        
+        // Convert all points, preserving all of them (no grouping)
+        return weekCalibrationPoints.map { point in
+            // Extract day of month in Miami timezone explicitly
+            // The calendar's timezone is already set to Miami, so component() will use it
+            let components = calendar.dateComponents([.day], from: point.recordedAt)
+            let dayOfMonth = components.day ?? 1
+            return (dayOfMonth: dayOfMonth, degrees: Double(point.degrees), date: point.recordedAt)
+        }
+        .sorted { $0.date < $1.date } // Sort chronologically
+    }
+    
+    // Calculate week range string for display (Miami timezone)
+    private var weekRange: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        formatter.timeZone = miamiCalendar.timeZone
+        
+        let weekRange = currentWeekRange
+        let startDay = formatter.string(from: weekRange.start)
+        let endDay = formatter.string(from: weekRange.end)
+        
+        return "\(startDay) - \(endDay)"
     }
     
     var body: some View {
@@ -417,30 +503,58 @@ struct RecoveryChartWeekView: View {
                 .font(.rrTitle)
                 .padding(.horizontal, 16)
             
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.white)
-                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
-                .frame(maxWidth: .infinity)
-                .frame(height: 240)
-                .overlay {
-                    if isLoading {
-                        ProgressView()
-                    } else if chartData.isEmpty {
-                        // Show "No Data" overlay in gray text
-                        Text("No Data")
-                            .font(.rrBody)
-                            .foregroundStyle(.gray)
-                            .multilineTextAlignment(.center)
-                    } else {
-                        ChartContentView(
-                            data: chartData,
-                            isWeekView: true,
-                            weekRange: weekRange,
-                            timestamps: calibrationPoints.map { $0.recordedAt }
-                        )
+            Button {
+                showFullHistory = true
+            } label: {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.white)
+                    .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 240)
+                    .overlay {
+                        if isLoading {
+                            ProgressView()
+                        } else if chartData.isEmpty {
+                            // Check if there's any past data
+                            if allCalibrationPoints.isEmpty {
+                                // No data at all
+                                Text("No Data")
+                                    .font(.rrBody)
+                                    .foregroundStyle(.gray)
+                                    .multilineTextAlignment(.center)
+                            } else {
+                                // Has past data but none for this week
+                                VStack(spacing: 8) {
+                                    Text("No data this week")
+                                        .font(.rrBody)
+                                        .foregroundStyle(.secondary)
+                                    Text("Tap to view full history")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.secondary.opacity(0.7))
+                                }
+                                .multilineTextAlignment(.center)
+                            }
+                        } else {
+                            ChartContentView(
+                                data: chartData.map { ($0.dayOfMonth, $0.degrees) },
+                                isWeekView: true,
+                                weekRange: weekRange,
+                                timestamps: chartData.map { $0.date },
+                                weekDayLabels: weekDayLabels.map { ($0.dayOfMonth, $0.date) },
+                                isFullHistory: false,
+                                fullHistoryLabels: nil
+                            )
+                        }
                     }
-                }
-                .padding(.horizontal, 16)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+        }
+        .sheet(isPresented: $showFullHistory) {
+            RecoveryChartFullHistoryView(
+                calibrationPoints: allCalibrationPoints,
+                patientProfileId: patientProfileId
+            )
         }
         .task {
             await loadCalibrationData()
@@ -462,13 +576,91 @@ struct RecoveryChartWeekView: View {
             }
             
             await MainActor.run {
-                calibrationPoints = points
+                allCalibrationPoints = points
                 isLoading = false
             }
         } catch {
             await MainActor.run {
                 errorMessage = "Failed to load calibration data: \(error.localizedDescription)"
                 isLoading = false
+            }
+        }
+    }
+}
+
+// MARK: - Recovery Chart (Full History View)
+struct RecoveryChartFullHistoryView: View {
+    let calibrationPoints: [TelemetryService.MaximumCalibrationPoint]
+    let patientProfileId: UUID?
+    @Environment(\.dismiss) private var dismiss
+    
+    // Miami, Florida timezone calendar helper
+    private var miamiCalendar: Calendar {
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone.current
+        return calendar
+    }
+    
+    // Convert all calibration points to chart data (Miami timezone)
+    // Show ALL points, not just one per day
+    // Stage filtering already done in TelemetryService - rely on database stage column
+    private var chartData: [(day: Int, month: String, degrees: Double, date: Date)] {
+        let calendar = miamiCalendar
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
+        formatter.timeZone = calendar.timeZone
+        
+        // No degree filtering - rely only on stage column from database
+        return calibrationPoints.map { point in
+            let components = calendar.dateComponents([.day, .month], from: point.recordedAt)
+            let day = components.day ?? 1
+            let month = formatter.string(from: point.recordedAt)
+            return (day: day, month: month, degrees: Double(point.degrees), date: point.recordedAt)
+        }
+        .sorted { $0.date < $1.date } // Sort chronologically
+    }
+    
+    var body: some View {
+        NavigationStack {
+            GeometryReader { geometry in
+                ScrollView(.horizontal, showsIndicators: true) {
+                    VStack {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(.white)
+                            .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                            .frame(width: max(geometry.size.width, CGFloat(chartData.count) * 60), height: 400)
+                            .padding()
+                            .overlay {
+                                if chartData.isEmpty {
+                                    Text("No Data")
+                                        .font(.rrBody)
+                                        .foregroundStyle(.gray)
+                                        .multilineTextAlignment(.center)
+                                } else {
+                                    ChartContentView(
+                                        data: chartData.map { ($0.day, $0.degrees) },
+                                        isWeekView: false,
+                                        weekRange: nil,
+                                        timestamps: chartData.map { $0.date },
+                                        weekDayLabels: nil,
+                                        isFullHistory: true,
+                                        fullHistoryLabels: chartData.map { ($0.day, $0.month, $0.date) }
+                                    )
+                                }
+                            }
+                        
+                        Spacer()
+                    }
+                }
+            }
+            .navigationTitle("Full Progress History")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
             }
         }
     }
@@ -504,7 +696,10 @@ struct RecoveryChartMonthView: View {
                             data: monthData,
                             isWeekView: false,
                             weekRange: nil,
-                            timestamps: nil
+                            timestamps: nil,
+                            weekDayLabels: nil,
+                            isFullHistory: false,
+                            fullHistoryLabels: nil
                         )
                     }
                 
@@ -529,22 +724,107 @@ struct ChartContentView: View {
     let isWeekView: Bool
     let weekRange: String?
     let timestamps: [Date]?  // Optional timestamps for proper spacing
+    let weekDayLabels: [(dayOfMonth: Int, date: Date)]?  // Optional: all 7 days of week with labels for week view
+    let isFullHistory: Bool  // Whether this is the full history view
+    let fullHistoryLabels: [(day: Int, month: String, date: Date)]?  // Optional: full history labels with month info
     
-    private var minDegrees: Double {
+    init(
+        data: [(day: Int, degrees: Double)],
+        isWeekView: Bool,
+        weekRange: String?,
+        timestamps: [Date]?,
+        weekDayLabels: [(dayOfMonth: Int, date: Date)]? = nil,
+        isFullHistory: Bool = false,
+        fullHistoryLabels: [(day: Int, month: String, date: Date)]? = nil
+    ) {
+        self.data = data
+        self.isWeekView = isWeekView
+        self.weekRange = weekRange
+        self.timestamps = timestamps
+        self.weekDayLabels = weekDayLabels
+        self.isFullHistory = isFullHistory
+        self.fullHistoryLabels = fullHistoryLabels
+    }
+    
+    private var dataMinDegrees: Double {
         data.map { $0.degrees }.min() ?? 0
     }
     
-    private var maxDegrees: Double {
+    private var dataMaxDegrees: Double {
         data.map { $0.degrees }.max() ?? 100
     }
     
+    // Calculate Y-axis range with dynamic increments starting ~10 degrees below minimum
+    private func calculateYAxisRange() -> (min: Double, max: Double, increment: Double, labels: [Double]) {
+        let dataMin = dataMinDegrees
+        let dataMax = dataMaxDegrees
+        let range = dataMax - dataMin
+        
+        // Start ~10 degrees below minimum, rounded down to nearest 10
+        let axisMin = floor((dataMin - 10) / 10) * 10
+        
+        // Determine increment based on range
+        let increment: Double
+        if range < 50 {
+            increment = 10
+        } else if range < 100 {
+            increment = 20
+        } else if range < 200 {
+            increment = 25
+        } else {
+            increment = 50
+        }
+        
+        // Calculate max to show (ensure we have enough range above data)
+        let axisMax = ceil((dataMax + 10) / increment) * increment
+        
+        // Generate Y-axis labels
+        var labels: [Double] = []
+        var current = axisMin
+        while current <= axisMax {
+            labels.append(current)
+            current += increment
+        }
+        
+        return (min: axisMin, max: axisMax, increment: increment, labels: labels)
+    }
+    
+    private var yAxisInfo: (min: Double, max: Double, increment: Double, labels: [Double]) {
+        calculateYAxisRange()
+    }
+    
     private var degreesRange: Double {
-        maxDegrees - minDegrees
+        yAxisInfo.max - yAxisInfo.min
     }
     
     // Calculate the full day range (from earliest to latest day, including all days in between)
     // Also includes one extra day after the latest day for spacing points on the last day
     private var fullDayRange: [Int] {
+        // If weekDayLabels is provided (for week view), use all 7 days
+        if let weekDayLabels = weekDayLabels, isWeekView {
+            let days = weekDayLabels.map { $0.dayOfMonth }.sorted()
+            if let lastDay = days.last {
+                var result = days
+                result.append(lastDay + 1) // Add next day for spacing points on the last day
+                return result
+            }
+            return days
+        }
+        
+        // For full history mode, use all unique days from data
+        if isFullHistory {
+            let uniqueDays = Set(data.map { $0.day }).sorted()
+            guard let firstDay = uniqueDays.first,
+                  let lastDay = uniqueDays.last else {
+                return uniqueDays
+            }
+            // Return all days from first to last, inclusive, plus one extra day for spacing
+            var days = Array(firstDay...lastDay)
+            days.append(lastDay + 1) // Add next day for spacing points on the last day
+            return days
+        }
+        
+        // Otherwise, use the data-based range
         let uniqueDays = Set(data.map { $0.day }).sorted()
         guard let firstDay = uniqueDays.first,
               let lastDay = uniqueDays.last else {
@@ -558,8 +838,34 @@ struct ChartContentView: View {
     
     // Calculate X positions with points positioned AFTER their day label
     private func xPosition(for index: Int, in chartWidth: CGFloat) -> CGFloat {
+        // For full history mode, use chronological spacing
+        if isFullHistory {
+            let numPoints = CGFloat(data.count)
+            let usableWidth = chartWidth - 60
+            let pointSpacing = numPoints > 1 ? usableWidth / (numPoints - 1) : 0
+            return 30 + (CGFloat(index) * pointSpacing)
+        }
+        
+        // For week view with single point, position it over the correct day using timestamp
+        if isWeekView, data.count == 1, let timestamps = timestamps, let weekDayLabels = weekDayLabels, index < timestamps.count {
+            let pointDate = timestamps[index]
+            var calendar = Calendar.current
+            calendar.timeZone = TimeZone(identifier: "America/New_York") ?? TimeZone.current
+            
+            // Get day of month from the timestamp in Miami timezone
+            let pointDay = calendar.component(.day, from: pointDate)
+            
+            // Find which day of week this corresponds to
+            if let dayIndex = weekDayLabels.firstIndex(where: { $0.dayOfMonth == pointDay }) {
+                let numDays = CGFloat(weekDayLabels.count)
+                let usableWidth = chartWidth - 60
+                let dayLabelSpacing = usableWidth / (numDays > 1 ? numDays - 1 : 1)
+                return 30 + (CGFloat(dayIndex) * dayLabelSpacing)
+            }
+        }
+        
         guard data.count > 1 else {
-            // Fall back to center
+            // Fall back to center only if we can't find the day
             return 30 + (chartWidth - 60) / 2
         }
         
@@ -678,10 +984,12 @@ struct ChartContentView: View {
                     
                     // Chart area
                     ZStack(alignment: .topLeading) {
-                        // Y-axis grid lines and labels
-                        ForEach(0..<5) { i in
-                            let y = CGFloat(i) * (chartHeight / 4)
-                            let value = maxDegrees - (Double(i) * degreesRange / 4)
+                        // Y-axis grid lines and labels (using dynamic calculation)
+                        let yLabels = yAxisInfo.labels
+                        ForEach(Array(yLabels.enumerated()), id: \.offset) { index, value in
+                            // Calculate Y position: normalize value to 0-1 range, then map to chart height
+                            let normalizedValue = degreesRange > 0 ? (value - yAxisInfo.min) / degreesRange : 0.5
+                            let y = CGFloat(normalizedValue) * chartHeight
                             
                             VStack(spacing: 0) {
                                 HStack {
@@ -698,14 +1006,15 @@ struct ChartContentView: View {
                                 Spacer()
                             }
                             .frame(height: chartHeight)
-                            .offset(y: y)
+                            .offset(y: chartHeight - y) // Flip Y axis (0 at bottom)
                         }
                         
                         // Plot line
                         Path { path in
                             for (index, point) in data.enumerated() {
                                 let x = xPosition(for: index, in: chartWidth)
-                                let normalizedDegrees = degreesRange > 0 ? (point.degrees - minDegrees) / degreesRange : 0.5
+                                // Normalize using Y-axis range (not data range)
+                                let normalizedDegrees = degreesRange > 0 ? (point.degrees - yAxisInfo.min) / degreesRange : 0.5
                                 let y = CGFloat(normalizedDegrees) * chartHeight
                                 
                                 if index == 0 {
@@ -720,7 +1029,8 @@ struct ChartContentView: View {
                         // Plot points - positioned based on timestamps
                         ForEach(Array(data.enumerated()), id: \.offset) { index, point in
                             let x = xPosition(for: index, in: chartWidth)
-                            let normalizedDegrees = degreesRange > 0 ? (point.degrees - minDegrees) / degreesRange : 0.5
+                            // Normalize using Y-axis range (not data range)
+                            let normalizedDegrees = degreesRange > 0 ? (point.degrees - yAxisInfo.min) / degreesRange : 0.5
                             let y = CGFloat(normalizedDegrees) * chartHeight
                             
                             Circle()
@@ -740,16 +1050,61 @@ struct ChartContentView: View {
                         .frame(width: yAxisLabelWidth)
                     
                     if isWeekView {
-                        // Week view: show unique day numbers only (one per day)
+                        // Week view: show all 7 days of the week
                         ZStack {
-                            ForEach(uniqueDayPositions(in: chartWidth), id: \.day) { dayPosition in
-                                Text("\(dayPosition.day)")
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.secondary)
-                                    .position(x: dayPosition.x, y: 10)
+                            if let weekDayLabels = weekDayLabels {
+                                // Show all 7 days, even if no data
+                                let numDays = CGFloat(weekDayLabels.count)
+                                let usableWidth = chartWidth - 60
+                                let dayLabelSpacing = usableWidth / (numDays > 1 ? numDays - 1 : 1)
+                                
+                                ForEach(Array(weekDayLabels.enumerated()), id: \.offset) { index, label in
+                                    let x = 30 + (CGFloat(index) * dayLabelSpacing)
+                                    
+                                    Text("\(label.dayOfMonth)")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.secondary)
+                                        .position(x: x, y: 10)
+                                }
+                            } else {
+                                // Fallback to original behavior
+                                ForEach(uniqueDayPositions(in: chartWidth), id: \.day) { dayPosition in
+                                    Text("\(dayPosition.day)")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.secondary)
+                                        .position(x: dayPosition.x, y: 10)
+                                }
                             }
                         }
                         .frame(width: chartWidth, height: 20)
+                    } else if isFullHistory, let fullHistoryLabels = fullHistoryLabels {
+                        // Full history view: show day numbers with month indicators
+                        ZStack {
+                            let numPoints = CGFloat(fullHistoryLabels.count)
+                            let usableWidth = chartWidth - 60
+                            let pointSpacing = numPoints > 1 ? usableWidth / (numPoints - 1) : 0
+                            
+                            ForEach(Array(fullHistoryLabels.enumerated()), id: \.offset) { index, label in
+                                let x = 30 + (CGFloat(index) * pointSpacing)
+                                
+                                // Show month in parentheses when month changes
+                                let showMonth = index == 0 || fullHistoryLabels[index - 1].month != label.month
+                                
+                                VStack(spacing: 2) {
+                                    Text("\(label.day)")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.secondary)
+                                    
+                                    if showMonth {
+                                        Text("(\(label.month))")
+                                            .font(.system(size: 8))
+                                            .foregroundStyle(.secondary.opacity(0.7))
+                                    }
+                                }
+                                .position(x: x, y: showMonth ? 18 : 10)
+                            }
+                        }
+                        .frame(width: chartWidth, height: 30)
                     } else {
                         // Month view: show day numbers (scrollable)
                         ScrollView(.horizontal, showsIndicators: false) {

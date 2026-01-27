@@ -273,8 +273,7 @@ enum TelemetryService {
           .from("calibrations")
           .select("*")
           .eq("device_assignment_id", value: assignmentId.uuidString)
-          .eq("stage", value: "maximum_position")  // Only maximum_position, not starting_position
-          .neq("stage", value: "starting_position")  // Explicitly exclude starting_position as safety check
+          .eq("stage", value: "maximum_position")  // Only filter by stage column - rely on database
           .order("recorded_at", ascending: true)
           .decoded(as: [CalibrationRow].self)
         
@@ -311,11 +310,8 @@ enum TelemetryService {
           degrees = storedValue
         }
         
-        // Additional validation: maximum values should typically be above 90 degrees (rest position)
-        // If we get a value that's suspiciously low (like rest position), log a warning
-        if degrees < 100 {
-          print("⚠️ TelemetryService: Warning - maximum calibration value is very low (\(degrees) degrees). This might be a rest position value.")
-        }
+        // Rely only on stage column from database - no degree-based filtering
+        // The database stage column is the source of truth
         
         return MaximumCalibrationPoint(
           id: calibration.id,

@@ -1,0 +1,55 @@
+# RealRehab MVP – Cursor rules
+
+## Xcode project: add new files to the project
+
+When you create **new Swift files** or **resource files** (e.g. `.plist`, `.storyboard`, asset catalogs) under `RealRehabPractice/` (excluding test bundles), **always update** `RealRehabPractice/RealRehabPractice.xcodeproj/project.pbxproj` so they appear in Xcode and are built. Do this in the same change that adds the file.
+
+### Steps for each new file
+
+1. **Generate two unique 24-character hex IDs** (e.g. `C8A1B2C32ED00001004D9347`). Use one for the file reference, one for the build file. Do not reuse existing IDs from the project.
+
+2. **PBXFileReference** (in the `/* Begin PBXFileReference section */` … `/* End PBXFileReference section */` block):
+   - For `.swift`:  
+     `ID /* Filename */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Filename; sourceTree = "<group>"; };`
+   - For `.plist`:  
+     `lastKnownFileType = text.plist.xml;`
+   - For `.storyboard`:  
+     `lastKnownFileType = file.storyboard;`
+   - For asset catalogs:  
+     `lastKnownFileType = folder.assetcatalog;`
+
+3. **PBXBuildFile** (in the `/* Begin PBXBuildFile section */` … `/* End PBXBuildFile section */` block):
+   - For Swift (app target):  
+     `BUILDFILEID /* Filename in Sources */ = {isa = PBXBuildFile; fileRef = FILEREFID /* Filename */; };`
+   - For resources (plist, storyboard, xcassets):  
+     `BUILDFILEID /* Filename in Resources */ = {isa = PBXBuildFile; fileRef = FILEREFID /* Filename */; };`
+
+4. **PBXGroup**: Add the file reference to the correct group’s `children` array. Match the folder structure:
+   - `App/` → group `C8D677BE2EB831BF00829144 /* App */`
+   - `Views/Onboarding/` → `C8D677C52EB8326500829144 /* Onboarding */`
+   - `Views/Home/` → `C8D677C62EB8327100829144 /* Home */`
+   - `Views/Lessons/` → `C8D677C72EB8327900829144 /* Lessons */`
+   - `Views/PTViews/` → `C8D677EF2EBA932000829144 /* PTViews */`
+   - `Views/Settings/` → `C82D70362ED0AB17004D9347 /* Settings */`
+   - `Views/` (file directly under Views) → `C8D677C12EB831E500829144 /* Views */`
+   - `Services/` → `C82D700D2EBE91D3004D9347 /* Services */`
+   - `Services/BLE/` → `C8F4A6F02ED2C79A00BADF02 /* BLE */`
+   - `Services/Cache/` → `C82537722F2B12C300465343 /* Cache */`
+   - `ViewModels/` → `C82D70262EBEB10C004D9347 /* ViewModels */`
+   - `Models/` → `C8D677C22EB8321100829144 /* Models */`
+   - `Components/` → `C8D677BF2EB831D600829144 /* Components */`
+   - `Utilities/` → `C8D677C42EB8321E00829144 /* Utilities */`
+   - `Resources/` → `C8D677C32EB8321800829144 /* Resources */`
+
+5. **Build phase**:
+   - **Swift** → add the PBXBuildFile to `C89A84AD2EB138150074B855 /* Sources */` (main app target Sources).
+   - **Resources** (plist, storyboard, xcassets) → add the PBXBuildFile to `C89A84AF2EB138150074B855 /* Resources */`.
+
+### Summary
+
+- One **PBXFileReference** per file (path = filename, correct `lastKnownFileType`).
+- One **PBXBuildFile** per file (Sources or Resources).
+- File ref added to the **correct PBXGroup** `children`.
+- Build file added to **PBXSourcesBuildPhase** (Sources) or **PBXResourcesBuildPhase** (Resources) for the main app target.
+
+This keeps new files visible in Xcode and included in the build without manual “Add Files” in Xcode.

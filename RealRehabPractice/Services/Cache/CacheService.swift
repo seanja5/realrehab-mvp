@@ -107,7 +107,8 @@ final class CacheService {
     // MARK: - Combined Operations
     
     /// Get value from cache (memory first, then disk)
-    func getCached<T: Codable>(_ key: String, as type: T.Type, useDisk: Bool = false) -> T? {
+    func getCached<T: Codable>(_ key: String, as type: T.Type, useDisk: Bool = false) async -> T? {
+        await Task.yield()
         // Try memory first
         if let value = get(key, as: type) {
             return value
@@ -122,7 +123,8 @@ final class CacheService {
     }
     
     /// Set value in cache (memory, optionally disk)
-    func setCached<T: Codable>(_ value: T, forKey key: String, ttl: TimeInterval, useDisk: Bool = false) {
+    func setCached<T: Codable>(_ value: T, forKey key: String, ttl: TimeInterval, useDisk: Bool = false) async {
+        await Task.yield()
         if useDisk {
             setToDisk(value, forKey: key, ttl: ttl)
         } else {
@@ -160,16 +162,17 @@ final class CacheService {
     }
     
     /// Invalidate specific key (remove from both memory and disk)
-    func invalidate(_ key: String) {
+    func invalidate(_ key: String) async {
+        await Task.yield()
         remove(key)
         removeFromDisk(key)
     }
     
     /// Invalidate keys matching pattern (e.g., all patient_profile:*)
-    func invalidateMatching(_ pattern: String) {
+    func invalidateMatching(_ pattern: String) async {
         let keysToRemove = memoryCache.keys.filter { $0.hasPrefix(pattern) }
         for key in keysToRemove {
-            invalidate(key)
+            await invalidate(key)
         }
     }
 }

@@ -62,7 +62,7 @@ struct CreateAccountView: View {
                                     .textInputAutocapitalization(.never)
                                     .textContentType(.emailAddress)
                                     .autocorrectionDisabled()
-                                    .onChange(of: email) { auth.email = $0 }
+                                    .onChange(of: email) { oldValue, newValue in auth.email = newValue }
                                 
                                 FormTextField(title: "Phone Number", placeholder: "Phone Number", text: $phoneNumber)
                                     .keyboardType(.phonePad)
@@ -78,7 +78,7 @@ struct CreateAccountView: View {
                                 
                                 FormSecureField(title: "Password", placeholder: "Password", text: $password)
                                     .textContentType(.newPassword)
-                                    .onChange(of: password) { auth.password = $0 }
+                                    .onChange(of: password) { oldValue, newValue in auth.password = newValue }
                                 
                                 FormSecureField(title: "Confirm Password", placeholder: "Confirm Password", text: $confirmPassword)
                                     .textContentType(.newPassword)

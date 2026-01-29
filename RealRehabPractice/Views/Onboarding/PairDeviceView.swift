@@ -144,8 +144,8 @@ struct PairDeviceView: View {
         .onDisappear {
             ble.stopScan()
         }
-        .onChange(of: ble.peripherals) { peripherals in
-            if let match = peripherals.first {
+        .onChange(of: ble.peripherals) { oldValue, newValue in
+            if let match = newValue.first {
                 presentPairing(for: match)
             }
         }

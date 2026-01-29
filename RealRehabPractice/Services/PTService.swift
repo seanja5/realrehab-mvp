@@ -198,7 +198,7 @@ enum PTService {
                 
                 // Call RPC function - PostgREST returns UUID as a string directly
                 // The function returns uuid type, which PostgREST serializes as a string
-                return try await client.database
+                return try await client
                     .rpc("add_patient_with_mapping", params: params)
                     .single()
                     .execute()

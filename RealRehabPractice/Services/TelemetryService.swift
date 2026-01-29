@@ -110,7 +110,7 @@ enum TelemetryService {
       throw NSError(domain: "TelemetryService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profile not found"])
     }
     
-    let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
+    _ = try await PatientService.myPatientProfileId(profileId: profile.id)
     
     // Step 1: Get or create device using RPC (devices table RLS only allows admin)
     // The RPC function handles device creation, but we need to extract device_id from the assignment
@@ -122,7 +122,6 @@ enum TelemetryService {
       let params = RPCParams(p_bluetooth_identifier: bluetoothIdentifier)
       
       return try await supabase
-        .database
         .rpc("get_or_create_device_assignment", params: params)
         .single()
         .execute()

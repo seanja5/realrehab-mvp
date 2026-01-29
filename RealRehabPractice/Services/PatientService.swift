@@ -327,7 +327,6 @@ enum PatientService {
       
       // Call RPC function that bypasses RLS
       try await client
-        .database
         .rpc("link_patient_to_pt", params: params)
         .execute()
     }.value
@@ -356,7 +355,6 @@ enum PatientService {
       
       // Call RPC function that updates placeholder and handles duplicates
       try await client
-        .database
         .rpc("link_patient_via_access_code", params: params)
         .execute()
     }.value
@@ -385,7 +383,6 @@ enum PatientService {
       
       // RPC returns UUID as string, or null if not found
       return try await client
-        .database
         .rpc("get_pt_profile_id_by_access_code", params: params)
         .single()
         .execute()

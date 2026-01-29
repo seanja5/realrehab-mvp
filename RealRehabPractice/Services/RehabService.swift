@@ -145,7 +145,7 @@ enum RehabService {
       .from("rehab.lessons")
       .update(payload)
       .eq("id", value: lessonId.uuidString)
-      .execute()
+      .executeAsync()
   }
 
   // PT-only: reorder lessons by updating order_index
@@ -158,7 +158,7 @@ enum RehabService {
       .from("rehab.lessons")
       .update(payload)
       .eq("id", value: lessonId.uuidString)
-      .execute()
+      .executeAsync()
   }
   
   // MARK: - Rehab Plans (MVP)
@@ -227,7 +227,7 @@ enum RehabService {
         .update(AnyEncodable(["status": "archived"]))
         .eq("patient_profile_id", value: patientProfileId.uuidString)
         .eq("status", value: "active")
-        .execute()
+        .executeAsync()
       
       // Convert LessonNode array to PlanNodeDTO array
       let nodeDTOs = nodes.map { node in
@@ -266,7 +266,7 @@ enum RehabService {
         .schema("accounts")
         .from("rehab_plans")
         .insert(AnyEncodable(payload))
-        .execute()
+        .executeAsync()
       
       // Invalidate cache for this plan
       let cacheKey = CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
@@ -377,7 +377,7 @@ enum RehabService {
         .from("rehab_plans")
         .update(AnyEncodable(updatePayload))
         .eq("id", value: plan.id.uuidString)
-        .execute()
+        .executeAsync()
       
       // Invalidate cache for this plan
       let cacheKey = CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)

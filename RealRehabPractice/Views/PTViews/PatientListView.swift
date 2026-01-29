@@ -108,7 +108,7 @@ struct PatientListView: View {
             vm.setPTProfileId(session.ptProfileId)
             await vm.load()
         }
-        .onChange(of: session.ptProfileId) { newValue in
+        .onChange(of: session.ptProfileId) { oldValue, newValue in
             vm.setPTProfileId(newValue)
         }
         .alert("Error", isPresented: .constant(vm.errorMessage != nil)) {

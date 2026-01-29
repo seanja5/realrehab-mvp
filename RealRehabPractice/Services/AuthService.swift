@@ -30,7 +30,7 @@ enum AuthService {
     try await supabase.auth.signOut()
     // Clear all caches on logout
     Task { @MainActor in
-      await CacheService.shared.clearAll()
+      CacheService.shared.clearAll()
       print("✅ AuthService.signOut: cleared all caches")
     }
   }
@@ -344,11 +344,18 @@ extension Date {
 }
 
 extension PostgrestBuilder {
+  /// Async wrapper so `await` has a real suspension (avoids "no async operations" warning).
+  func executeAsync(options: FetchOptions = FetchOptions()) async throws {
+    await Task.yield()
+    _ = try await execute(options: options)
+  }
+
   func decoded<T: Decodable>(
     as type: T.Type = T.self,
     options: FetchOptions = FetchOptions()
   ) async throws -> T {
-    try await execute(options: options).value
+    await Task.yield()
+    return try await execute(options: options).value
   }
 }
 

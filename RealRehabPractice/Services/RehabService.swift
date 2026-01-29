@@ -3,7 +3,7 @@ import Supabase
 import PostgREST
 
 // Supabase includes CodableValue to decode JSONB flexibly
-struct Lesson: Decodable, Equatable {
+struct Lesson: Codable, Equatable {
   let id: UUID
   let program_id: UUID
   let exercise_id: UUID
@@ -12,14 +12,14 @@ struct Lesson: Decodable, Equatable {
   let created_at: Date?
 }
 
-struct AssignmentRow: Decodable {
+struct AssignmentRow: Codable {
   let id: UUID
   let patient_id: UUID
   let program_id: UUID
   let active: Bool
 }
 
-struct ProgramRow: Decodable {
+struct ProgramRow: Codable {
   let id: UUID
   let title: String
   let description: String?
@@ -39,7 +39,7 @@ enum RehabService {
     let restSec: Int
   }
   
-  struct PlanRow: Decodable {
+  struct PlanRow: Codable {
     let id: UUID
     let pt_profile_id: UUID
     let patient_profile_id: UUID
@@ -54,6 +54,14 @@ enum RehabService {
   // Active assignment for current (patient) user
   static func myActiveAssignment() async throws -> AssignmentRow {
     let uid = try AuthService.currentUserId()
+    let cacheKey = CacheKey.activeAssignment(userId: uid)
+    
+    // Check cache first (memory only, 10min TTL)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: AssignmentRow.self, useDisk: false) {
+      print("✅ RehabService.myActiveAssignment: cache hit")
+      return cached
+    }
+    
     let rows: [AssignmentRow] = try await supabase
       .from("rehab.assignments")
       .select()
@@ -69,22 +77,48 @@ enum RehabService {
         userInfo: [NSLocalizedDescriptionKey: "No active assignment"]
       )
     }
+    
+    // Cache the result (memory only, 10min TTL)
+    await CacheService.shared.setCached(first, forKey: cacheKey, ttl: CacheService.TTL.assignment, useDisk: false)
+    print("✅ RehabService.myActiveAssignment: cached result")
 
     return first
   }
 
   // Ordered lessons for a program
   static func lessons(for programId: UUID) async throws -> [Lesson] {
-    try await supabase
+    let cacheKey = CacheKey.lessons(programId: programId)
+    
+    // Check cache first (memory only, 10min TTL)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: [Lesson].self, useDisk: false) {
+      print("✅ RehabService.lessons: cache hit")
+      return cached
+    }
+    
+    let result = try await supabase
       .from("rehab.lessons")
       .select()
       .eq("program_id", value: programId.uuidString)
       .order("order_index", ascending: true)
       .decoded(as: [Lesson].self)
+    
+    // Cache the result (memory only, 10min TTL)
+    await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.lessons, useDisk: false)
+    print("✅ RehabService.lessons: cached \(result.count) lessons")
+    
+    return result
   }
 
   // Fetch program metadata (useful for UI headers)
   static func program(id: UUID) async throws -> ProgramRow? {
+    let cacheKey = CacheKey.program(programId: id)
+    
+    // Check cache first (memory only, 10min TTL)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: ProgramRow?.self, useDisk: false) {
+      print("✅ RehabService.program: cache hit")
+      return cached
+    }
+    
     let rows: [ProgramRow] = try await supabase
       .from("rehab.programs")
       .select()
@@ -92,7 +126,13 @@ enum RehabService {
       .limit(1)
       .decoded(as: [ProgramRow].self)
 
-    return rows.first
+    let result = rows.first
+    
+    // Cache the result (memory only, 10min TTL)
+    await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.program, useDisk: false)
+    print("✅ RehabService.program: cached result")
+    
+    return result
   }
 
   // PT-only: update lesson params (JSON) e.g. ["reps": 12, "rest_seconds": 20]
@@ -126,6 +166,14 @@ enum RehabService {
   static func currentPlan(ptProfileId: UUID, patientProfileId: UUID) async throws -> PlanRow? {
     print("🔍 RehabService.currentPlan: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
     
+    let cacheKey = CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
+    
+    // Check cache first (memory only, 5min TTL)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: PlanRow?.self, useDisk: false) {
+      print("✅ RehabService.currentPlan: cache hit")
+      return cached
+    }
+    
     do {
       let rows: [PlanRow] = try await supabase
         .schema("accounts")
@@ -137,13 +185,19 @@ enum RehabService {
         .limit(1)
         .decoded(as: [PlanRow].self)
       
-      if let plan = rows.first {
+      let result = rows.first
+      
+      if let plan = result {
         print("✅ RehabService.currentPlan: found plan id=\(plan.id.uuidString), category=\(plan.category), injury=\(plan.injury)")
       } else {
         print("ℹ️ RehabService.currentPlan: no active plan found for pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
       }
       
-      return rows.first
+      // Cache the result (memory only, 5min TTL)
+      await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.rehabPlan, useDisk: false)
+      print("✅ RehabService.currentPlan: cached result")
+      
+      return result
     } catch {
       // Handle permission errors with user-friendly message
       if let postgrestError = error as? PostgrestError {
@@ -213,6 +267,11 @@ enum RehabService {
         .from("rehab_plans")
         .insert(AnyEncodable(payload))
         .execute()
+      
+      // Invalidate cache for this plan
+      let cacheKey = CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
+      await CacheService.shared.invalidate(cacheKey)
+      print("✅ RehabService.saveACLPlan: invalidated cache")
       
       print("✅ RehabService.saveACLPlan: successfully saved plan with \(nodes.count) nodes")
     } catch {
@@ -288,14 +347,20 @@ enum RehabService {
         .decoded(as: [PlanIdRow].self)
       
       guard let plan = rows.first else {
-        // If no plan exists, create one with just notes
-        print("ℹ️ RehabService.updatePlanNotes: no active plan found, creating one with notes")
-        try await saveACLPlan(
-          ptProfileId: ptProfileId,
-          patientProfileId: patientProfileId,
-          nodes: [],  // Empty nodes for notes-only plan
-          notes: notes
-        )
+        // If no plan exists and notes are provided, create a notes-only plan (with empty nodes)
+        // This plan won't show in the UI because we check for nodes before displaying
+        if let notes = notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+          print("ℹ️ RehabService.updatePlanNotes: no active plan found, creating notes-only plan (hidden from UI)")
+          try await saveACLPlan(
+            ptProfileId: ptProfileId,
+            patientProfileId: patientProfileId,
+            nodes: [],  // Empty nodes - plan won't show in UI
+            notes: notes
+          )
+        } else {
+          // No notes to save, nothing to do
+          print("ℹ️ RehabService.updatePlanNotes: no active plan found and no notes to save")
+        }
         return
       }
       
@@ -313,6 +378,11 @@ enum RehabService {
         .update(AnyEncodable(updatePayload))
         .eq("id", value: plan.id.uuidString)
         .execute()
+      
+      // Invalidate cache for this plan
+      let cacheKey = CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
+      await CacheService.shared.invalidate(cacheKey)
+      print("✅ RehabService.updatePlanNotes: invalidated cache")
       
       print("✅ RehabService.updatePlanNotes: successfully updated notes")
     } catch {

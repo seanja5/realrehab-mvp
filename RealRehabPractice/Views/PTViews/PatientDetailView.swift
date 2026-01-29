@@ -68,7 +68,8 @@ struct PatientDetailView: View {
                         Text("Current Rehab Plan")
                             .font(.rrTitle)
                         
-                        if let plan = currentPlan {
+                        if let plan = currentPlan, let nodes = plan.nodes, !nodes.isEmpty {
+                            // Only show plan card if plan has actual nodes (exercises)
                             // Show image card - make it tappable
                             Button {
                                 // Navigate to PTJourneyMapView with planId to edit existing plan
@@ -106,8 +107,8 @@ struct PatientDetailView: View {
                     }
                     .padding(.horizontal, 16)
                     
-                    // Progress this week section (outside the if/else to ensure consistent width)
-                    if currentPlan != nil {
+                    // Progress this week section (only show if plan has nodes)
+                    if let plan = currentPlan, let nodes = plan.nodes, !nodes.isEmpty {
                         RecoveryChartWeekView(patientProfileId: patientProfileId)
                             .padding(.top, 16)
                         

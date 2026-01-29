@@ -31,7 +31,10 @@ public final class JourneyMapViewModel: ObservableObject {
     
     @MainActor
     public func load() async {
-        isLoading = true
+        // Only show loading if we don't have data yet
+        if nodes.isEmpty {
+            isLoading = true
+        }
         errorMessage = nil
         
         do {
@@ -44,25 +47,12 @@ public final class JourneyMapViewModel: ObservableObject {
             let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
             print("🔍 JourneyMapViewModel: patient_profile_id=\(patientProfileId.uuidString)")
             
-            // Get PT profile ID from pt_patient_map
-            struct MapRow: Decodable {
-                let pt_profile_id: UUID
-            }
-            let mapRows: [MapRow] = try await SupabaseService.shared.client
-                .schema("accounts")
-                .from("pt_patient_map")
-                .select("pt_profile_id")
-                .eq("patient_profile_id", value: patientProfileId.uuidString)
-                .limit(1)
-                .decoded()
-            
-            guard let mapRow = mapRows.first else {
+            // Get PT profile ID from patient profile ID (using cached service)
+            guard let ptProfileId = try await PatientService.getPTProfileId(patientProfileId: patientProfileId) else {
                 print("⚠️ JourneyMapViewModel: no pt_patient_map found for patient")
                 isLoading = false
                 return
             }
-            
-            let ptProfileId = mapRow.pt_profile_id
             print("🔍 JourneyMapViewModel: pt_profile_id=\(ptProfileId.uuidString)")
             
             // Fetch the active rehab plan

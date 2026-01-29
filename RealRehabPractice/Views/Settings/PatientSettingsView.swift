@@ -246,7 +246,10 @@ struct PatientSettingsView: View {
     }
     
     private func loadProfile() async {
-        isLoading = true
+        // Only show loading if we don't have data yet
+        if patientProfile == nil && (email?.isEmpty ?? true) {
+            isLoading = true
+        }
         errorMessage = nil
         do {
             let profile = try await PatientService.myPatientProfile()

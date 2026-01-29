@@ -10,6 +10,9 @@
 		C8003FA22EB42E72008DC812 /* SupabaseConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */; };
 		C8003FAD2EB441F1008DC812 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = C8003FAC2EB441F1008DC812 /* Supabase */; };
 		C8003FB52EB7FD57008DC812 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8003FB42EB7FC39008DC812 /* Components.swift */; };
+		C82537732F2B12C300465343 /* CacheKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82537702F2B12C300465343 /* CacheKey.swift */; };
+		C82537742F2B12C300465343 /* CacheService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82537712F2B12C300465343 /* CacheService.swift */; };
+		C82537752F2B12C300465343 /* CacheEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C825376F2F2B12C300465343 /* CacheEntry.swift */; };
 		C826BD3F2ECC23CB00B500DC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C826BD3E2ECC23CB00B500DC /* Assets.xcassets */; };
 		C82D700E2EBE91D3004D9347 /* RehabService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D700A2EBE91D3004D9347 /* RehabService.swift */; };
 		C82D700F2EBE91D3004D9347 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D700B2EBE91D3004D9347 /* SupabaseService.swift */; };
@@ -42,13 +45,13 @@
 		C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */; };
 		C8AEECBC2EB2D7A200720184 /* LessonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA82EB2D7A200720184 /* LessonView.swift */; };
 		C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA12EB2D7A200720184 /* CompletionView.swift */; };
-		C8AEECC62EB2D7A200720186 /* DirectionsView1.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC42EB2D7A200720186 /* DirectionsView1.swift */; };
-		C8AEECC72EB2D7A200720187 /* DirectionsView2.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC52EB2D7A200720187 /* DirectionsView2.swift */; };
-		C8AEECC92EB2D7A200720188 /* AssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC82EB2D7A200720188 /* AssessmentView.swift */; };
 		C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA52EB2D7A200720184 /* HomeView.swift */; };
 		C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */; };
 		C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */; };
 		C8AEECC32EB2D7A200720185 /* TestCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA12EB2D7A200720185 /* TestCalibrationView.swift */; };
+		C8AEECC62EB2D7A200720186 /* DirectionsView1.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC42EB2D7A200720186 /* DirectionsView1.swift */; };
+		C8AEECC72EB2D7A200720187 /* DirectionsView2.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC52EB2D7A200720187 /* DirectionsView2.swift */; };
+		C8AEECC92EB2D7A200720188 /* AssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC82EB2D7A200720188 /* AssessmentView.swift */; };
 		C8D677BD2EB8285A00829144 /* PairDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677BC2EB8285A00829144 /* PairDeviceView.swift */; };
 		C8D677BE2EB8285A00829146 /* TestPairDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677BC2EB8285A00829146 /* TestPairDeviceView.swift */; };
 		C8D677C92EB839FC00829144 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677C82EB839FC00829144 /* Theme.swift */; };
@@ -86,6 +89,9 @@
 /* Begin PBXFileReference section */
 		C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SupabaseConfig.plist; sourceTree = "<group>"; };
 		C8003FB42EB7FC39008DC812 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		C825376F2F2B12C300465343 /* CacheEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheEntry.swift; sourceTree = "<group>"; };
+		C82537702F2B12C300465343 /* CacheKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheKey.swift; sourceTree = "<group>"; };
+		C82537712F2B12C300465343 /* CacheService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheService.swift; sourceTree = "<group>"; };
 		C826BD3E2ECC23CB00B500DC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C82D70082EBE91D3004D9347 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		C82D70092EBE91D3004D9347 /* LessonEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonEngine.swift; sourceTree = "<group>"; };
@@ -121,14 +127,14 @@
 		C8AEECA52EB2D7A200720184 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyMapView.swift; sourceTree = "<group>"; };
 		C8AEECA82EB2D7A200720184 /* LessonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonView.swift; sourceTree = "<group>"; };
-		C8AEECC42EB2D7A200720186 /* DirectionsView1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectionsView1.swift; sourceTree = "<group>"; };
-		C8AEECC52EB2D7A200720187 /* DirectionsView2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectionsView2.swift; sourceTree = "<group>"; };
-		C8AEECC82EB2D7A200720188 /* AssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssessmentView.swift; sourceTree = "<group>"; };
 		C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeSensorSimulator.swift; sourceTree = "<group>"; };
 		C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealRehabPracticeApp.swift; sourceTree = "<group>"; };
 		C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RehabOverviewView.swift; sourceTree = "<group>"; };
 		C8AEECAE2EB2D7A200720184 /* SensorSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorSample.swift; sourceTree = "<group>"; };
 		C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		C8AEECC42EB2D7A200720186 /* DirectionsView1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectionsView1.swift; sourceTree = "<group>"; };
+		C8AEECC52EB2D7A200720187 /* DirectionsView2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectionsView2.swift; sourceTree = "<group>"; };
+		C8AEECC82EB2D7A200720188 /* AssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssessmentView.swift; sourceTree = "<group>"; };
 		C8D677BC2EB8285A00829144 /* PairDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceView.swift; sourceTree = "<group>"; };
 		C8D677BC2EB8285A00829146 /* TestPairDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestPairDeviceView.swift; sourceTree = "<group>"; };
 		C8D677C82EB839FC00829144 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -179,9 +185,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C82537722F2B12C300465343 /* Cache */ = {
+			isa = PBXGroup;
+			children = (
+				C825376F2F2B12C300465343 /* CacheEntry.swift */,
+				C82537702F2B12C300465343 /* CacheKey.swift */,
+				C82537712F2B12C300465343 /* CacheService.swift */,
+			);
+			path = Cache;
+			sourceTree = "<group>";
+		};
 		C82D700D2EBE91D3004D9347 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				C82537722F2B12C300465343 /* Cache */,
 				C8F4A6F02ED2C79A00BADF02 /* BLE */,
 				C82D70082EBE91D3004D9347 /* AuthService.swift */,
 				C82D70092EBE91D3004D9347 /* LessonEngine.swift */,
@@ -542,6 +559,9 @@
 				C82D703A2ED09AC7004D9351 /* JourneyMapViewModel.swift in Sources */,
 				C82D70382ED0AB17004D9347 /* PTSettingsView.swift in Sources */,
 				C82D703C2ED0B4BE004D9347 /* PatientSettingsView.swift in Sources */,
+				C82537732F2B12C300465343 /* CacheKey.swift in Sources */,
+				C82537742F2B12C300465343 /* CacheService.swift in Sources */,
+				C82537752F2B12C300465343 /* CacheEntry.swift in Sources */,
 				C82D702C2ED00153004D9347 /* PatientService.swift in Sources */,
 				C8D677F02EBA932000829144 /* InjurySelectView.swift in Sources */,
 				C82D70572EC15F90004D9347 /* PatientTabBar.swift in Sources */,

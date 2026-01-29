@@ -14,7 +14,7 @@ enum PatientService {
     let phone: String?
   }
   
-  struct PatientProfileRow: Decodable {
+  struct PatientProfileRow: Codable {
     let id: UUID
     let profile_id: UUID?
     let first_name: String?
@@ -58,8 +58,17 @@ enum PatientService {
     }
   }
 
-  // Resolve the current user's patient_profiles.id from profiles.id
+  // Resolve the current user's patient_profiles.id from profiles.id (with caching)
   static func myPatientProfileId(profileId: UUID) async throws -> UUID {
+    let cacheKey = CacheKey.patientProfileId(profileId: profileId)
+    
+    // Check cache first (disk persistence enabled, 24h TTL)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: UUID.self, useDisk: true) {
+      print("✅ PatientService.myPatientProfileId: cache hit")
+      return cached
+    }
+    
+    // Fetch from Supabase
     let rows: [IdRow] = try await client
       .schema("accounts").from("patient_profiles")
       .select("id")
@@ -69,15 +78,61 @@ enum PatientService {
     guard let r = rows.first else {
       throw NSError(domain: "PatientService", code: 404, userInfo: [NSLocalizedDescriptionKey: "No patient_profile row for current user"])
     }
+    
+    // Cache the result (disk persistence enabled, 24h TTL)
+    await CacheService.shared.setCached(r.id, forKey: cacheKey, ttl: CacheService.TTL.profile, useDisk: true)
+    print("✅ PatientService.myPatientProfileId: cached result")
+    
     return r.id
   }
   
-  // Fetch the current user's patient profile
+  // Check if patient has a PT (with caching)
+  static func hasPT(patientProfileId: UUID) async throws -> Bool {
+    let cacheKey = CacheKey.hasPT(patientProfileId: patientProfileId)
+    
+    // Check cache first (memory only)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: Bool.self, useDisk: false) {
+      print("✅ PatientService.hasPT: cache hit")
+      return cached
+    }
+    
+    // Fetch from Supabase
+    struct MapRow: Decodable {
+      let pt_profile_id: UUID
+    }
+    
+    let mapRows: [MapRow] = try await client
+      .schema("accounts")
+      .from("pt_patient_map")
+      .select("pt_profile_id")
+      .eq("patient_profile_id", value: patientProfileId.uuidString)
+      .limit(1)
+      .decoded()
+    
+    let hasPT = mapRows.first != nil
+    
+    // Cache the result (memory only)
+    await CacheService.shared.setCached(hasPT, forKey: cacheKey, ttl: CacheService.TTL.hasPT, useDisk: false)
+    print("✅ PatientService.hasPT: cached result = \(hasPT)")
+    
+    return hasPT
+  }
+  
+  // Fetch the current user's patient profile (with caching)
   static func myPatientProfile() async throws -> PatientProfileRow {
     guard let profile = try await AuthService.myProfile() else {
       throw NSError(domain: "PatientService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profile not found"])
     }
     
+    let cacheKey = CacheKey.patientProfile(userId: profile.id)
+    
+    // Check cache first (disk persistence enabled)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: PatientProfileRow.self, useDisk: true) {
+      print("✅ PatientService.myPatientProfile: cache hit")
+      return cached
+    }
+    
+    // Fetch from Supabase
     let rows: [PatientProfileRow] = try await client
       .schema("accounts")
       .from("patient_profiles")
@@ -90,11 +145,24 @@ enum PatientService {
       throw NSError(domain: "PatientService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Patient profile not found"])
     }
     
+    // Cache the result (disk persistence enabled)
+    await CacheService.shared.setCached(row, forKey: cacheKey, ttl: CacheService.TTL.profile, useDisk: true)
+    print("✅ PatientService.myPatientProfile: cached result")
+    
     return row
   }
   
-  // Get email from profiles table
+  // Get email from profiles table (with caching)
   static func getEmail(profileId: UUID) async throws -> String? {
+    let cacheKey = CacheKey.patientEmail(profileId: profileId)
+    
+    // Check cache first (disk persistence enabled)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: String?.self, useDisk: true) {
+      print("✅ PatientService.getEmail: cache hit")
+      return cached
+    }
+    
+    // Fetch from Supabase
     struct EmailRow: Decodable {
       let email: String?
     }
@@ -107,7 +175,91 @@ enum PatientService {
       .limit(1)
       .decoded()
     
-    return rows.first?.email
+    let email = rows.first?.email
+    
+    // Cache the result (disk persistence enabled)
+    await CacheService.shared.setCached(email, forKey: cacheKey, ttl: CacheService.TTL.profile, useDisk: true)
+    print("✅ PatientService.getEmail: cached result")
+    
+    return email
+  }
+  
+  // Get PT profile ID from patient profile ID (with caching)
+  static func getPTProfileId(patientProfileId: UUID) async throws -> UUID? {
+    let cacheKey = CacheKey.ptProfileIdFromPatient(patientProfileId: patientProfileId)
+    
+    // Check cache first (memory only, 1h TTL)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: UUID?.self, useDisk: false) {
+      print("✅ PatientService.getPTProfileId: cache hit")
+      return cached
+    }
+    
+    // Fetch from Supabase
+    struct MapRow: Decodable {
+      let pt_profile_id: UUID
+    }
+    
+    let mapRows: [MapRow] = try await client
+      .schema("accounts")
+      .from("pt_patient_map")
+      .select("pt_profile_id")
+      .eq("patient_profile_id", value: patientProfileId.uuidString)
+      .limit(1)
+      .decoded()
+    
+    let result = mapRows.first?.pt_profile_id
+    
+    // Cache the result (memory only, 1h TTL)
+    await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.hasPT, useDisk: false)
+    print("✅ PatientService.getPTProfileId: cached result")
+    
+    return result
+  }
+  
+  // Get PT info (name, email, phone) by PT profile ID (with caching)
+  struct PTInfo: Codable {
+    let id: UUID
+    let email: String?
+    let first_name: String?
+    let last_name: String?
+    let phone: String?
+  }
+  
+  static func getPTInfo(ptProfileId: UUID) async throws -> PTInfo? {
+    let actualKey = "pt_info_by_id:\(ptProfileId.uuidString)"
+    
+    // Check cache first (memory only, 1h TTL)
+    if let cached = await CacheService.shared.getCached(actualKey, as: PTInfo?.self, useDisk: false) {
+      print("✅ PatientService.getPTInfo: cache hit")
+      return cached
+    }
+    
+    // Fetch from Supabase
+    struct PTRow: Decodable {
+      let id: UUID
+      let email: String?
+      let first_name: String?
+      let last_name: String?
+      let phone: String?
+    }
+    
+    let ptRows: [PTRow] = try await client
+      .schema("accounts")
+      .from("pt_profiles")
+      .select("id,email,first_name,last_name,phone")
+      .eq("id", value: ptProfileId.uuidString)
+      .limit(1)
+      .decoded()
+    
+    let result = ptRows.first.map { pt in
+      PTInfo(id: pt.id, email: pt.email, first_name: pt.first_name, last_name: pt.last_name, phone: pt.phone)
+    }
+    
+    // Cache the result (memory only, 1h TTL)
+    await CacheService.shared.setCached(result, forKey: actualKey, ttl: CacheService.TTL.ptInfo, useDisk: false)
+    print("✅ PatientService.getPTInfo: cached result")
+    
+    return result
   }
 
   // Upsert/find a PT profile by email and return the row

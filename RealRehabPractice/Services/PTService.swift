@@ -5,7 +5,7 @@ import PostgREST
 enum PTService {
     private static var client: SupabaseClient { SupabaseService.shared.client }
 
-    struct PTProfileRow: Decodable {
+    struct PTProfileRow: Codable {
         let id: UUID
         let profile_id: UUID
         let email: String?
@@ -19,7 +19,7 @@ enum PTService {
         let specialization: String?
     }
     
-    struct SimplePatient: Decodable, Identifiable {
+    struct SimplePatient: Codable, Identifiable {
         let patient_profile_id: UUID
         let first_name: String
         let last_name: String
@@ -133,6 +133,14 @@ enum PTService {
             )
         }
         
+        let cacheKey = CacheKey.ptProfile(profileId: profile.id)
+        
+        // Check cache first (disk persistence enabled)
+        if let cached = await CacheService.shared.getCached(cacheKey, as: PTProfileRow.self, useDisk: true) {
+            print("✅ PTService.myPTProfile: cache hit")
+            return cached
+        }
+        
         let rows: [PTProfileRow] = try await client
             .schema("accounts")
             .from("pt_profiles")
@@ -148,6 +156,10 @@ enum PTService {
                 userInfo: [NSLocalizedDescriptionKey: "PT profile not found"]
             )
         }
+        
+        // Cache the result (disk persistence enabled)
+        await CacheService.shared.setCached(pt, forKey: cacheKey, ttl: CacheService.TTL.profile, useDisk: true)
+        print("✅ PTService.myPTProfile: cached result")
         
         return pt
     }
@@ -202,6 +214,11 @@ enum PTService {
             }
             
             print("✅ PTService.addPatient: successfully created patient_profile \(pid) and pt_patient_map entry via RPC")
+            
+            // Invalidate patient list cache
+            let cacheKey = CacheKey.patientList(ptProfileId: ptProfileId)
+            await CacheService.shared.invalidate(cacheKey)
+            print("✅ PTService.addPatient: invalidated patient list cache")
         } catch {
             print("❌ PTService.addPatient: RLS error or other failure: \(error)")
             if let postgrestError = error as? PostgrestError {
@@ -213,6 +230,14 @@ enum PTService {
     
     @MainActor
     static func listMyPatients(ptProfileId: UUID) async throws -> [SimplePatient] {
+        let cacheKey = CacheKey.patientList(ptProfileId: ptProfileId)
+        
+        // Check cache first (memory only, 5min TTL)
+        if let cached = await CacheService.shared.getCached(cacheKey, as: [SimplePatient].self, useDisk: false) {
+            print("✅ PTService.listMyPatients: cache hit")
+            return cached
+        }
+        
         // Find all patient_profile_id for my map
         struct MapRow: Decodable {
             let patient_profile_id: UUID
@@ -293,7 +318,7 @@ enum PTService {
             print("📊 PTService.listMyPatients: built email map with \(emailByProfile.count) entries, phone map with \(phoneByProfile.count) entries")
         }
         
-        return patients.map { patient in
+        let result = patients.map { patient in
             // Use phone from profiles table as fallback if patient_profiles.phone is NULL
             let phoneFromPatientProfiles = patient.phone
             let phoneFromProfiles = patient.profile_id.flatMap { profileId in phoneByProfile[profileId] }
@@ -323,10 +348,24 @@ enum PTService {
                 access_code: patient.access_code
             )
         }
+        
+        // Cache the result (memory only, 5min TTL)
+        await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.patientList, useDisk: false)
+        print("✅ PTService.listMyPatients: cached \(result.count) patients")
+        
+        return result
     }
     
     @MainActor
     static func getPatient(patientProfileId: UUID) async throws -> SimplePatient {
+        let cacheKey = CacheKey.patientDetail(patientProfileId: patientProfileId)
+        
+        // Check cache first (memory only, 10min TTL)
+        if let cached = await CacheService.shared.getCached(cacheKey, as: SimplePatient.self, useDisk: false) {
+            print("✅ PTService.getPatient: cache hit")
+            return cached
+        }
+        
         // DTO that matches database exactly
         struct PatientCardDTO: Decodable {
             let id: UUID
@@ -388,7 +427,7 @@ enum PTService {
             }
         }
         
-        return SimplePatient(
+        let result = SimplePatient(
             patient_profile_id: patient.id,
             first_name: patient.first_name,
             last_name: patient.last_name,
@@ -399,6 +438,12 @@ enum PTService {
             profile_id: patient.profile_id,
             access_code: patient.access_code
         )
+        
+        // Cache the result (memory only, 10min TTL)
+        await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.patientDetail, useDisk: false)
+        print("✅ PTService.getPatient: cached result")
+        
+        return result
     }
     
     @MainActor
@@ -430,6 +475,13 @@ enum PTService {
             .eq("patient_profile_id", value: patientProfileId.uuidString)
             .eq("pt_profile_id", value: ptProfileId.uuidString)
             .execute()
+        
+        // Invalidate patient list cache and patient detail cache
+        let listCacheKey = CacheKey.patientList(ptProfileId: ptProfileId)
+        let detailCacheKey = CacheKey.patientDetail(patientProfileId: patientProfileId)
+        await CacheService.shared.invalidate(listCacheKey)
+        await CacheService.shared.invalidate(detailCacheKey)
+        print("✅ PTService.deletePatientMapping: invalidated patient list and detail caches")
     }
     
     // MARK: - Update PT Profile
@@ -482,6 +534,13 @@ enum PTService {
             .update(AnyEncodable(payload))
             .eq("id", value: ptProfileId.uuidString)
             .execute()
+        
+        // Invalidate PT profile cache (need profileId to get cache key)
+        if let profile = try? await AuthService.myProfile() {
+            let cacheKey = CacheKey.ptProfile(profileId: profile.id)
+            await CacheService.shared.invalidate(cacheKey)
+            print("✅ PTService.updatePTProfile: invalidated PT profile cache")
+        }
         
         print("✅ PTService.updatePTProfile: successfully updated profile")
     }

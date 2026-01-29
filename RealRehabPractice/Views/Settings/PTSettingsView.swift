@@ -228,7 +228,11 @@ struct PTSettingsView: View {
             return
         }
         
-        isLoading = true
+        // Only show loading if we don't have data yet
+        if ptProfile == nil {
+            isLoading = true
+        }
+        
         do {
             let profile = try await PTService.myPTProfile()
             self.ptProfile = profile

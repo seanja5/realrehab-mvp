@@ -28,6 +28,11 @@ enum AuthService {
 
   static func signOut() async throws {
     try await supabase.auth.signOut()
+    // Clear all caches on logout
+    Task { @MainActor in
+      await CacheService.shared.clearAll()
+      print("✅ AuthService.signOut: cleared all caches")
+    }
   }
 
   static func currentUserId() throws -> UUID {
@@ -69,6 +74,15 @@ enum AuthService {
   // MARK: - Fetch my profile
   static func myProfile() async throws -> Profile? {
     let uid = try currentUserId()
+    let cacheKey = CacheKey.authProfile(userId: uid)
+    
+    // Check cache first (disk persistence enabled, 24h TTL)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: Profile?.self, useDisk: true) {
+      print("✅ AuthService.myProfile: cache hit")
+      return cached
+    }
+    
+    // Fetch from Supabase
     let rows: [Profile] = try await supabase
       .schema("accounts")
       .from("profiles")
@@ -77,7 +91,13 @@ enum AuthService {
       .limit(1)
       .decoded(as: [Profile].self)
 
-    return rows.first
+    let result = rows.first
+    
+    // Cache the result (disk persistence enabled, 24h TTL)
+    await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.profile, useDisk: true)
+    print("✅ AuthService.myProfile: cached result")
+    
+    return result
   }
 
   // MARK: - Fetch profile ID and role

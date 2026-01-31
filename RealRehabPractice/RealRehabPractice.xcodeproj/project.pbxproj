@@ -67,6 +67,7 @@
 		C8F4A8222ED2F3B500BADF02 /* SelectSignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8232ED2F3B500BADF02 /* SelectSignUpView.swift */; };
 		C8F4A8242ED2F3B500BADF02 /* PTCreateAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8252ED2F3B500BADF02 /* PTCreateAccountView.swift */; };
 		C8FF08ED2ED68CB6007FE9DC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */; };
+		C8A1B2C32ED00001004D9348 /* ACLJourneyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A1B2C32ED00001004D9347 /* ACLJourneyModels.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -150,6 +151,7 @@
 		C8F4A8232ED2F3B500BADF02 /* SelectSignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectSignUpView.swift; sourceTree = "<group>"; };
 		C8F4A8252ED2F3B500BADF02 /* PTCreateAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCreateAccountView.swift; sourceTree = "<group>"; };
 		C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		C8A1B2C32ED00001004D9347 /* ACLJourneyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ACLJourneyModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -298,6 +300,7 @@
 		C8D677C22EB8321100829144 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				C8A1B2C32ED00001004D9347 /* ACLJourneyModels.swift */,
 				C8D677D02EB97B4700829144 /* SchedulingModels.swift */,
 				C82D703F2ED2F3B6004D9347 /* SessionContext.swift */,
 			);
@@ -536,6 +539,7 @@
 				C8AEECB82EB2D7A200720184 /* AppRouter.swift in Sources */,
 				C8D677D12EB97B4700829144 /* SchedulingModels.swift in Sources */,
 				C82D70402ED2F3B6004D9347 /* SessionContext.swift in Sources */,
+				C8A1B2C32ED00001004D9348 /* ACLJourneyModels.swift in Sources */,
 				C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */,
 				C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */,
 				C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */,

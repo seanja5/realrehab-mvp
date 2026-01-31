@@ -37,6 +37,8 @@ enum RehabService {
     let isLocked: Bool
     let reps: Int
     let restSec: Int
+    let nodeType: String?  // "lesson" or "benchmark"; nil = legacy, treat as lesson
+    let phase: Int?       // 1–4; nil = legacy, treat as 1
   }
   
   struct PlanRow: Codable {
@@ -237,7 +239,9 @@ enum RehabService {
           icon: node.icon.systemName == "figure.stand" ? "person" : "video",
           isLocked: node.isLocked,
           reps: node.reps,
-          restSec: node.restSec
+          restSec: node.restSec,
+          nodeType: node.nodeType.rawValue,
+          phase: node.phase
         )
       }
       

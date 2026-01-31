@@ -9,38 +9,13 @@ struct PTJourneyMapView: View {
     @State private var errorMessage: String?
     
     // MARK: - State
-    @State private var nodes: [LessonNode] = {
-        var defaultNodes: [LessonNode] = [
-            LessonNode(title: "Knee Extension", icon: .person, isLocked: false, reps: 20, restSec: 3),
-            LessonNode(title: "Wall Sits", icon: .video, isLocked: false, reps: 12, restSec: 3),
-            LessonNode(title: "Lunges", icon: .video, isLocked: false, reps: 12, restSec: 3),
-            LessonNode(title: "Knee Extension", icon: .video, isLocked: false, reps: 12, restSec: 3),
-            LessonNode(title: "Wall Sits", icon: .video, isLocked: false, reps: 12, restSec: 3),
-            LessonNode(title: "Lunges", icon: .video, isLocked: false, reps: 12, restSec: 3),
-            LessonNode(title: "Knee Extension", icon: .video, isLocked: false, reps: 12, restSec: 3)
-        ]
-        
-        // Set default parameters for Wall Sits lessons
-        for index in defaultNodes.indices {
-            if defaultNodes[index].title.lowercased().contains("wall sits") {
-                defaultNodes[index].enableReps = false
-                defaultNodes[index].enableRestBetweenReps = false
-                defaultNodes[index].enableSets = false
-                defaultNodes[index].enableRestBetweenSets = false
-                defaultNodes[index].enableKneeBendAngle = true
-                defaultNodes[index].enableTimeHoldingPosition = true
-                defaultNodes[index].kneeBendAngle = 120
-                defaultNodes[index].timeHoldingPosition = 30
-            }
-        }
-        
-        return defaultNodes
-    }()
+    @State private var nodes: [LessonNode] = ACLJourneyModels.defaultACLPlanNodes()
     
     @State private var showingAddPopover = false
     @State private var addSelection = 0
     @State private var customLessonName = ""
-    @State private var showingRehabOverview = false
+    @State private var showingPhaseGoals = false
+    @State private var activePhaseId: Int? = 1  // Used by scrollPosition; 1–4
     @State private var selectedNodeID: UUID? = nil
     @State private var showingEditor = false
     @State private var tempReps: Int = 12
@@ -63,7 +38,8 @@ struct PTJourneyMapView: View {
     @State private var isDragging = false
     @State private var pressedIndex: Int? = nil // Index of bubble that is "pressed"/enlarged by tap
     
-    private let exerciseTypes = ["Knee Extension (Advanced)", "Wall Sits", "Lunges", "Squats", "Custom"]
+    private var exerciseTypes: [String] { ACLJourneyModels.allExerciseNamesForPicker }
+    private var activePhase: Int { activePhaseId ?? 1 }
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -141,11 +117,10 @@ struct PTJourneyMapView: View {
             if let savedNodes = plan.nodes {
                 nodes = savedNodes.map { dto in
                     let iconType: LessonNode.IconType = dto.icon == "person" ? .person : .video
-                    // Create new LessonNode (id will be auto-generated UUID)
-                    var node = LessonNode(title: dto.title, icon: iconType, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec)
-                    
-                    // Special handling for "Wall Sits" lessons
-                    if dto.title.lowercased().contains("wall sits") {
+                    let nodeType: JourneyNodeType = (dto.nodeType == "benchmark") ? .benchmark : .lesson
+                    let phase = max(1, min(4, dto.phase ?? 1))
+                    var node = LessonNode(title: dto.title, icon: iconType, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
+                    if node.nodeType == .lesson && node.title.lowercased().contains("wall sit") {
                         node.enableReps = false
                         node.enableRestBetweenReps = false
                         node.enableSets = false
@@ -155,12 +130,9 @@ struct PTJourneyMapView: View {
                         node.kneeBendAngle = 120
                         node.timeHoldingPosition = 30
                     }
-                    
-                    // Note: We create new UUIDs since LessonNode.id is let and auto-generated
-                    // The stored id in DTO is for reference but we generate new ones for UI
                     return node
                 }
-                layoutNodesZigZag()
+                ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
                 print("✅ PTJourneyMapView: loaded \(nodes.count) nodes from plan")
             }
         } catch {
@@ -173,31 +145,45 @@ struct PTJourneyMapView: View {
     
     private var content: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                // Top padding to push content below sticky header (matches JourneyMapView)
-                Spacer()
-                    .frame(height: 40)
+            ZStack(alignment: .top) {
+                // Invisible LazyVStack with phase anchors – scrollPosition tracks which is at top
+                LazyVStack(spacing: 0) {
+                    Color.clear.frame(height: 1).id(1)
+                    Color.clear.frame(height: 2618)  // to phase 2 boundary
+                    Color.clear.frame(height: 1).id(2)
+                    Color.clear.frame(height: 5039)  // to phase 3 boundary
+                    Color.clear.frame(height: 1).id(3)
+                    Color.clear.frame(height: 7439)  // to phase 4 boundary
+                    Color.clear.frame(height: 1).id(4)
+                    Color.clear.frame(height: max(0, maxHeight + 60 - 15100))
+                }
+                .scrollTargetLayout()
                 
-                // Journey path container
-                GeometryReader { geometry in
-                    ZStack {
+                // Visible content
+                VStack(spacing: 0) {
+                    Spacer().frame(height: 40)
+                    GeometryReader { geometry in
+                    ZStack(alignment: .topLeading) {
                         // Draw the diagonal path (matches JourneyMapView)
                         if nodes.count > 1 {
                             Path { path in
                                 let width = geometry.size.width
-                                let startX = width * 0.3
-                                var currentX = startX
-                                var currentY: CGFloat = 40 // Start below the padding
-                                
-                                path.move(to: CGPoint(x: currentX, y: currentY))
+                                var currentX = width * 0.3
+                                var currentY: CGFloat = 40
                                 
                                 for (index, node) in nodes.enumerated() {
-                                    // Zig-zag pattern: alternate between left and right
-                                    if index > 0 {
-                                        currentX = (index % 2 == 0) ? width * 0.3 : width * 0.7
+                                    currentX = (index % 2 == 0) ? width * 0.3 : width * 0.7
+                                    currentY = node.yOffset + 40
+                                    let point = CGPoint(x: currentX, y: currentY)
+                                    // Break path at phase boundaries: no line from last node of phase N to first of phase N+1
+                                    let isPhaseBoundary = index > 0 && node.phase != nodes[index - 1].phase
+                                    if isPhaseBoundary {
+                                        path.move(to: point)
+                                    } else if index == 0 {
+                                        path.move(to: point)
+                                    } else {
+                                        path.addLine(to: point)
                                     }
-                                    currentY = node.yOffset + 40 // Offset all nodes down
-                                    path.addLine(to: CGPoint(x: currentX, y: currentY))
                                 }
                             }
                             .stroke(Color.brandLightBlue.opacity(0.4), lineWidth: 2)
@@ -222,7 +208,7 @@ struct PTJourneyMapView: View {
                                 TapGesture()
                                     .onEnded {
                                         // Ignore taps during active drag or when another overlay is showing
-                                        guard !isDragging, draggingIndex == nil, !showingEditor, !showingRehabOverview else { return }
+                                        guard !isDragging, draggingIndex == nil, !showingEditor, !showingPhaseGoals else { return }
                                         
                                         pressedIndex = index
                                         withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
@@ -237,7 +223,7 @@ struct PTJourneyMapView: View {
                                 LongPressGesture(minimumDuration: 0.3)
                                     .onEnded { _ in
                                         // Start drag mode
-                                        if draggingIndex == nil && !showingEditor && !showingRehabOverview {
+                                        if draggingIndex == nil && !showingEditor && !showingPhaseGoals {
                                             draggingIndex = index
                                             isDragging = true
                                             pressedIndex = nil
@@ -260,11 +246,25 @@ struct PTJourneyMapView: View {
                                             }
                                     )
                             )
-                            .allowsHitTesting(!showingEditor && !showingRehabOverview)
+                            .allowsHitTesting(!showingEditor && !showingPhaseGoals)
                             .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: dragOffset)
                             .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: draggingIndex)
                             .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: pressedIndex)
                             .position(displayPosition)
+                        }
+                        
+                        // Phase separator overlays (no separator for Phase 1 at top)
+                        ForEach([2, 3, 4], id: \.self) { phase in
+                            let y: CGFloat = {
+                                switch phase {
+                                case 2: return 2620.0
+                                case 3: return 7660.0
+                                case 4: return 15100.0
+                                default: return 2620.0
+                                }
+                            }()
+                            PhaseSeparatorView(phase: phase, timeline: ACLPhase.phase(from: phase).timeline)
+                                .position(x: geometry.size.width / 2, y: y)
                         }
                     }
                     .frame(height: maxHeight)
@@ -272,11 +272,12 @@ struct PTJourneyMapView: View {
                 .frame(height: maxHeight)
                 .padding(.horizontal, 16)
                 
-                // Bottom padding
-                Spacer()
-                    .frame(height: 0)
+                Spacer().frame(height: 0)
+                }
             }
+            .frame(height: 40 + maxHeight + 60)
         }
+        .scrollPosition(id: $activePhaseId, anchor: .top)
         .scrollDisabled(isDragging) // Disable scrolling while dragging
         .safeAreaInset(edge: .top) {
             // Sticky header card (matches JourneyMapView exactly)
@@ -318,7 +319,7 @@ struct PTJourneyMapView: View {
             }
             .overlay(alignment: .topTrailing) {
                 // Rehab Overview popover positioned below header
-                if showingRehabOverview {
+                if showingPhaseGoals {
                     VStack {
                         Spacer()
                             .frame(height: 80) // Height of header card
@@ -326,10 +327,9 @@ struct PTJourneyMapView: View {
                         HStack {
                             Spacer()
                             
-                            RehabOverviewPopover(
-                                onDismiss: {
-                                    showingRehabOverview = false
-                                }
+                            PhaseGoalsPopover(
+                                phase: activePhase,
+                                onDismiss: { showingPhaseGoals = false }
                             )
                             .padding(.trailing, 16)
                         }
@@ -356,24 +356,24 @@ struct PTJourneyMapView: View {
             }
             
             // Dismiss popover when tapping outside
-            if showingRehabOverview {
+            if showingPhaseGoals {
                 Color.clear
                     .contentShape(Rectangle())
                     .ignoresSafeArea()
                     .onTapGesture {
-                        showingRehabOverview = false
+                        showingPhaseGoals = false
                     }
             }
         }
         .task {
             await loadPlan()
-            layoutNodesZigZag()
+            ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
         }
         .onAppear {
-            layoutNodesZigZag()
+            ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
         }
         .onChange(of: nodes.count) {
-            layoutNodesZigZag()
+            ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
         }
         .padding(.bottom, 20) // Extra padding for Confirm Journey button
     }
@@ -383,47 +383,31 @@ struct PTJourneyMapView: View {
         CGFloat(max(nodes.count * 120 + 40, 1240))
     }
     
-    // MARK: - Header Card (matches JourneyMapView exactly)
+    // MARK: - Header Card (sticky, dynamic phase)
     private var headerCard: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Lower Ex. Knee")
+                Text("ACL Tear Recovery Map")
                     .font(.rrHeadline)
                     .foregroundStyle(.primary)
                 
-                Text("ACL Tear Recovery Map")
+                Text("Phase \(activePhase)")
                     .font(.rrTitle)
                     .foregroundStyle(.primary)
                 
-                Text("Phase 1")
+                Text(ACLPhase.phase(from: activePhase).timeline)
                     .font(.rrCaption)
                     .foregroundStyle(.secondary)
             }
             
             Spacer()
             
-            HStack(spacing: 12) {
-                // Icons stack (matches JourneyMapView)
-                VStack(spacing: 8) {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(.primary)
-                    Image(systemName: "calendar")
-                        .font(.system(size: 16))
-                        .foregroundStyle(.primary)
-                    Image(systemName: "chart.bar.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(.primary)
-                }
-                
-                // More button
-                Button {
-                    showingRehabOverview.toggle()
-                } label: {
-                    Image(systemName: "ellipsis.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(.primary)
-                }
+            Button {
+                showingPhaseGoals.toggle()
+            } label: {
+                Image(systemName: "ellipsis.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(.primary)
             }
         }
         .padding(16)
@@ -615,7 +599,7 @@ struct PTJourneyMapView: View {
     
     // Computed property to count enabled parameters
     private var enabledParameterCount: Int {
-        guard let id = selectedNodeID, let node = nodes.first(where: { $0.id == id }) else {
+        guard let id = selectedNodeID, let node = nodes.first(where: { $0.id == id }), node.nodeType == .lesson else {
             return 0
         }
         var count = 0
@@ -635,8 +619,8 @@ struct PTJourneyMapView: View {
                 .font(.rrTitle)
                 .foregroundStyle(.primary)
             
-            // Conditionally show parameters based on what's enabled for this node
-            if let id = selectedNodeID, let node = nodes.first(where: { $0.id == id }) {
+            // Benchmarks: title only, lock, remove. Lessons: full parameters.
+            if let id = selectedNodeID, let node = nodes.first(where: { $0.id == id }), node.nodeType == .lesson {
                 if node.enableReps {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Set number of repetitions")
@@ -786,20 +770,14 @@ struct PTJourneyMapView: View {
     private func commitEdit() {
         if let id = selectedNodeID,
            let idx = nodeIndex(for: id) {
-            nodes[idx].reps = tempReps
-            nodes[idx].restSec = tempRest
             nodes[idx].isLocked = tempLocked
-            if nodes[idx].enableSets {
-                nodes[idx].sets = tempSets
-            }
-            if nodes[idx].enableRestBetweenSets {
-                nodes[idx].restBetweenSets = tempRestBetweenSets
-            }
-            if nodes[idx].enableKneeBendAngle {
-                nodes[idx].kneeBendAngle = tempKneeBendAngle
-            }
-            if nodes[idx].enableTimeHoldingPosition {
-                nodes[idx].timeHoldingPosition = tempTimeHoldingPosition
+            if nodes[idx].nodeType == .lesson {
+                nodes[idx].reps = tempReps
+                nodes[idx].restSec = tempRest
+                if nodes[idx].enableSets { nodes[idx].sets = tempSets }
+                if nodes[idx].enableRestBetweenSets { nodes[idx].restBetweenSets = tempRestBetweenSets }
+                if nodes[idx].enableKneeBendAngle { nodes[idx].kneeBendAngle = tempKneeBendAngle }
+                if nodes[idx].enableTimeHoldingPosition { nodes[idx].timeHoldingPosition = tempTimeHoldingPosition }
             }
         }
         withAnimation(.spring()) {
@@ -814,7 +792,7 @@ struct PTJourneyMapView: View {
            let idx = nodeIndex(for: id) {
             withAnimation(.spring()) {
                 nodes.remove(at: idx)
-                layoutNodesZigZag()
+                ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
                 showingEditor = false
                 selectedNodeID = nil
                 pressedIndex = nil
@@ -823,13 +801,6 @@ struct PTJourneyMapView: View {
     }
     
     // MARK: - Helper Functions
-    private func layoutNodesZigZag() {
-        // Match JourneyMapView spacing exactly (120pt intervals, starting at yOffset 0)
-        for index in nodes.indices {
-            nodes[index].yOffset = CGFloat(index) * 120
-        }
-    }
-    
     private func handleDragEnd(from index: Int, translation: CGSize, geometry: GeometryProxy) {
         let finalY = nodes[index].yOffset + 40 + translation.height // Account for padding offset
         
@@ -856,7 +827,7 @@ struct PTJourneyMapView: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             let node = nodes.remove(at: from)
             nodes.insert(node, at: to)
-            layoutNodesZigZag()
+            ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
         }
         
         draggingIndex = nil
@@ -873,103 +844,116 @@ struct PTJourneyMapView: View {
         enableKneeBendAngle: Bool,
         enableTimeHoldingPosition: Bool
     ) {
-        var newNode = LessonNode(title: title, icon: .video, isLocked: false, reps: 12, restSec: 3)
-        
-        // Special handling for "Wall Sits" lessons
-        if title.lowercased().contains("wall sits") {
-            newNode.enableReps = false
-            newNode.enableRestBetweenReps = false
-            newNode.enableSets = false
-            newNode.enableRestBetweenSets = false
-            newNode.enableKneeBendAngle = true
-            newNode.enableTimeHoldingPosition = true
-            newNode.kneeBendAngle = 120
-            newNode.timeHoldingPosition = 30
-        } else {
-            newNode.enableReps = enableReps
-            newNode.enableRestBetweenReps = enableRestBetweenReps
-            newNode.enableSets = enableSets
-            newNode.enableRestBetweenSets = enableRestBetweenSets
-            newNode.enableKneeBendAngle = enableKneeBendAngle
-            newNode.enableTimeHoldingPosition = enableTimeHoldingPosition
+        let newNode = LessonNode.lesson(title: title, phase: activePhase)
+        var added = newNode
+        if !title.lowercased().contains("wall sit") {
+            added.enableReps = enableReps
+            added.enableRestBetweenReps = enableRestBetweenReps
+            added.enableSets = enableSets
+            added.enableRestBetweenSets = enableRestBetweenSets
+            added.enableKneeBendAngle = enableKneeBendAngle
+            added.enableTimeHoldingPosition = enableTimeHoldingPosition
+            if enableSets { added.sets = 4 }
+            if enableRestBetweenSets { added.restBetweenSets = 20 }
+            if enableKneeBendAngle { added.kneeBendAngle = 120 }
+            if enableTimeHoldingPosition { added.timeHoldingPosition = 30 }
+        }
+        nodes.append(added)
+        ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
+    }
+}
+
+// MARK: - Phase separator (horizontal line + "Phase N")
+struct PhaseSeparatorView: View {
+    let phase: Int
+    let timeline: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Rectangle()
+                .fill(Color.gray.opacity(0.4))
+                .frame(height: 1)
+            Text("Phase \(phase)")
+                .font(.rrCaption)
+                .foregroundStyle(.secondary)
+            Rectangle()
+                .fill(Color.gray.opacity(0.4))
+                .frame(height: 1)
+        }
+        .padding(.horizontal, 8)
+    }
+}
+
+// MARK: - Phase goals popover (replaces schedule/overview)
+struct PhaseGoalsPopover: View {
+    let phase: Int
+    let onDismiss: () -> Void
+    
+    private var goals: [String] {
+        ACLPhase.phase(from: phase).goals
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Phase \(phase) Goals")
+                .font(.rrTitle)
             
-            // Set default values for enabled parameters
-            if enableSets {
-                newNode.sets = 4
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(goals, id: \.self) { goal in
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .font(.rrBody)
+                        Text(goal)
+                            .font(.rrBody)
+                    }
+                }
             }
-            if enableRestBetweenSets {
-                newNode.restBetweenSets = 20
-            }
-            if enableKneeBendAngle {
-                newNode.kneeBendAngle = 120
-            }
-            if enableTimeHoldingPosition {
-                newNode.timeHoldingPosition = 30
-            }
+            
+            Button("Close") { onDismiss() }
+                .font(.rrCaption)
         }
-        
-        nodes.append(newNode)
-        layoutNodesZigZag()
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
+        )
+        .frame(width: 320)
+        .onTapGesture { }
     }
 }
 
-// MARK: - Lesson Node Model
-struct LessonNode: Identifiable {
-    let id = UUID()
-    var title: String
-    var icon: IconType
-    var isLocked: Bool
-    var reps: Int
-    var restSec: Int
-    var yOffset: CGFloat = 0
-    
-    // New optional parameters
-    var sets: Int? = nil
-    var restBetweenSets: Int? = nil
-    var kneeBendAngle: Int? = nil
-    var timeHoldingPosition: Int? = nil
-    
-    // Track which parameters are enabled
-    var enableReps: Bool = true
-    var enableRestBetweenReps: Bool = true
-    var enableSets: Bool = false
-    var enableRestBetweenSets: Bool = false
-    var enableKneeBendAngle: Bool = false
-    var enableTimeHoldingPosition: Bool = false
-    
-    enum IconType {
-        case person
-        case video
-        
-        var systemName: String {
-            switch self {
-            case .person: return "figure.stand" // Match JourneyMapView
-            case .video: return "video.fill" // Match JourneyMapView
-            }
-        }
-    }
-}
-
-// MARK: - PT Node View (all blue, lock overlay)
+// MARK: - PT Node View (circle for lessons, star for benchmarks)
 struct PTNodeView: View {
     let node: LessonNode
     var scale: CGFloat = 1.0
     
     var body: some View {
         ZStack {
-            Circle()
-                .fill(Color.brandDarkBlue) // Always blue, never gray
-                .frame(width: 60 * scale, height: 60 * scale)
-                .shadow(color: Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
+            Group {
+                if node.nodeType == .benchmark {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 44 * scale))
+                        .foregroundStyle(Color.brandDarkBlue)
+                        .shadow(color: Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
+                } else {
+                    Circle()
+                        .fill(Color.brandDarkBlue)
+                        .frame(width: 60 * scale, height: 60 * scale)
+                        .shadow(color: Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
+                }
+            }
             
-            Image(systemName: node.icon.systemName)
-                .font(.system(size: 24 * scale, weight: .medium))
-                .foregroundStyle(.white)
+            if node.nodeType == .lesson {
+                Image(systemName: node.icon.systemName)
+                    .font(.system(size: 24 * scale, weight: .medium))
+                    .foregroundStyle(.white)
+            }
             
             if node.isLocked {
                 Image(systemName: "lock.fill")
                     .font(.system(size: 12 * scale))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(node.nodeType == .benchmark ? .gray : .white)
                     .offset(x: 20 * scale, y: -20 * scale)
             }
         }
@@ -978,70 +962,4 @@ struct PTNodeView: View {
     }
 }
 
-// MARK: - Rehab Overview Popover
-struct RehabOverviewPopover: View {
-    let onDismiss: () -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Rehab Overview")
-                .font(.rrTitle)
-            
-            HStack(alignment: .top) {
-                Text("Number of phases:")
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("4")
-                    .font(.rrBody)
-            }
-            
-            HStack(alignment: .top) {
-                Text("Phase 1:")
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("8 lessons")
-                    .font(.rrBody)
-            }
-            
-            HStack(alignment: .top) {
-                Text("Phase 2:")
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("20 lessons")
-                    .font(.rrBody)
-            }
-            
-            HStack(alignment: .top) {
-                Text("Phase 3:")
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("22 lessons")
-                    .font(.rrBody)
-            }
-            
-            HStack(alignment: .top) {
-                Text("Phase 4:")
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("10 lessons")
-                    .font(.rrBody)
-            }
-        }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
-        )
-        .frame(width: 320)
-        .onTapGesture {
-            // Prevent tap from propagating
-        }
-    }
-}
 

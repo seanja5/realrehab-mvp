@@ -11,14 +11,18 @@ public struct JourneyNode: Identifiable {
     public let yOffset: CGFloat
     public let reps: Int
     public let restSec: Int
+    public let nodeType: JourneyNodeType
+    public let phase: Int
     
-    public init(icon: String, isLocked: Bool, title: String, yOffset: CGFloat, reps: Int = 20, restSec: Int = 3) {
+    public init(icon: String, isLocked: Bool, title: String, yOffset: CGFloat, reps: Int = 20, restSec: Int = 3, nodeType: JourneyNodeType = .lesson, phase: Int = 1) {
         self.icon = icon
         self.isLocked = isLocked
         self.title = title
         self.yOffset = yOffset
         self.reps = reps
         self.restSec = restSec
+        self.nodeType = nodeType
+        self.phase = phase
     }
 }
 
@@ -65,11 +69,11 @@ public final class JourneyMapViewModel: ObservableObject {
             // Convert PlanNodeDTO to JourneyNode
             if let planNodes = plan.nodes, !planNodes.isEmpty {
                 nodes = planNodes.enumerated().map { index, dto in
-                    // Map icon: "person" -> "figure.stand", "video" -> "video.fill"
                     let iconName = dto.icon == "person" ? "figure.stand" : "video.fill"
-                    // Calculate yOffset using 120pt intervals
                     let yOffset = CGFloat(index) * 120
-                    return JourneyNode(icon: iconName, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec)
+                    let nodeType: JourneyNodeType = (dto.nodeType == "benchmark") ? .benchmark : .lesson
+                    let phase = max(1, min(4, dto.phase ?? 1))
+                    return JourneyNode(icon: iconName, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
                 }
                 print("✅ JourneyMapViewModel: loaded \(nodes.count) nodes from plan")
             } else {

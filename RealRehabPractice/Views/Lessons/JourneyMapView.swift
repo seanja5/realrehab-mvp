@@ -5,37 +5,11 @@ struct JourneyMapView: View {
     @StateObject private var vm = JourneyMapViewModel()
     
     @State private var showCallout = false
-    @State private var showSchedulePopover = false
+    @State private var showPhaseGoals = false
     @State private var selectedNodeIndex: Int?
     @State private var showLockedPopup = false
-    
-    // Load schedule data from UserDefaults
-    private var scheduleStartDate: Date? {
-        guard UserDefaults.standard.bool(forKey: "scheduleStartDateChosen"),
-              let date = UserDefaults.standard.object(forKey: "scheduleStartDate") as? Date else {
-            return nil
-        }
-        return date
-    }
-    
-    private var scheduleSelectedDays: [Int] {
-        UserDefaults.standard.array(forKey: "scheduleSelectedDays") as? [Int] ?? []
-    }
-    
-    private var scheduleTimes: [Int: Date] {
-        guard let data = UserDefaults.standard.data(forKey: "scheduleTimes"),
-              let dict = try? JSONDecoder().decode([Int: TimeInterval].self, from: data) else {
-            return [:]
-        }
-        return dict.mapValues { Date(timeIntervalSince1970: $0) }
-    }
-    
-    // Convert day orders to Weekday enum for display
-    private var scheduleWeekdays: [Weekday] {
-        scheduleSelectedDays.compactMap { order in
-            Weekday.allCases.first { $0.order == order }
-        }
-    }
+    @State private var activePhaseId: Int? = 1
+    private var activePhase: Int { activePhaseId ?? 1 }
     
     // Computed property for dynamic height
     private var maxHeight: CGFloat {
@@ -74,26 +48,42 @@ struct JourneyMapView: View {
                 }
             } else {
                 ScrollView {
-                    VStack(spacing: 0) {
-                        Spacer()
-                            .frame(height: 40)
+                    ZStack(alignment: .top) {
+                        // Invisible LazyVStack with phase anchors – scrollPosition tracks which is at top
+                        LazyVStack(spacing: 0) {
+                            Color.clear.frame(height: 1).id(1)
+                            Color.clear.frame(height: 2618)
+                            Color.clear.frame(height: 1).id(2)
+                            Color.clear.frame(height: 5039)
+                            Color.clear.frame(height: 1).id(3)
+                            Color.clear.frame(height: 7439)
+                            Color.clear.frame(height: 1).id(4)
+                            Color.clear.frame(height: max(0, maxHeight + 60 - 15100))
+                        }
+                        .scrollTargetLayout()
                         
-                        GeometryReader { geometry in
-                            ZStack {
+                        // Visible content
+                        VStack(spacing: 0) {
+                            Spacer().frame(height: 40)
+                            GeometryReader { geometry in
+                            ZStack(alignment: .topLeading) {
                                 Path { path in
                                     let width = geometry.size.width
-                                    let startX = width * 0.3
-                                    var currentX = startX
+                                    var currentX = width * 0.3
                                     var currentY: CGFloat = 40
                                     
-                                    path.move(to: CGPoint(x: currentX, y: currentY))
-                                    
                                     for (index, node) in vm.nodes.enumerated() {
-                                        if index > 0 {
-                                            currentX = (index % 2 == 0) ? width * 0.3 : width * 0.7
-                                        }
+                                        currentX = (index % 2 == 0) ? width * 0.3 : width * 0.7
                                         currentY = node.yOffset + 40
-                                        path.addLine(to: CGPoint(x: currentX, y: currentY))
+                                        let point = CGPoint(x: currentX, y: currentY)
+                                        let isPhaseBoundary = index > 0 && node.phase != vm.nodes[index - 1].phase
+                                        if isPhaseBoundary {
+                                            path.move(to: point)
+                                        } else if index == 0 {
+                                            path.move(to: point)
+                                        } else {
+                                            path.addLine(to: point)
+                                        }
                                     }
                                 }
                                 .stroke(Color.brandLightBlue.opacity(0.4), lineWidth: 2)
@@ -112,16 +102,32 @@ struct JourneyMapView: View {
                                             }
                                         }
                                 }
+                                
+                                // Phase separator overlays (no separator for Phase 1 at top)
+                                ForEach([2, 3, 4], id: \.self) { phase in
+                                    let y: CGFloat = {
+                                        switch phase {
+                                        case 2: return 2620.0
+                                        case 3: return 7660.0
+                                        case 4: return 15100.0
+                                        default: return 2620.0
+                                        }
+                                    }()
+                                    PhaseSeparatorView(phase: phase, timeline: ACLPhase.phase(from: phase).timeline)
+                                        .position(x: geometry.size.width / 2, y: y)
+                                }
                             }
                             .frame(height: maxHeight)
                         }
                         .frame(height: maxHeight)
                         .padding(.horizontal, 16)
                         
-                        Spacer()
-                            .frame(height: 60)
+                        Spacer().frame(height: 60)
+                        }
                     }
+                    .frame(height: 40 + maxHeight + 60)
                 }
+                .scrollPosition(id: $activePhaseId, anchor: .top)
             }
             
             PatientTabBar(
@@ -153,23 +159,13 @@ struct JourneyMapView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .overlay(alignment: .topTrailing) {
-                    if showSchedulePopover {
+                    if showPhaseGoals {
                         VStack {
-                            Spacer()
-                                .frame(height: 80)
-                            
+                            Spacer().frame(height: 80)
                             HStack {
                                 Spacer()
-                                
-                                ScheduleSummaryPopover(
-                                    startDate: scheduleStartDate,
-                                    selectedDays: scheduleWeekdays,
-                                    times: scheduleTimes,
-                                    onDismiss: {
-                                        showSchedulePopover = false
-                                    }
-                                )
-                                .padding(.trailing, 16)
+                                PhaseGoalsPopover(phase: activePhase, onDismiss: { showPhaseGoals = false })
+                                    .padding(.trailing, 16)
                             }
                         }
                     }
@@ -270,20 +266,20 @@ struct JourneyMapView: View {
         .bluetoothPopupOverlay()
     }
     
-    // MARK: - Header Card
+    // MARK: - Header Card (sticky, dynamic phase)
     private var headerCard: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Lower Ex. Knee")
+                    Text("ACL Tear Recovery Map")
                         .font(.rrHeadline)
                         .foregroundStyle(.primary)
                     
-                    Text("ACL Tear Recovery Map")
+                    Text("Phase \(activePhase)")
                         .font(.rrTitle)
                         .foregroundStyle(.primary)
                     
-                    Text("Phase 1")
+                    Text(ACLPhase.phase(from: activePhase).timeline)
                         .font(.rrCaption)
                         .foregroundStyle(.secondary)
                 }
@@ -291,7 +287,7 @@ struct JourneyMapView: View {
                 Spacer()
                 
                 Button {
-                    showSchedulePopover.toggle()
+                    showPhaseGoals.toggle()
                 } label: {
                     Image(systemName: "ellipsis.circle.fill")
                         .font(.system(size: 24))
@@ -302,93 +298,37 @@ struct JourneyMapView: View {
         .padding(16)
     }
     
-    // Helper views below remain unchanged ...
-    
     private func NodeView(node: JourneyNode) -> some View {
         ZStack {
-            Circle()
-                .fill(node.isLocked ? Color.gray.opacity(0.3) : Color.brandDarkBlue)
-                .frame(width: 60, height: 60)
-                .shadow(color: node.isLocked ? Color.gray.opacity(0.2) : Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
+            Group {
+                if node.nodeType == .benchmark {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 44))
+                        .foregroundStyle(node.isLocked ? Color.gray.opacity(0.5) : Color.brandDarkBlue)
+                        .shadow(color: (node.isLocked ? Color.gray : Color.brandDarkBlue).opacity(0.3), radius: 12, x: 0, y: 2)
+                } else {
+                    Circle()
+                        .fill(node.isLocked ? Color.gray.opacity(0.3) : Color.brandDarkBlue)
+                        .frame(width: 60, height: 60)
+                        .shadow(color: node.isLocked ? Color.gray.opacity(0.2) : Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
+                }
+            }
             
-            // Show lock icon for locked lessons, video icon for unlocked
-            Image(systemName: node.isLocked ? "lock.fill" : "video.fill")
-                .font(.system(size: 24, weight: .medium))
-                .foregroundStyle(.white)
+            if node.nodeType == .lesson {
+                Image(systemName: node.isLocked ? "lock.fill" : "video.fill")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundStyle(.white)
+            }
+            
+            if node.nodeType == .benchmark && node.isLocked {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.gray)
+                    .offset(x: 20, y: -20)
+            }
         }
     }
     
 }
 
-struct ScheduleSummaryPopover: View {
-    let startDate: Date?
-    let selectedDays: [Weekday]
-    let times: [Int: Date]
-    let onDismiss: () -> Void
-    
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter
-    }
-    
-    private var timeFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Schedule Summary")
-                    .font(.rrTitle)
-                Spacer()
-                Button("Close") { onDismiss() }
-                    .font(.rrCaption)
-            }
-            
-            if let startDate {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Start Date")
-                        .font(.rrCaption)
-                        .foregroundStyle(.secondary)
-                    Text(dateFormatter.string(from: startDate))
-                        .font(.rrBody)
-                }
-            }
-            
-            if !selectedDays.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Days")
-                        .font(.rrCaption)
-                        .foregroundStyle(.secondary)
-                    Text(selectedDays.map { $0.name }.joined(separator: ", "))
-                        .font(.rrBody)
-                }
-            }
-            
-            if !times.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Times")
-                        .font(.rrCaption)
-                        .foregroundStyle(.secondary)
-                    ForEach(times.keys.sorted(), id: \.self) { key in
-                        if let date = times[key] {
-                            Text("Day \(key + 1): \(timeFormatter.string(from: date))")
-                                .font(.rrBody)
-                        }
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: 320, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 6)
-        )
-    }
-}
 

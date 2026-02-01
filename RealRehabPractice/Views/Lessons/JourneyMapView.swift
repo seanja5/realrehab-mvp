@@ -360,17 +360,17 @@ struct JourneyMapView: View {
         !(v.isNaN || v.isInfinite)
     }
     
-    /// indexInPhase: 0 = first node of phase (starts left), then S-curve flows right as index increases.
+    /// indexInPhase: 0 = first node of phase (starts center), then S-curve flows left/right as index increases.
     private func safeNodeX(indexInPhase: Int, width: CGFloat) -> CGFloat {
         let bubbleRadius: CGFloat = 30
-        let innerMargin: CGFloat = 22
+        let innerMargin: CGFloat = 55
         let minX = bubbleRadius + innerMargin
         let maxX = max(minX, width - bubbleRadius - innerMargin)
         let usable = max(0, maxX - minX)
         let amplitude = usable / 2
         let center = minX + amplitude
         let period: CGFloat = 9.0
-        let t = CGFloat(indexInPhase) / period * (2 * .pi) - .pi / 2
+        let t = CGFloat(indexInPhase) / period * (2 * .pi)
         var x = center + amplitude * sin(t)
         x += min(8, amplitude * 0.15) * sin(t * 2 + 0.7)
         x = min(max(x, minX), maxX)

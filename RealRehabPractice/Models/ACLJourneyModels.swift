@@ -282,11 +282,10 @@ enum ACLJourneyModels {
         return nodes
     }
     
-    /// Vertical step between nodes within a phase.
-    static let baseStep: CGFloat = 120
-    /// Extra vertical gap at each phase transition so separator text is not covered by bubbles.
-    /// Kept smaller so gap below separator matches gap above (last lesson of prev phase).
-    static let phaseSeparatorClearance: CGFloat = 100
+    /// Vertical step between nodes within a phase (halved so bubbles are closer).
+    static let baseStep: CGFloat = 60
+    /// Vertical gap at each phase transition; same as baseStep so spacing is constant everywhere.
+    static let phaseSeparatorClearance: CGFloat = 60
     
     /// Y offsets for each index with phase separator clearance; use for patient JourneyNode layout.
     static func layoutYOffsets(phases: [Int]) -> [CGFloat] {

@@ -282,12 +282,70 @@ enum ACLJourneyModels {
         return nodes
     }
     
-    /// Vertical step between nodes within a phase (halved so bubbles are closer).
+    /// Vertical step between nodes (used only when width unknown; constant-segment layout preferred).
     static let baseStep: CGFloat = 60
-    /// Vertical gap at each phase transition; same as baseStep so spacing is constant everywhere.
+    /// Vertical gap at each phase transition when using fixed-step layout.
     static let phaseSeparatorClearance: CGFloat = 60
     
-    /// Y offsets for each index with phase separator clearance; use for patient JourneyNode layout.
+    /// Target length of each connector segment so lines between bubbles are the same length.
+    static let segmentLength: CGFloat = 80
+    
+    /// Gap from last bubble of a phase to the phase separator line (and separator to first bubble of next phase).
+    static let phaseSeparatorGap: CGFloat = 100
+    
+    /// X position for a node by index-in-phase (matches view safeNodeX: center start, S-curve).
+    static func nodeX(indexInPhase: Int, width: CGFloat) -> CGFloat {
+        let bubbleRadius: CGFloat = 30
+        let innerMargin: CGFloat = 55
+        let minX = bubbleRadius + innerMargin
+        let maxX = max(minX, width - bubbleRadius - innerMargin)
+        let usable = max(0, maxX - minX)
+        let amplitude = usable / 2
+        let center = minX + amplitude
+        let period: CGFloat = 9.0
+        let t = CGFloat(indexInPhase) / period * (2 * .pi)
+        var x = center + amplitude * sin(t)
+        x += min(8, amplitude * 0.15) * sin(t * 2 + 0.7)
+        x = min(max(x, minX), maxX)
+        if x.isNaN || x.isInfinite { x = center }
+        return x
+    }
+    
+    /// Y offsets so each connector segment has the same length (adapts vertical spacing to S-curve).
+    /// Inserts phaseSeparatorGap * 2 (100pt above + 100pt below separator) at each phase boundary.
+    static func layoutYOffsets(phases: [Int], width: CGFloat, segmentLength D: CGFloat = segmentLength) -> [CGFloat] {
+        guard !phases.isEmpty else { return [] }
+        let phaseGap: CGFloat = phaseSeparatorGap * 2
+        var yOffsets: [CGFloat] = []
+        var prevY: CGFloat = 0
+        var prevX: CGFloat = nodeX(indexInPhase: 0, width: width)
+        for index in phases.indices {
+            let indexInPhase = index - (index > 0 ? (phases[0..<index].lastIndex(where: { $0 != phases[index] }).map { $0 + 1 } ?? 0) : 0)
+            let x = nodeX(indexInPhase: indexInPhase, width: width)
+            if index == 0 {
+                yOffsets.append(0)
+                prevY = 0
+            } else {
+                let isPhaseBoundary = phases[index] != phases[index - 1]
+                let y: CGFloat
+                if isPhaseBoundary {
+                    prevY += phaseGap
+                    y = prevY
+                } else {
+                    let dx = x - prevX
+                    let dySq = max(0, D * D - dx * dx)
+                    let dy = dySq.squareRoot()
+                    y = prevY + dy
+                }
+                yOffsets.append(y)
+                prevY = y
+            }
+            prevX = x
+        }
+        return yOffsets
+    }
+    
+    /// Y offsets (fixed step) when width is unknown; use for fallback only.
     static func layoutYOffsets(phases: [Int]) -> [CGFloat] {
         guard !phases.isEmpty else { return [] }
         var result: [CGFloat] = []
@@ -302,12 +360,24 @@ enum ACLJourneyModels {
         return result
     }
     
-    static func layoutNodesZigZag(nodes: inout [LessonNode]) {
+    static func layoutNodesZigZag(nodes: inout [LessonNode], width: CGFloat = 390) {
         guard !nodes.isEmpty else { return }
         let phases = nodes.map(\.phase)
-        let yOffsets = layoutYOffsets(phases: phases)
+        let yOffsets = layoutYOffsets(phases: phases, width: width)
         for (index, y) in yOffsets.enumerated() where index < nodes.count {
             nodes[index].yOffset = y
+        }
+    }
+    
+    /// Returns nodes with yOffsets set for constant segment length at the given width.
+    static func layoutNodesZigZag(nodes: [LessonNode], width: CGFloat) -> [LessonNode] {
+        guard !nodes.isEmpty, width > 0 else { return nodes }
+        let phases = nodes.map(\.phase)
+        let yOffsets = layoutYOffsets(phases: phases, width: width)
+        return nodes.enumerated().map { index, node in
+            var n = node
+            n.yOffset = index < yOffsets.count ? yOffsets[index] : node.yOffset
+            return n
         }
     }
     
@@ -330,7 +400,7 @@ enum ACLJourneyModels {
         gapBelowLastNode: CGFloat? = nil,
         maxHeight: CGFloat
     ) -> (phase2: CGFloat, phase3: CGFloat, phase4: CGFloat) {
-        let gap = gapBelowLastNode ?? (phaseSeparatorClearance / 2)
+        let gap = gapBelowLastNode ?? phaseSeparatorGap
         let lastY = { (phase: Int) -> CGFloat in
             nodes.last(where: { $0.phase == phase })?.yOffset ?? 0
         }

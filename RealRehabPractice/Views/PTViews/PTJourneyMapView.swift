@@ -41,6 +41,7 @@ struct PTJourneyMapView: View {
     @State private var dragOffset: CGSize = .zero
     @State private var isDragging = false
     @State private var pressedIndex: Int? = nil // Index of bubble that is "pressed"/enlarged by tap
+    @State private var lastLayoutWidth: CGFloat = 0
     
     private var exerciseTypes: [String] { ACLJourneyModels.allExerciseNamesForPicker }
     private var activePhase: Int { activePhaseId }
@@ -282,6 +283,7 @@ struct PTJourneyMapView: View {
                             .position(x: geometry.size.width / 2, y: phaseBoundaries.phase4)
                     }
                     .frame(height: maxHeight)
+                    .preference(key: ContentWidthPreferenceKey.self, value: geometry.size.width)
                 }
                 .frame(height: maxHeight)
                 .padding(.horizontal, 16)
@@ -290,6 +292,11 @@ struct PTJourneyMapView: View {
                 }
             }
             .frame(height: 40 + maxHeight + 60)
+            .onPreferenceChange(ContentWidthPreferenceKey.self) { w in
+                guard w > 0, abs(w - lastLayoutWidth) > 0.5 else { return }
+                lastLayoutWidth = w
+                nodes = ACLJourneyModels.layoutNodesZigZag(nodes: nodes, width: w)
+            }
             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { scrollContentMinY = $0 }
             .onPreferenceChange(PhaseHeaderPreferenceKey.self) { positions in
                 for (k, v) in positions { lastKnownPhasePositions[k] = v }

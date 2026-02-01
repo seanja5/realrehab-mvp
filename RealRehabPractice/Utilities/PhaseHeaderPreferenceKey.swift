@@ -34,6 +34,15 @@ struct StickyHeaderBottomPreferenceKey: PreferenceKey {
     }
 }
 
+// MARK: - Content width for constant-segment layout (PT journey map)
+struct ContentWidthPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat { 0 }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        let next = nextValue()
+        if next > 0 { value = next }
+    }
+}
+
 // MARK: - Phase dividers report their minY in global (merge by phase index)
 struct PhaseHeaderPreferenceKey: PreferenceKey {
     static var defaultValue: [Int: CGFloat] { [:] }

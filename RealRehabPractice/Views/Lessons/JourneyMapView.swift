@@ -8,8 +8,10 @@ struct JourneyMapView: View {
     @State private var showPhaseGoals = false
     @State private var selectedNodeIndex: Int?
     @State private var showLockedPopup = false
-    @State private var activePhaseId: Int? = 1
-    private var activePhase: Int { activePhaseId ?? 1 }
+    @State private var activePhaseId: Int = 1
+    @State private var headerBottomGlobal: CGFloat = 0
+    @State private var lastKnownPhasePositions: [Int: CGFloat] = [:]
+    private var activePhase: Int { activePhaseId }
     
     // Computed property for dynamic height
     private var maxHeight: CGFloat {
@@ -49,16 +51,19 @@ struct JourneyMapView: View {
             } else {
                 ScrollView {
                     ZStack(alignment: .top) {
-                        // Invisible LazyVStack with phase anchors – scrollPosition tracks which is at top
-                        LazyVStack(spacing: 0) {
-                            Color.clear.frame(height: 1).id(1)
-                            Color.clear.frame(height: 2618)
-                            Color.clear.frame(height: 1).id(2)
+                        VStack(spacing: 0) {
+                            Color.clear.frame(height: 1)
+                                .phaseHeaderPosition(phase: 1)
+                            Color.clear.frame(height: 2659)
+                            Color.clear.frame(height: 1)
+                                .phaseHeaderPosition(phase: 2)
                             Color.clear.frame(height: 5039)
-                            Color.clear.frame(height: 1).id(3)
+                            Color.clear.frame(height: 1)
+                                .phaseHeaderPosition(phase: 3)
                             Color.clear.frame(height: 7439)
-                            Color.clear.frame(height: 1).id(4)
-                            Color.clear.frame(height: max(0, maxHeight + 60 - 15100))
+                            Color.clear.frame(height: 1)
+                                .phaseHeaderPosition(phase: 4)
+                            Color.clear.frame(height: max(0, maxHeight + 60 - 15141))
                         }
                         .scrollTargetLayout()
                         
@@ -126,8 +131,17 @@ struct JourneyMapView: View {
                         }
                     }
                     .frame(height: 40 + maxHeight + 60)
+                    .onPreferenceChange(PhaseHeaderPreferenceKey.self) { positions in
+                        for (k, v) in positions { lastKnownPhasePositions[k] = v }
+                        if !positions.isEmpty {
+                            activePhaseId = JourneyMapPhaseHeader.activePhase(
+                                thresholdY: headerBottomGlobal,
+                                phasePositions: positions
+                            )
+                        }
+                    }
                 }
-                .scrollPosition(id: $activePhaseId, anchor: .top)
+                .coordinateSpace(name: JourneyMapPhaseHeader.coordinateSpaceName)
             }
             
             PatientTabBar(
@@ -148,9 +162,19 @@ struct JourneyMapView: View {
             )
             .ignoresSafeArea(.keyboard, edges: .bottom)
         }
+        .onPreferenceChange(StickyHeaderBottomPreferenceKey.self) { value in
+            headerBottomGlobal = value
+            if !lastKnownPhasePositions.isEmpty {
+                activePhaseId = JourneyMapPhaseHeader.activePhase(
+                    thresholdY: value,
+                    phasePositions: lastKnownPhasePositions
+                )
+            }
+        }
         .rrPageBackground()
         .safeAreaInset(edge: .top) {
             headerCard
+                .reportHeaderBottom()
                 .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color.white)

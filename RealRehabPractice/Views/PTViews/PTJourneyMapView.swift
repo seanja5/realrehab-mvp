@@ -15,7 +15,9 @@ struct PTJourneyMapView: View {
     @State private var addSelection = 0
     @State private var customLessonName = ""
     @State private var showingPhaseGoals = false
-    @State private var activePhaseId: Int? = 1  // Used by scrollPosition; 1–4
+    @State private var activePhaseId: Int = 1
+    @State private var headerBottomGlobal: CGFloat = 0
+    @State private var lastKnownPhasePositions: [Int: CGFloat] = [:]
     @State private var selectedNodeID: UUID? = nil
     @State private var showingEditor = false
     @State private var tempReps: Int = 12
@@ -39,7 +41,7 @@ struct PTJourneyMapView: View {
     @State private var pressedIndex: Int? = nil // Index of bubble that is "pressed"/enlarged by tap
     
     private var exerciseTypes: [String] { ACLJourneyModels.allExerciseNamesForPicker }
-    private var activePhase: Int { activePhaseId ?? 1 }
+    private var activePhase: Int { activePhaseId }
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -146,16 +148,19 @@ struct PTJourneyMapView: View {
     private var content: some View {
         ScrollView {
             ZStack(alignment: .top) {
-                // Invisible LazyVStack with phase anchors – scrollPosition tracks which is at top
-                LazyVStack(spacing: 0) {
-                    Color.clear.frame(height: 1).id(1)
-                    Color.clear.frame(height: 2618)  // to phase 2 boundary
-                    Color.clear.frame(height: 1).id(2)
-                    Color.clear.frame(height: 5039)  // to phase 3 boundary
-                    Color.clear.frame(height: 1).id(3)
-                    Color.clear.frame(height: 7439)  // to phase 4 boundary
-                    Color.clear.frame(height: 1).id(4)
-                    Color.clear.frame(height: max(0, maxHeight + 60 - 15100))
+                VStack(spacing: 0) {
+                    Color.clear.frame(height: 1)
+                        .phaseHeaderPosition(phase: 1)
+                    Color.clear.frame(height: 2659)
+                    Color.clear.frame(height: 1)
+                        .phaseHeaderPosition(phase: 2)
+                    Color.clear.frame(height: 5039)
+                    Color.clear.frame(height: 1)
+                        .phaseHeaderPosition(phase: 3)
+                    Color.clear.frame(height: 7439)
+                    Color.clear.frame(height: 1)
+                        .phaseHeaderPosition(phase: 4)
+                    Color.clear.frame(height: max(0, maxHeight + 60 - 15141))
                 }
                 .scrollTargetLayout()
                 
@@ -276,13 +281,32 @@ struct PTJourneyMapView: View {
                 }
             }
             .frame(height: 40 + maxHeight + 60)
+            .onPreferenceChange(PhaseHeaderPreferenceKey.self) { positions in
+                for (k, v) in positions { lastKnownPhasePositions[k] = v }
+                if !positions.isEmpty {
+                    activePhaseId = JourneyMapPhaseHeader.activePhase(
+                        thresholdY: headerBottomGlobal,
+                        phasePositions: positions
+                    )
+                }
+            }
         }
-        .scrollPosition(id: $activePhaseId, anchor: .top)
+        .coordinateSpace(name: JourneyMapPhaseHeader.coordinateSpaceName)
+        .onPreferenceChange(StickyHeaderBottomPreferenceKey.self) { value in
+            headerBottomGlobal = value
+            if !lastKnownPhasePositions.isEmpty {
+                activePhaseId = JourneyMapPhaseHeader.activePhase(
+                    thresholdY: value,
+                    phasePositions: lastKnownPhasePositions
+                )
+            }
+        }
         .scrollDisabled(isDragging) // Disable scrolling while dragging
         .safeAreaInset(edge: .top) {
             // Sticky header card (matches JourneyMapView exactly)
             VStack(spacing: 0) {
                 headerCard
+                    .reportHeaderBottom()
                     .background(
                         RoundedRectangle(cornerRadius: 16)
                             .fill(Color.white)

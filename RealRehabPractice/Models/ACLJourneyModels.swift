@@ -193,6 +193,51 @@ struct LessonNode: Identifiable {
     }
 }
 
+// MARK: - Lesson descriptions (one sentence per exercise)
+extension ACLJourneyModels {
+    /// Returns the one-sentence description for a lesson title, or nil for benchmarks/custom.
+    static func lessonDescription(for title: String) -> String? {
+        let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return lessonDescriptions[t] ?? lessonDescriptionsByPrefix.first { key, _ in
+            t.lowercased().hasPrefix(key.lowercased()) || key.lowercased().hasPrefix(t.lowercased())
+        }?.value
+    }
+
+    private static let lessonDescriptions: [String: String] = [
+        // Phase 1
+        "Seated Knee Extensions": "Slowly straighten your knee while seated, focusing on fully extending the leg and engaging your thigh muscle.",
+        "Quad Sets (Isometric)": "Tighten your thigh muscle while keeping your leg straight, holding the contraction without moving the knee.",
+        "Heel Slides (Towel Slide)": "Slide your heel toward your body while lying down to gently bend the knee and improve range of motion.",
+        "Ankle Pumps": "Move your foot up and down to promote circulation and reduce swelling in the lower leg.",
+        "Calf Stretch (Seated Towel Stretch)": "Use a towel to gently pull your foot toward you, stretching the calf while keeping the knee straight.",
+        // Phase 2
+        "Terminal Knee Extensions": "Straighten your knee from a slightly bent position to strengthen the quadriceps and improve knee control.",
+        "Sit-to-Stand Squats (Chair Squats)": "Stand up from a chair and slowly sit back down while keeping your knees controlled and aligned.",
+        "Sit-to-Stand Squats": "Stand up from a chair and slowly sit back down while keeping your knees controlled and aligned.",
+        "Wall Sit (Shallow)": "Hold a gentle squat position against a wall to build early strength and endurance in the legs.",
+        "Standing Calf Raises (Double-Leg)": "Lift your heels off the ground and slowly lower them to strengthen the calves and improve lower-leg stability.",
+        "Standing Calf Raises": "Lift your heels off the ground and slowly lower them to strengthen the calves and improve lower-leg stability.",
+        "Seated Hamstring Stretch": "Extend one leg and gently lean forward to stretch the muscles along the back of the thigh.",
+        // Phase 3
+        "Step-Ups": "Step onto a stair or elevated surface and slowly step back down, focusing on controlled knee movement.",
+        "Single-Leg Sit-to-Stand": "Stand up from a chair using one leg, keeping the knee steady throughout the movement.",
+        "Reverse Lunges (Short Step)": "Step backward into a lunge and return to standing, emphasizing balance and knee control.",
+        "Reverse Lunges": "Step backward into a lunge and return to standing, emphasizing balance and knee control.",
+        "Single-Leg Balance Hold": "Balance on one leg while maintaining a steady, controlled knee position.",
+        "Wall Sit (Deeper)": "Hold a deeper squat against the wall to increase strength and endurance in the legs.",
+        // Phase 4
+        "Split Squats": "Lower into a squat with one foot forward and one foot back, focusing on control and stability in the front leg.",
+        "Walking Lunges (Short Controlled Steps)": "Step forward into a lunge and continue walking while maintaining steady, controlled knee movement.",
+        "Walking Lunges": "Step forward into a lunge and continue walking while maintaining steady, controlled knee movement.",
+        "Lateral Step-Out Squats": "Step sideways into a squat and return to standing to strengthen the legs and improve side-to-side control.",
+        "Single-Leg Wall Sit": "Hold a wall sit while lifting one foot off the ground to challenge single-leg strength and endurance.",
+        "Tempo Squats (3-Second Lower)": "Lower into a squat slowly over three seconds to build strength, control, and movement awareness.",
+        "Tempo Squats (3s eccentric)": "Lower into a squat slowly over three seconds to build strength, control, and movement awareness.",
+    ]
+
+    private static let lessonDescriptionsByPrefix: [(key: String, value: String)] = []
+}
+
 // MARK: - Default ACL Plan Generator
 enum ACLJourneyModels {
     static var allExerciseNames: [String] {

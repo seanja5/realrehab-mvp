@@ -13,7 +13,9 @@ struct PTJourneyMapView: View {
     
     @State private var showingAddPopover = false
     @State private var addSelection = 0
+    @State private var addPhaseSelection: Int = 0  // 0 = "Select", 1-4 = Phase 1-4
     @State private var customLessonName = ""
+    @State private var scrollContentMinY: CGFloat = 0  // scroll offset when adding (for insert position)
     @State private var showingPhaseGoals = false
     @State private var activePhaseId: Int = 1
     @State private var headerBottomGlobal: CGFloat = 0
@@ -148,6 +150,17 @@ struct PTJourneyMapView: View {
     private var content: some View {
         ScrollView {
             ZStack(alignment: .top) {
+                Color.clear
+                    .frame(height: 0)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear.preference(
+                                key: ScrollOffsetPreferenceKey.self,
+                                value: geo.frame(in: .named(JourneyMapPhaseHeader.coordinateSpaceName)).minY
+                            )
+                        }
+                    )
                 VStack(spacing: 0) {
                     Color.clear.frame(height: 1)
                         .phaseHeaderPosition(phase: 1)
@@ -275,6 +288,7 @@ struct PTJourneyMapView: View {
                 }
             }
             .frame(height: 40 + maxHeight + 60)
+            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { scrollContentMinY = $0 }
             .onPreferenceChange(PhaseHeaderPreferenceKey.self) { positions in
                 for (k, v) in positions { lastKnownPhasePositions[k] = v }
                 if !positions.isEmpty {
@@ -314,6 +328,7 @@ struct PTJourneyMapView: View {
                     Spacer()
                     Button {
                         showingAddPopover = true
+                        addPhaseSelection = activePhaseId  // Default to current phase
                         // Reset add form
                         addSelection = 0
                         customLessonName = ""
@@ -481,6 +496,24 @@ struct PTJourneyMapView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 14))
                                 }
                                 
+                                // Phase # selection
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Phase #")
+                                        .font(.rrBody)
+                                    
+                                    Picker("Phase #", selection: $addPhaseSelection) {
+                                        Text("Select").tag(0)
+                                        Text("Phase 1").tag(1)
+                                        Text("Phase 2").tag(2)
+                                        Text("Phase 3").tag(3)
+                                        Text("Phase 4").tag(4)
+                                    }
+                                    .pickerStyle(.menu)
+                                    .padding(14)
+                                    .background(Color(uiColor: .secondarySystemFill))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                }
+                                
                                 // Custom Lesson Text Field - only show when "Custom" is selected
                                 if addSelection == exerciseTypes.count - 1 { // "Custom" is last item
                                     VStack(alignment: .leading, spacing: 8) {
@@ -552,8 +585,10 @@ struct PTJourneyMapView: View {
                                 
                                 PrimaryButton(title: "Add Lesson") {
                                     let newTitle = (addSelection == exerciseTypes.count - 1 && !customLessonName.isEmpty) ? customLessonName : exerciseTypes[addSelection]
+                                    let phase = addPhaseSelection >= 1 ? addPhaseSelection : activePhaseId
                                     addNode(
                                         with: newTitle,
+                                        phase: phase,
                                         enableReps: enableReps,
                                         enableRestBetweenReps: enableRestBetweenReps,
                                         enableSets: enableSets,
@@ -646,6 +681,12 @@ struct PTJourneyMapView: View {
             Text(selectedNodeTitle)
                 .font(.rrTitle)
                 .foregroundStyle(.primary)
+            
+            if let desc = selectedNodeDescription {
+                Text(desc)
+                    .font(.rrBody)
+                    .foregroundStyle(.secondary)
+            }
             
             // Benchmarks: title only, lock, remove. Lessons: full parameters.
             if let id = selectedNodeID, let node = nodes.first(where: { $0.id == id }), node.nodeType == .lesson {
@@ -775,6 +816,10 @@ struct PTJourneyMapView: View {
         }
         return "Lesson"
     }
+
+    private var selectedNodeDescription: String? {
+        ACLJourneyModels.lessonDescription(for: selectedNodeTitle)
+    }
     
     // MARK: - Helper Functions for Editor
     private func nodeIndex(for id: UUID) -> Int? {
@@ -865,6 +910,7 @@ struct PTJourneyMapView: View {
     
     private func addNode(
         with title: String,
+        phase: Int,
         enableReps: Bool,
         enableRestBetweenReps: Bool,
         enableSets: Bool,
@@ -872,7 +918,7 @@ struct PTJourneyMapView: View {
         enableKneeBendAngle: Bool,
         enableTimeHoldingPosition: Bool
     ) {
-        let newNode = LessonNode.lesson(title: title, phase: activePhase)
+        let newNode = LessonNode.lesson(title: title, phase: phase)
         var added = newNode
         if !title.lowercased().contains("wall sit") {
             added.enableReps = enableReps
@@ -886,7 +932,21 @@ struct PTJourneyMapView: View {
             if enableKneeBendAngle { added.kneeBendAngle = 120 }
             if enableTimeHoldingPosition { added.timeHoldingPosition = 30 }
         }
-        nodes.append(added)
+        let insertIndex: Int
+        if phase == activePhaseId {
+            // Insert near current view (middle of visible area) within this phase
+            let targetContentY = scrollContentMinY + 200
+            let targetYOffset = targetContentY - 40
+            let firstInPhase = nodes.firstIndex(where: { $0.phase == phase }) ?? nodes.count
+            let lastInPhase = nodes.lastIndex(where: { $0.phase == phase }) ?? -1
+            let idealIndex = Int(round(targetYOffset / 120))
+            insertIndex = min(max(idealIndex, firstInPhase), lastInPhase + 1)
+        } else {
+            // Insert at end of selected phase
+            let lastInPhase = nodes.lastIndex(where: { $0.phase == phase })
+            insertIndex = (lastInPhase ?? -1) + 1
+        }
+        nodes.insert(added, at: insertIndex)
         ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
     }
 }

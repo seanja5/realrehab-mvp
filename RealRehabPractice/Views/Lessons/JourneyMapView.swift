@@ -35,6 +35,11 @@ struct JourneyMapView: View {
         }
         return vm.nodes[index].title.isEmpty ? "Lesson" : vm.nodes[index].title
     }
+
+    // Get selected node description for popup (nil for benchmarks)
+    private var selectedNodeDescription: String? {
+        ACLJourneyModels.lessonDescription(for: selectedNodeTitle)
+    }
     
     // Check if selected node is first unlocked lesson
     private var isFirstUnlockedLesson: Bool {
@@ -221,6 +226,13 @@ struct JourneyMapView: View {
                                     .font(.rrTitle)
                                     .foregroundStyle(.primary)
                                 
+                                if let desc = selectedNodeDescription {
+                                    Text(desc)
+                                        .font(.rrBody)
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
+                                
                                 PrimaryButton(title: "Go!") {
                                     // Get the selected node's parameters if it's a Knee Extension lesson
                                     let node = vm.nodes[selectedNodeIndex!]
@@ -262,6 +274,13 @@ struct JourneyMapView: View {
                                 Text(selectedNodeTitle)
                                     .font(.rrTitle)
                                     .foregroundStyle(.primary)
+                                
+                                if let desc = selectedNodeDescription {
+                                    Text(desc)
+                                        .font(.rrBody)
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
                                 
                                 Text("Locked")
                                     .font(.rrBody)

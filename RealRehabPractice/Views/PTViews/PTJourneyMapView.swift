@@ -1070,7 +1070,7 @@ struct PTNodeView: View {
             }
             
             if node.nodeType == .lesson {
-                Image(systemName: node.icon.systemName)
+                Image(systemName: ACLJourneyModels.lessonIconSystemName(for: node.title))
                     .font(.system(size: 24 * scale, weight: .medium))
                     .foregroundStyle(.white)
             }

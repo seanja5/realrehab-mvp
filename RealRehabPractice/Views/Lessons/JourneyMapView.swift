@@ -395,7 +395,7 @@ struct JourneyMapView: View {
             }
             
             if node.nodeType == .lesson {
-                Image(systemName: node.isLocked ? "lock.fill" : "video.fill")
+                Image(systemName: node.isLocked ? "lock.fill" : ACLJourneyModels.lessonIconSystemName(for: node.title))
                     .font(.system(size: 24, weight: .medium))
                     .foregroundStyle(.white)
             }

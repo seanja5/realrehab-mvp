@@ -193,6 +193,34 @@ struct LessonNode: Identifiable {
     }
 }
 
+// MARK: - Lesson icon (SF Symbol) for journey map bubbles
+extension ACLJourneyModels {
+    /// Returns an SF Symbol system name for the lesson bubble; simplistic, consistent size/stroke. Known exercises get specific icons; custom/unknown get pencil.
+    static func lessonIconSystemName(for title: String) -> String {
+        let t = title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if t.isEmpty { return "square.and.pencil" }
+        if t.contains("knee extension") { return "arrow.up.and.down" }
+        if t.contains("quad set") { return "bolt.fill" }
+        if t.contains("heel slide") { return "figure.walk" }
+        if t.contains("ankle pump") { return "waveform" }
+        if t.contains("calf stretch") { return "arrow.down.to.line" }
+        if t.contains("terminal knee") { return "arrow.up.and.down" }
+        if t.contains("sit-to-stand") || t.contains("chair squat") { return "figure.stand" }
+        if t.contains("wall sit") { return "rectangle.portrait" }
+        if t.contains("standing calf raise") { return "arrow.up.circle" }
+        if t.contains("hamstring stretch") { return "arrow.down" }
+        if t.contains("step-up") { return "figure.stairs" }
+        if t.contains("single-leg sit") { return "figure.stand" }
+        if t.contains("reverse lunge") { return "figure.walk" }
+        if t.contains("single-leg balance") { return "circle.circle" }
+        if t.contains("split squat") { return "figure.strengthtraining.traditional" }
+        if t.contains("walking lunge") { return "figure.walk" }
+        if t.contains("lateral step") { return "arrow.left.and.right" }
+        if t.contains("tempo squat") { return "timer" }
+        return "square.and.pencil"
+    }
+}
+
 // MARK: - Lesson descriptions (one sentence per exercise)
 extension ACLJourneyModels {
     /// Returns the one-sentence description for a lesson title, or nil for benchmarks/custom.

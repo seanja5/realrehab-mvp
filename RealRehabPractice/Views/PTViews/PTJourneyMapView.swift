@@ -350,25 +350,6 @@ struct PTJourneyMapView: View {
                     .padding(.top, 12)
                 }
             }
-            .overlay(alignment: .topTrailing) {
-                // Rehab Overview popover positioned below header
-                if showingPhaseGoals {
-                    VStack {
-                        Spacer()
-                            .frame(height: 80) // Height of header card
-                        
-                        HStack {
-                            Spacer()
-                            
-                            PhaseGoalsPopover(
-                                phase: activePhase,
-                                onDismiss: { showingPhaseGoals = false }
-                            )
-                            .padding(.trailing, 16)
-                        }
-                    }
-                }
-            }
         }
         .rrPageBackground()
         .navigationTitle("Journey Map")
@@ -380,6 +361,25 @@ struct PTJourneyMapView: View {
             }
         }
         .overlay {
+            if showingPhaseGoals {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture { showingPhaseGoals = false }
+                    .overlay(alignment: .topTrailing) {
+                        VStack {
+                            Spacer().frame(height: 100)
+                            HStack {
+                                Spacer()
+                                PhaseGoalsPopover(
+                                    phase: activePhase,
+                                    onDismiss: { showingPhaseGoals = false }
+                                )
+                                .padding(.trailing, 16)
+                            }
+                            Spacer()
+                        }
+                    }
+            }
             if showingEditor {
                 editorPopover
             }
@@ -993,6 +993,8 @@ struct PhaseGoalsPopover: View {
                             .font(.rrBody)
                         Text(goal)
                             .font(.rrBody)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .multilineTextAlignment(.leading)
                     }
                 }
             }
@@ -1001,12 +1003,13 @@ struct PhaseGoalsPopover: View {
                 .font(.rrCaption)
         }
         .padding(16)
+        .frame(width: 340, alignment: .topLeading)
+        .fixedSize(horizontal: false, vertical: true)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
         )
-        .frame(width: 320)
         .onTapGesture { }
     }
 }

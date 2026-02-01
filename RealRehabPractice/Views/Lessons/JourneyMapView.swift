@@ -191,18 +191,6 @@ struct JourneyMapView: View {
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
-                .overlay(alignment: .topTrailing) {
-                    if showPhaseGoals {
-                        VStack {
-                            Spacer().frame(height: 80)
-                            HStack {
-                                Spacer()
-                                PhaseGoalsPopover(phase: activePhase, onDismiss: { showPhaseGoals = false })
-                                    .padding(.trailing, 16)
-                            }
-                        }
-                    }
-                }
         }
         .navigationTitle("Journey Map")
         .navigationBarTitleDisplayMode(.inline)
@@ -213,6 +201,22 @@ struct JourneyMapView: View {
             }
         }
         .overlay {
+                if showPhaseGoals {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .onTapGesture { showPhaseGoals = false }
+                        .overlay(alignment: .topTrailing) {
+                            VStack {
+                                Spacer().frame(height: 100)
+                                HStack {
+                                    Spacer()
+                                    PhaseGoalsPopover(phase: activePhase, onDismiss: { showPhaseGoals = false })
+                                        .padding(.trailing, 16)
+                                }
+                                Spacer()
+                            }
+                        }
+                }
                 if showCallout {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
@@ -234,8 +238,12 @@ struct JourneyMapView: View {
                                 }
                                 
                                 PrimaryButton(title: "Go!") {
-                                    // Get the selected node's parameters if it's a Knee Extension lesson
-                                    let node = vm.nodes[selectedNodeIndex!]
+                                    guard let idx = selectedNodeIndex, idx < vm.nodes.count else {
+                                        showCallout = false
+                                        selectedNodeIndex = nil
+                                        return
+                                    }
+                                    let node = vm.nodes[idx]
                                     if node.title.lowercased().contains("knee extension") {
                                         router.go(.directionsView1(reps: node.reps, restSec: node.restSec))
                                     } else {

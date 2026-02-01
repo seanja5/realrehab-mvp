@@ -289,6 +289,8 @@ enum ACLJourneyModels {
     
     /// Target length of each connector segment so lines between bubbles are the same length.
     static let segmentLength: CGFloat = 80
+    /// Minimum vertical drop per segment so the S-curve always flows downward (no bubble directly to the right).
+    static let minVerticalStep: CGFloat = 30
     
     /// Gap from last bubble of a phase to the phase separator line (and separator to first bubble of next phase).
     static let phaseSeparatorGap: CGFloat = 100
@@ -334,7 +336,7 @@ enum ACLJourneyModels {
                 } else {
                     let dx = x - prevX
                     let dySq = max(0, D * D - dx * dx)
-                    let dy = dySq.squareRoot()
+                    let dy = max(minVerticalStep, dySq.squareRoot())
                     y = prevY + dy
                 }
                 yOffsets.append(y)

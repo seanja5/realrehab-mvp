@@ -282,10 +282,38 @@ enum ACLJourneyModels {
         return nodes
     }
     
-    static func layoutNodesZigZag(nodes: inout [LessonNode]) {
-        for index in nodes.indices {
-            nodes[index].yOffset = CGFloat(index) * 120
+    /// Vertical step between nodes within a phase.
+    static let baseStep: CGFloat = 120
+    /// Extra vertical gap at each phase transition so separator text is not covered by bubbles.
+    static let phaseSeparatorClearance: CGFloat = 140
+    
+    /// Y offsets for each index with phase separator clearance; use for patient JourneyNode layout.
+    static func layoutYOffsets(phases: [Int]) -> [CGFloat] {
+        guard !phases.isEmpty else { return [] }
+        var result: [CGFloat] = []
+        var runningY: CGFloat = 0
+        for index in phases.indices {
+            if index > 0, phases[index] != phases[index - 1] {
+                runningY += phaseSeparatorClearance
+            }
+            result.append(runningY)
+            runningY += baseStep
         }
+        return result
+    }
+    
+    static func layoutNodesZigZag(nodes: inout [LessonNode]) {
+        guard !nodes.isEmpty else { return }
+        let phases = nodes.map(\.phase)
+        let yOffsets = layoutYOffsets(phases: phases)
+        for (index, y) in yOffsets.enumerated() where index < nodes.count {
+            nodes[index].yOffset = y
+        }
+    }
+    
+    /// Total content height from last node yOffset (for frame height).
+    static func contentHeight(lastNodeYOffset: CGFloat, nodeContentOffset: CGFloat = 40) -> CGFloat {
+        lastNodeYOffset + nodeContentOffset + 60
     }
 
     /// Phase boundary Y positions in GeometryReader content space (node at yOffset + nodeContentOffset).
@@ -299,18 +327,19 @@ enum ACLJourneyModels {
     static func phaseBoundaryYs(
         nodes: [(yOffset: CGFloat, phase: Int)],
         nodeContentOffset: CGFloat = 40,
-        gapBelowLastNode: CGFloat = 60,
+        gapBelowLastNode: CGFloat? = nil,
         maxHeight: CGFloat
     ) -> (phase2: CGFloat, phase3: CGFloat, phase4: CGFloat) {
+        let gap = gapBelowLastNode ?? (phaseSeparatorClearance / 2)
         let lastY = { (phase: Int) -> CGFloat in
             nodes.last(where: { $0.phase == phase })?.yOffset ?? 0
         }
-        var p2 = lastY(1) + nodeContentOffset + gapBelowLastNode
-        var p3 = lastY(2) + nodeContentOffset + gapBelowLastNode
-        var p4 = lastY(3) + nodeContentOffset + gapBelowLastNode
+        var p2 = lastY(1) + nodeContentOffset + gap
+        var p3 = lastY(2) + nodeContentOffset + gap
+        var p4 = lastY(3) + nodeContentOffset + gap
         p2 = min(max(p2, 0), maxHeight)
-        p3 = min(max(max(p3, p2 + 1), 0), maxHeight)
-        p4 = min(max(max(p4, p3 + 1), 0), maxHeight)
+        p3 = min(max(p3, p2 + 1), maxHeight)
+        p4 = min(max(p4, p3 + 1), maxHeight)
         return (p2, p3, p4)
     }
 }

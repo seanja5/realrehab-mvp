@@ -186,14 +186,12 @@ struct PTJourneyMapView: View {
                         if nodes.count > 1 {
                             Path { path in
                                 let width = geometry.size.width
-                                var currentX = width * 0.3
-                                var currentY: CGFloat = 40
-                                
+                                let startY: CGFloat = 40
                                 for (index, node) in nodes.enumerated() {
-                                    currentX = (index % 2 == 0) ? width * 0.3 : width * 0.7
-                                    currentY = node.yOffset + 40
-                                    let point = CGPoint(x: currentX, y: currentY)
-                                    // Break path at phase boundaries: no line from last node of phase N to first of phase N+1
+                                    let nodeX = safeNodeX(index: index, width: width)
+                                    let nodeY = node.yOffset + startY
+                                    if !isValid(nodeX) || !isValid(nodeY) { continue }
+                                    let point = CGPoint(x: nodeX, y: nodeY)
                                     let isPhaseBoundary = index > 0 && node.phase != nodes[index - 1].phase
                                     if isPhaseBoundary {
                                         path.move(to: point)
@@ -209,11 +207,13 @@ struct PTJourneyMapView: View {
                         
                         // Draw nodes
                         ForEach(Array(nodes.enumerated()), id: \.element.id) { index, node in
-                            let nodeX = (index % 2 == 0) ? geometry.size.width * 0.3 : geometry.size.width * 0.7
-                            
+                            let nodeX = safeNodeX(index: index, width: geometry.size.width)
+                            let baseY = node.yOffset + 40
+                            let safeX = isValid(nodeX) ? nodeX : (geometry.size.width / 2)
+                            let safeY = isValid(baseY) ? baseY : 40
                             let displayPosition = isDragging && draggingIndex == index
-                                ? CGPoint(x: nodeX + dragOffset.width, y: node.yOffset + 40 + dragOffset.height)
-                                : CGPoint(x: nodeX, y: node.yOffset + 40)
+                                ? CGPoint(x: safeX + dragOffset.width, y: safeY + dragOffset.height)
+                                : CGPoint(x: safeX, y: safeY)
                             
                             PTNodeView(
                                 node: node,
@@ -412,8 +412,8 @@ struct PTJourneyMapView: View {
     }
     
     private var maxHeight: CGFloat {
-        // Calculate based on node count with same spacing as JourneyMapView (120pt intervals)
-        CGFloat(max(nodes.count * 120 + 40, 1240))
+        let lastY = nodes.last?.yOffset ?? 0
+        return max(ACLJourneyModels.contentHeight(lastNodeYOffset: lastY), 1240)
     }
 
     /// Phase boundary Y positions in GeometryReader content space; updates when nodes change.
@@ -421,7 +421,6 @@ struct PTJourneyMapView: View {
         ACLJourneyModels.phaseBoundaryYs(
             nodes: nodes.map { ($0.yOffset, $0.phase) },
             nodeContentOffset: 40,
-            gapBelowLastNode: 60,
             maxHeight: maxHeight
         )
     }
@@ -874,6 +873,27 @@ struct PTJourneyMapView: View {
     }
     
     // MARK: - Helper Functions
+    private func isValid(_ v: CGFloat) -> Bool {
+        !(v.isNaN || v.isInfinite)
+    }
+    
+    private func safeNodeX(index i: Int, width: CGFloat) -> CGFloat {
+        let bubbleRadius: CGFloat = 30
+        let innerMargin: CGFloat = 22
+        let minX = bubbleRadius + innerMargin
+        let maxX = max(minX, width - bubbleRadius - innerMargin)
+        let usable = max(0, maxX - minX)
+        let amplitude = usable / 2
+        let center = minX + amplitude
+        let period: CGFloat = 9.0
+        let t = CGFloat(i) / period * (2 * .pi)
+        var x = center + amplitude * sin(t)
+        x += min(8, amplitude * 0.15) * sin(t * 2 + 0.7)
+        x = min(max(x, minX), maxX)
+        if x.isNaN || x.isInfinite { x = center }
+        return x
+    }
+    
     private func handleDragEnd(from index: Int, translation: CGSize, geometry: GeometryProxy) {
         let finalY = nodes[index].yOffset + 40 + translation.height // Account for padding offset
         
@@ -934,13 +954,17 @@ struct PTJourneyMapView: View {
         }
         let insertIndex: Int
         if phase == activePhaseId {
-            // Insert near current view (middle of visible area) within this phase
             let targetContentY = scrollContentMinY + 200
             let targetYOffset = targetContentY - 40
             let firstInPhase = nodes.firstIndex(where: { $0.phase == phase }) ?? nodes.count
             let lastInPhase = nodes.lastIndex(where: { $0.phase == phase }) ?? -1
-            let idealIndex = Int(round(targetYOffset / 120))
-            insertIndex = min(max(idealIndex, firstInPhase), lastInPhase + 1)
+            if firstInPhase > lastInPhase {
+                insertIndex = firstInPhase
+            } else {
+                let indicesInPhase = Array(firstInPhase...lastInPhase)
+                let idealIndex = indicesInPhase.min(by: { abs(nodes[$0].yOffset - targetYOffset) < abs(nodes[$1].yOffset - targetYOffset) }) ?? lastInPhase
+                insertIndex = min(idealIndex + 1, lastInPhase + 1)
+            }
         } else {
             // Insert at end of selected phase
             let lastInPhase = nodes.lastIndex(where: { $0.phase == phase })

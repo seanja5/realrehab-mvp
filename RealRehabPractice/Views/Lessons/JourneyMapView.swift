@@ -13,9 +13,10 @@ struct JourneyMapView: View {
     @State private var lastKnownPhasePositions: [Int: CGFloat] = [:]
     private var activePhase: Int { activePhaseId }
     
-    // Computed property for dynamic height
+    // Computed property for dynamic height (phase clearance built into node yOffsets)
     private var maxHeight: CGFloat {
-        CGFloat(max(vm.nodes.count * 120 + 40, 400))
+        let lastY = vm.nodes.last?.yOffset ?? 0
+        return max(ACLJourneyModels.contentHeight(lastNodeYOffset: lastY), 400)
     }
 
     /// Phase boundary Y positions in GeometryReader content space; updates when nodes change.
@@ -23,7 +24,6 @@ struct JourneyMapView: View {
         ACLJourneyModels.phaseBoundaryYs(
             nodes: vm.nodes.map { ($0.yOffset, $0.phase) },
             nodeContentOffset: 40,
-            gapBelowLastNode: 60,
             maxHeight: maxHeight
         )
     }
@@ -89,13 +89,12 @@ struct JourneyMapView: View {
                             ZStack(alignment: .topLeading) {
                                 Path { path in
                                     let width = geometry.size.width
-                                    var currentX = width * 0.3
-                                    var currentY: CGFloat = 40
-                                    
+                                    let startY: CGFloat = 40
                                     for (index, node) in vm.nodes.enumerated() {
-                                        currentX = (index % 2 == 0) ? width * 0.3 : width * 0.7
-                                        currentY = node.yOffset + 40
-                                        let point = CGPoint(x: currentX, y: currentY)
+                                        let nodeX = safeNodeX(index: index, width: width)
+                                        let nodeY = node.yOffset + startY
+                                        if !isValid(nodeX) || !isValid(nodeY) { continue }
+                                        let point = CGPoint(x: nodeX, y: nodeY)
                                         let isPhaseBoundary = index > 0 && node.phase != vm.nodes[index - 1].phase
                                         if isPhaseBoundary {
                                             path.move(to: point)
@@ -109,10 +108,12 @@ struct JourneyMapView: View {
                                 .stroke(Color.brandLightBlue.opacity(0.4), lineWidth: 2)
                                 
                                 ForEach(Array(vm.nodes.enumerated()), id: \.element.id) { index, node in
-                                    let nodeX = (index % 2 == 0) ? geometry.size.width * 0.3 : geometry.size.width * 0.7
-                                    
+                                    let nodeX = safeNodeX(index: index, width: geometry.size.width)
+                                    let posY = node.yOffset + 40
+                                    let safeX = isValid(nodeX) ? nodeX : (geometry.size.width / 2)
+                                    let safeY = isValid(posY) ? posY : 40
                                     NodeView(node: node)
-                                        .position(x: nodeX, y: node.yOffset + 40)
+                                        .position(x: safeX, y: safeY)
                                         .onTapGesture {
                                             selectedNodeIndex = index
                                             if node.isLocked {
@@ -351,6 +352,27 @@ struct JourneyMapView: View {
             }
         }
         .padding(16)
+    }
+    
+    private func isValid(_ v: CGFloat) -> Bool {
+        !(v.isNaN || v.isInfinite)
+    }
+    
+    private func safeNodeX(index i: Int, width: CGFloat) -> CGFloat {
+        let bubbleRadius: CGFloat = 30
+        let innerMargin: CGFloat = 22
+        let minX = bubbleRadius + innerMargin
+        let maxX = max(minX, width - bubbleRadius - innerMargin)
+        let usable = max(0, maxX - minX)
+        let amplitude = usable / 2
+        let center = minX + amplitude
+        let period: CGFloat = 9.0
+        let t = CGFloat(i) / period * (2 * .pi)
+        var x = center + amplitude * sin(t)
+        x += min(8, amplitude * 0.15) * sin(t * 2 + 0.7)
+        x = min(max(x, minX), maxX)
+        if x.isNaN || x.isInfinite { x = center }
+        return x
     }
     
     private func NodeView(node: JourneyNode) -> some View {

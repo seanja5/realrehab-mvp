@@ -66,13 +66,15 @@ public final class JourneyMapViewModel: ObservableObject {
                 return
             }
             
-            // Convert PlanNodeDTO to JourneyNode
+            // Convert PlanNodeDTO to JourneyNode (S-curve layout with phase separator clearance)
             if let planNodes = plan.nodes, !planNodes.isEmpty {
+                let phases = planNodes.map { max(1, min(4, $0.phase ?? 1)) }
+                let yOffsets = ACLJourneyModels.layoutYOffsets(phases: phases)
                 nodes = planNodes.enumerated().map { index, dto in
                     let iconName = dto.icon == "person" ? "figure.stand" : "video.fill"
-                    let yOffset = CGFloat(index) * 120
+                    let yOffset = index < yOffsets.count ? yOffsets[index] : CGFloat(index) * ACLJourneyModels.baseStep
                     let nodeType: JourneyNodeType = (dto.nodeType == "benchmark") ? .benchmark : .lesson
-                    let phase = max(1, min(4, dto.phase ?? 1))
+                    let phase = phases[index]
                     return JourneyNode(icon: iconName, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
                 }
                 print("✅ JourneyMapViewModel: loaded \(nodes.count) nodes from plan")

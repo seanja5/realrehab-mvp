@@ -17,6 +17,16 @@ struct JourneyMapView: View {
     private var maxHeight: CGFloat {
         CGFloat(max(vm.nodes.count * 120 + 40, 400))
     }
+
+    /// Phase boundary Y positions in GeometryReader content space; updates when nodes change.
+    private var phaseBoundaries: (phase2: CGFloat, phase3: CGFloat, phase4: CGFloat) {
+        ACLJourneyModels.phaseBoundaryYs(
+            nodes: vm.nodes.map { ($0.yOffset, $0.phase) },
+            nodeContentOffset: 40,
+            gapBelowLastNode: 60,
+            maxHeight: maxHeight
+        )
+    }
     
     // Get selected node title for popup
     private var selectedNodeTitle: String {
@@ -54,16 +64,16 @@ struct JourneyMapView: View {
                         VStack(spacing: 0) {
                             Color.clear.frame(height: 1)
                                 .phaseHeaderPosition(phase: 1)
-                            Color.clear.frame(height: 2659)
+                            Color.clear.frame(height: max(0, 40 + phaseBoundaries.phase2 - 1))
                             Color.clear.frame(height: 1)
                                 .phaseHeaderPosition(phase: 2)
-                            Color.clear.frame(height: 5039)
+                            Color.clear.frame(height: max(0, phaseBoundaries.phase3 - phaseBoundaries.phase2 - 1))
                             Color.clear.frame(height: 1)
                                 .phaseHeaderPosition(phase: 3)
-                            Color.clear.frame(height: 7439)
+                            Color.clear.frame(height: max(0, phaseBoundaries.phase4 - phaseBoundaries.phase3 - 1))
                             Color.clear.frame(height: 1)
                                 .phaseHeaderPosition(phase: 4)
-                            Color.clear.frame(height: max(0, maxHeight + 60 - 15141))
+                            Color.clear.frame(height: max(0, maxHeight + 60 - phaseBoundaries.phase4 - 1))
                         }
                         .scrollTargetLayout()
                         
@@ -108,19 +118,13 @@ struct JourneyMapView: View {
                                         }
                                 }
                                 
-                                // Phase separator overlays (no separator for Phase 1 at top)
-                                ForEach([2, 3, 4], id: \.self) { phase in
-                                    let y: CGFloat = {
-                                        switch phase {
-                                        case 2: return 2620.0
-                                        case 3: return 7660.0
-                                        case 4: return 15100.0
-                                        default: return 2620.0
-                                        }
-                                    }()
-                                    PhaseSeparatorView(phase: phase, timeline: ACLPhase.phase(from: phase).timeline)
-                                        .position(x: geometry.size.width / 2, y: y)
-                                }
+                                // Phase separator overlays (positions from node layout)
+                                PhaseSeparatorView(phase: 2, timeline: ACLPhase.phase(from: 2).timeline)
+                                    .position(x: geometry.size.width / 2, y: phaseBoundaries.phase2)
+                                PhaseSeparatorView(phase: 3, timeline: ACLPhase.phase(from: 3).timeline)
+                                    .position(x: geometry.size.width / 2, y: phaseBoundaries.phase3)
+                                PhaseSeparatorView(phase: 4, timeline: ACLPhase.phase(from: 4).timeline)
+                                    .position(x: geometry.size.width / 2, y: phaseBoundaries.phase4)
                             }
                             .frame(height: maxHeight)
                         }

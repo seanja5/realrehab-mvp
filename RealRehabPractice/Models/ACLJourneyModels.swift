@@ -242,4 +242,30 @@ enum ACLJourneyModels {
             nodes[index].yOffset = CGFloat(index) * 120
         }
     }
+
+    /// Phase boundary Y positions in GeometryReader content space (node at yOffset + nodeContentOffset).
+    /// Use for separator lines and phase anchors so they move when lessons are added/removed.
+    /// - Parameters:
+    ///   - nodes: (yOffset, phase) for each node (e.g. from layoutNodesZigZag).
+    ///   - nodeContentOffset: Y offset of first node in content (e.g. 40).
+    ///   - gapBelowLastNode: Gap between last node of phase and separator line (e.g. 60).
+    ///   - maxHeight: Content height; boundaries are clamped and ordered.
+    /// - Returns: (phase2Y, phase3Y, phase4Y) in content coordinates.
+    static func phaseBoundaryYs(
+        nodes: [(yOffset: CGFloat, phase: Int)],
+        nodeContentOffset: CGFloat = 40,
+        gapBelowLastNode: CGFloat = 60,
+        maxHeight: CGFloat
+    ) -> (phase2: CGFloat, phase3: CGFloat, phase4: CGFloat) {
+        let lastY = { (phase: Int) -> CGFloat in
+            nodes.last(where: { $0.phase == phase })?.yOffset ?? 0
+        }
+        var p2 = lastY(1) + nodeContentOffset + gapBelowLastNode
+        var p3 = lastY(2) + nodeContentOffset + gapBelowLastNode
+        var p4 = lastY(3) + nodeContentOffset + gapBelowLastNode
+        p2 = min(max(p2, 0), maxHeight)
+        p3 = min(max(max(p3, p2 + 1), 0), maxHeight)
+        p4 = min(max(max(p4, p3 + 1), 0), maxHeight)
+        return (p2, p3, p4)
+    }
 }

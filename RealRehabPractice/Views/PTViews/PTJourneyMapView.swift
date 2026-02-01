@@ -164,7 +164,7 @@ struct PTJourneyMapView: View {
                 VStack(spacing: 0) {
                     Color.clear.frame(height: 1)
                         .phaseHeaderPosition(phase: 1)
-                    Color.clear.frame(height: max(0, 40 + phaseBoundaries.phase2 - 1))
+                    Color.clear.frame(height: max(0, phaseBoundaries.phase2 - 1))
                     Color.clear.frame(height: 1)
                         .phaseHeaderPosition(phase: 2)
                     Color.clear.frame(height: max(0, phaseBoundaries.phase3 - phaseBoundaries.phase2 - 1))
@@ -179,7 +179,7 @@ struct PTJourneyMapView: View {
                 
                 // Visible content
                 VStack(spacing: 0) {
-                    Spacer().frame(height: 40)
+                    Spacer().frame(height: 0)
                     GeometryReader { geometry in
                     ZStack(alignment: .topLeading) {
                         // Draw the diagonal path (matches JourneyMapView)
@@ -188,7 +188,8 @@ struct PTJourneyMapView: View {
                                 let width = geometry.size.width
                                 let startY: CGFloat = 40
                                 for (index, node) in nodes.enumerated() {
-                                    let nodeX = safeNodeX(index: index, width: width)
+                                    let indexInPhase = index - (nodes[0..<index].lastIndex(where: { $0.phase != node.phase }).map { $0 + 1 } ?? 0)
+                                    let nodeX = safeNodeX(indexInPhase: indexInPhase, width: width)
                                     let nodeY = node.yOffset + startY
                                     if !isValid(nodeX) || !isValid(nodeY) { continue }
                                     let point = CGPoint(x: nodeX, y: nodeY)
@@ -207,7 +208,8 @@ struct PTJourneyMapView: View {
                         
                         // Draw nodes
                         ForEach(Array(nodes.enumerated()), id: \.element.id) { index, node in
-                            let nodeX = safeNodeX(index: index, width: geometry.size.width)
+                            let indexInPhase = index - (nodes[0..<index].lastIndex(where: { $0.phase != node.phase }).map { $0 + 1 } ?? 0)
+                            let nodeX = safeNodeX(indexInPhase: indexInPhase, width: geometry.size.width)
                             let baseY = node.yOffset + 40
                             let safeX = isValid(nodeX) ? nodeX : (geometry.size.width / 2)
                             let safeY = isValid(baseY) ? baseY : 40
@@ -877,7 +879,8 @@ struct PTJourneyMapView: View {
         !(v.isNaN || v.isInfinite)
     }
     
-    private func safeNodeX(index i: Int, width: CGFloat) -> CGFloat {
+    /// indexInPhase: 0 = first node of phase (starts left), then S-curve flows right as index increases.
+    private func safeNodeX(indexInPhase: Int, width: CGFloat) -> CGFloat {
         let bubbleRadius: CGFloat = 30
         let innerMargin: CGFloat = 22
         let minX = bubbleRadius + innerMargin
@@ -886,7 +889,7 @@ struct PTJourneyMapView: View {
         let amplitude = usable / 2
         let center = minX + amplitude
         let period: CGFloat = 9.0
-        let t = CGFloat(i) / period * (2 * .pi)
+        let t = CGFloat(indexInPhase) / period * (2 * .pi) - .pi / 2
         var x = center + amplitude * sin(t)
         x += min(8, amplitude * 0.15) * sin(t * 2 + 0.7)
         x = min(max(x, minX), maxX)

@@ -5,10 +5,15 @@ enum JourneyMapPhaseHeader {
     /// Named coordinate space on the ScrollView (optional; phase anchors use .global).
     static let coordinateSpaceName = "journeyScroll"
 
-    /// activePhase = max(phase where phaseMinY <= headerBottomGlobal); fallback 1 if none crossed.
+    /// Offset (in global pt) below the header bottom at which we switch phase. ~1.5" so the
+    /// title card changes when the horizontal separator touches the bottom of the title card.
+    static let phaseSwitchOffsetBelowHeader: CGFloat = 225
+
+    /// activePhase = max(phase where phaseMinY <= thresholdY + offset); fallback 1 if none crossed.
     /// Both thresholdY (header bottom) and phase anchor minY must be in .global.
     static func activePhase(thresholdY: CGFloat, phasePositions: [Int: CGFloat]) -> Int {
-        let crossed = phasePositions.filter { $0.value <= thresholdY }
+        let effectiveThreshold = thresholdY + phaseSwitchOffsetBelowHeader
+        let crossed = phasePositions.filter { $0.value <= effectiveThreshold }
         return crossed.keys.max() ?? 1
     }
 }

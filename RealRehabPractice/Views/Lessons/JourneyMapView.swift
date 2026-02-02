@@ -8,6 +8,7 @@ struct JourneyMapView: View {
     @State private var showPhaseGoals = false
     @State private var selectedNodeIndex: Int?
     @State private var showLockedPopup = false
+    @State private var pressedNodeIndex: Int? = nil
     @State private var activePhaseId: Int = 1
     @State private var headerBottomGlobal: CGFloat = 0
     @State private var lastKnownPhasePositions: [Int: CGFloat] = [:]
@@ -114,16 +115,27 @@ struct JourneyMapView: View {
                                     let posY = node.yOffset + 40
                                     let safeX = isValid(nodeX) ? nodeX : (geometry.size.width / 2)
                                     let safeY = isValid(posY) ? posY : 40
-                                    NodeView(node: node)
+                                    NodeView(node: node, isPressed: pressedNodeIndex == index)
                                         .position(x: safeX, y: safeY)
-                                        .onTapGesture {
-                                            selectedNodeIndex = index
-                                            if node.isLocked {
-                                                showLockedPopup = true
-                                            } else {
-                                                showCallout = true
-                                            }
-                                        }
+                                        .simultaneousGesture(
+                                            DragGesture(minimumDistance: 0)
+                                                .onChanged { _ in
+                                                    pressedNodeIndex = index
+                                                }
+                                                .onEnded { value in
+                                                    pressedNodeIndex = nil
+                                                    let distSq = value.translation.width * value.translation.width + value.translation.height * value.translation.height
+                                                    let tapThresholdSq: CGFloat = 64
+                                                    if distSq < tapThresholdSq {
+                                                        selectedNodeIndex = index
+                                                        if node.isLocked {
+                                                            showLockedPopup = true
+                                                        } else {
+                                                            showCallout = true
+                                                        }
+                                                    }
+                                                }
+                                        )
                                 }
                                 
                                 // Phase separator overlays (positions from node layout)
@@ -378,7 +390,7 @@ struct JourneyMapView: View {
         return x
     }
     
-    private func NodeView(node: JourneyNode) -> some View {
+    private func NodeView(node: JourneyNode, isPressed: Bool = false) -> some View {
         ZStack {
             Group {
                 if node.nodeType == .benchmark {
@@ -387,7 +399,7 @@ struct JourneyMapView: View {
                         .foregroundStyle(node.isLocked ? Color.gray.opacity(0.5) : Color.brandDarkBlue)
                         .shadow(color: (node.isLocked ? Color.gray : Color.brandDarkBlue).opacity(0.3), radius: 12, x: 0, y: 2)
                 } else {
-                    GlossyLessonBubbleBackground(baseColor: Color.brandDarkBlue, isLocked: node.isLocked)
+                    GlossyLessonBubbleBackground(baseColor: Color.brandDarkBlue, isLocked: node.isLocked, isPressed: isPressed)
                 }
             }
             
@@ -395,6 +407,8 @@ struct JourneyMapView: View {
                 Image(systemName: ACLJourneyModels.lessonIconSystemName(for: node.title))
                     .font(.system(size: 36, weight: .medium))
                     .foregroundStyle(.white)
+                    .offset(y: isPressed ? 6 : 0)
+                    .animation(.interactiveSpring(response: 0.2, dampingFraction: 0.7), value: isPressed)
             }
             
             if node.nodeType == .benchmark && node.isLocked {

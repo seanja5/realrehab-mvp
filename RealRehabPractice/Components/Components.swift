@@ -72,81 +72,89 @@ struct GlossyLessonBubbleBackground: View {
     var baseColor: Color = .brandDarkBlue
     /// When true (patient locked lesson): light gray top, dark gray underside, no shine.
     var isLocked: Bool = false
+    /// When true (patient press): top layer shifts down to cover underside for button-click effect.
+    var isPressed: Bool = false
     /// Ellipse: 80pt wide, 70pt tall.
     private let ovalWidth: CGFloat = 80
     private let ovalHeight: CGFloat = 70
     private let hitSize: CGFloat = 80
+    private let pressOffset: CGFloat = 6
     private static let lockedLightGray = Color(white: 0.72)
     private static let lockedDarkGray = Color(white: 0.38)
 
     var body: some View {
         ZStack {
-            // 1) Underside: dark gray (locked) or darker blue (unlocked)
+            // 1) Underside: stays fixed; top layer presses down over it when isPressed
             Ellipse()
                 .fill(isLocked ? Self.lockedDarkGray : Color.brandDarkerBlue)
                 .frame(width: ovalWidth, height: ovalHeight)
-                .offset(y: 6)
+                .offset(y: pressOffset)
                 .blur(radius: 0)
 
-            // 2) Base ellipse
-            Ellipse()
-                .fill(isLocked ? Self.lockedLightGray : baseColor)
-                .frame(width: ovalWidth, height: ovalHeight)
-
-            if !isLocked {
-                // 3) Vertical lighting + subtle inner shadow (unlocked only)
+            // 2–5) Top layer: base + lighting + shine + rim; shifts down when pressed
+            ZStack {
+                // 2) Base ellipse
                 Ellipse()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.12),
-                                Color.white.opacity(0.02),
-                                Color.black.opacity(0.08),
-                                Color.black.opacity(0.12)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
+                    .fill(isLocked ? Self.lockedLightGray : baseColor)
+                    .frame(width: ovalWidth, height: ovalHeight)
+
+                if !isLocked {
+                    // 3) Vertical lighting + subtle inner shadow (unlocked only)
+                    Ellipse()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.12),
+                                    Color.white.opacity(0.02),
+                                    Color.black.opacity(0.08),
+                                    Color.black.opacity(0.12)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
                         )
+                        .frame(width: ovalWidth, height: ovalHeight)
+                        .allowsHitTesting(false)
+
+                    // 4) Shine: two 45° diagonal white stripes (unlocked only)
+                    ZStack {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.22))
+                            .frame(width: 12, height: diagonalStripeLength)
+                            .rotationEffect(.degrees(45))
+                        Rectangle()
+                            .fill(Color.white.opacity(0.18))
+                            .frame(width: 6, height: diagonalStripeLength)
+                            .rotationEffect(.degrees(45))
+                            .offset(x: -10, y: -10)
+                    }
+                    .frame(width: ovalWidth, height: ovalHeight)
+                    .clipShape(Ellipse())
+                    .allowsHitTesting(false)
+                }
+
+                // 5) Rim stroke
+                Ellipse()
+                    .stroke(
+                        isLocked
+                            ? AnyShapeStyle(Color(white: 0.55))
+                            : AnyShapeStyle(LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.4),
+                                    Color.white.opacity(0.15),
+                                    Color.clear,
+                                    baseColor.opacity(0.5)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )),
+                        lineWidth: 1.1
                     )
                     .frame(width: ovalWidth, height: ovalHeight)
                     .allowsHitTesting(false)
-
-                // 4) Shine: two 45° diagonal white stripes (unlocked only)
-                ZStack {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.22))
-                        .frame(width: 12, height: diagonalStripeLength)
-                        .rotationEffect(.degrees(45))
-                    Rectangle()
-                        .fill(Color.white.opacity(0.18))
-                        .frame(width: 6, height: diagonalStripeLength)
-                        .rotationEffect(.degrees(45))
-                        .offset(x: -10, y: -10)
-                }
-                .frame(width: ovalWidth, height: ovalHeight)
-                .clipShape(Ellipse())
-                .allowsHitTesting(false)
             }
-
-            // 5) Rim stroke
-            Ellipse()
-                .stroke(
-                    isLocked
-                        ? AnyShapeStyle(Color(white: 0.55))
-                        : AnyShapeStyle(LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.4),
-                                Color.white.opacity(0.15),
-                                Color.clear,
-                                baseColor.opacity(0.5)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )),
-                    lineWidth: 1.1
-                )
-                .frame(width: ovalWidth, height: ovalHeight)
-                .allowsHitTesting(false)
+            .offset(y: isPressed ? pressOffset : 0)
+            .animation(.interactiveSpring(response: 0.2, dampingFraction: 0.7), value: isPressed)
         }
         .frame(width: hitSize, height: hitSize)
         .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)

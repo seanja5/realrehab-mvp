@@ -917,6 +917,14 @@ struct PTJourneyMapView: View {
             }
         }
         
+        // Only allow reorder within the same phase; cross-phase drag reverts (bubble snaps back)
+        let draggedPhase = nodes[index].phase
+        let targetPhase = nodes[nearestIndex].phase
+        if draggedPhase != targetPhase {
+            // Revert: don't reorder; dragOffset/draggingIndex reset in onEnded will snap bubble back
+            return
+        }
+        
         if nearestIndex != index {
             reorder(from: index, to: nearestIndex)
         } else {

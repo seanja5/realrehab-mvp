@@ -12,6 +12,8 @@ import Combine
 extension Color {
     static let brandLightBlue = Color(red: 0.2, green: 0.4, blue: 0.8)
     static let brandDarkBlue  = Color(red: 0.1, green: 0.2, blue: 0.6)
+    /// Darker blue for lesson bubble underside (solid, hides connector line).
+    static let brandDarkerBlue = Color(red: 0.05, green: 0.1, blue: 0.42)
 }
 
 // MARK: - Primary (Filled) Button
@@ -64,21 +66,22 @@ struct SecondaryButton: View {
 }
 
 // MARK: - Glossy Lesson Bubble (oval 3D token style)
-/// Reusable oval, 3D beveled, glossy bubble. Size matches ACLJourneyModels.lessonBubbleDiameter (75); icon/text go on top.
+/// Reusable oval (wider than tall), 3D beveled, glossy. Height 75pt; underside is solid darker blue so connector line doesn’t show.
 /// Shine: two diagonal low-opacity white stripes at 45°, clipped to capsule.
 struct GlossyLessonBubbleBackground: View {
     var baseColor: Color = .brandDarkBlue
-    private let ovalWidth: CGFloat = 75
-    private let ovalHeight: CGFloat = 70
-    private let hitSize: CGFloat = 75
+    /// Oval wider than tall: height 75pt, width 88pt.
+    private let ovalWidth: CGFloat = 88
+    private let ovalHeight: CGFloat = 75
+    private let hitSize: CGFloat = 88
 
     var body: some View {
         ZStack {
-            // 1) Darker underside / base shadow (3D thickness)
+            // 1) Darker underside (solid 100% opacity so connector line doesn’t show); larger offset for clickable look
             Capsule()
-                .fill(baseColor.opacity(0.45))
+                .fill(Color.brandDarkerBlue)
                 .frame(width: ovalWidth, height: ovalHeight)
-                .offset(y: 3)
+                .offset(y: 6)
                 .blur(radius: 0)
 
             // 2) Base oval

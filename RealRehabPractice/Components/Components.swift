@@ -67,76 +67,82 @@ struct SecondaryButton: View {
 
 // MARK: - Glossy Lesson Bubble (oval 3D token style)
 /// Reusable oval (wider than tall), 3D beveled, glossy. Height 75pt; underside is solid darker blue so connector line doesn’t show.
-/// Shine: two diagonal low-opacity white stripes at 45°, clipped to capsule.
+/// When isLocked: light gray top, dark gray bottom, no shine, 100% opacity (patient view only).
 struct GlossyLessonBubbleBackground: View {
     var baseColor: Color = .brandDarkBlue
-    /// Oval wider than tall: height 75pt, width 88pt.
-    private let ovalWidth: CGFloat = 88
-    private let ovalHeight: CGFloat = 75
-    private let hitSize: CGFloat = 88
+    /// When true (patient locked lesson): light gray top, dark gray underside, no shine.
+    var isLocked: Bool = false
+    /// Ellipse: 80pt wide, 70pt tall.
+    private let ovalWidth: CGFloat = 80
+    private let ovalHeight: CGFloat = 70
+    private let hitSize: CGFloat = 80
+    private static let lockedLightGray = Color(white: 0.72)
+    private static let lockedDarkGray = Color(white: 0.38)
 
     var body: some View {
         ZStack {
-            // 1) Darker underside (solid 100% opacity so connector line doesn’t show); larger offset for clickable look
-            Capsule()
-                .fill(Color.brandDarkerBlue)
+            // 1) Underside: dark gray (locked) or darker blue (unlocked)
+            Ellipse()
+                .fill(isLocked ? Self.lockedDarkGray : Color.brandDarkerBlue)
                 .frame(width: ovalWidth, height: ovalHeight)
                 .offset(y: 6)
                 .blur(radius: 0)
 
-            // 2) Base oval
-            Capsule()
-                .fill(baseColor)
+            // 2) Base ellipse
+            Ellipse()
+                .fill(isLocked ? Self.lockedLightGray : baseColor)
                 .frame(width: ovalWidth, height: ovalHeight)
 
-            // 3) Vertical lighting + subtle inner shadow at bottom edge (bevel)
-            Capsule()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.12),
-                            Color.white.opacity(0.02),
-                            Color.black.opacity(0.08),
-                            Color.black.opacity(0.12)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+            if !isLocked {
+                // 3) Vertical lighting + subtle inner shadow (unlocked only)
+                Ellipse()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.12),
+                                Color.white.opacity(0.02),
+                                Color.black.opacity(0.08),
+                                Color.black.opacity(0.12)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                     )
-                )
+                    .frame(width: ovalWidth, height: ovalHeight)
+                    .allowsHitTesting(false)
+
+                // 4) Shine: two 45° diagonal white stripes (unlocked only)
+                ZStack {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.22))
+                        .frame(width: 12, height: diagonalStripeLength)
+                        .rotationEffect(.degrees(45))
+                    Rectangle()
+                        .fill(Color.white.opacity(0.18))
+                        .frame(width: 6, height: diagonalStripeLength)
+                        .rotationEffect(.degrees(45))
+                        .offset(x: -10, y: -10)
+                }
                 .frame(width: ovalWidth, height: ovalHeight)
+                .clipShape(Ellipse())
                 .allowsHitTesting(false)
-
-            // 4) Shine: two 45° diagonal white low-opacity stripes, clipped to bubble
-            ZStack {
-                // Center stripe (wider)
-                Rectangle()
-                    .fill(Color.white.opacity(0.22))
-                    .frame(width: 12, height: diagonalStripeLength)
-                    .rotationEffect(.degrees(45))
-                // Above-left stripe (thinner), parallel
-                Rectangle()
-                    .fill(Color.white.opacity(0.18))
-                    .frame(width: 6, height: diagonalStripeLength)
-                    .rotationEffect(.degrees(45))
-                    .offset(x: -10, y: -10)
             }
-            .frame(width: ovalWidth, height: ovalHeight)
-            .clipShape(Capsule())
-            .allowsHitTesting(false)
 
-            // 5) Top-edge rim highlight + bottom-edge darker rim (bevel)
-            Capsule()
+            // 5) Rim stroke
+            Ellipse()
                 .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.4),
-                            Color.white.opacity(0.15),
-                            Color.clear,
-                            baseColor.opacity(0.5)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
+                    isLocked
+                        ? AnyShapeStyle(Color(white: 0.55))
+                        : AnyShapeStyle(LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.4),
+                                Color.white.opacity(0.15),
+                                Color.clear,
+                                baseColor.opacity(0.5)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )),
                     lineWidth: 1.1
                 )
                 .frame(width: ovalWidth, height: ovalHeight)
@@ -145,10 +151,9 @@ struct GlossyLessonBubbleBackground: View {
         .frame(width: hitSize, height: hitSize)
         .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
         .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 4)
-        .shadow(color: baseColor.opacity(0.35), radius: 12, x: 0, y: 3)
+        .shadow(color: (isLocked ? Self.lockedLightGray : baseColor).opacity(0.35), radius: 12, x: 0, y: 3)
     }
 
-    /// Long enough that rotated 45° the stripe reaches the capsule edge (diagonal of bubble).
     private var diagonalStripeLength: CGFloat {
         sqrt(ovalWidth * ovalWidth + ovalHeight * ovalHeight) + 10
     }

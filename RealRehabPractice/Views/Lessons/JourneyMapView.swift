@@ -387,12 +387,12 @@ struct JourneyMapView: View {
                         .foregroundStyle(node.isLocked ? Color.gray.opacity(0.5) : Color.brandDarkBlue)
                         .shadow(color: (node.isLocked ? Color.gray : Color.brandDarkBlue).opacity(0.3), radius: 12, x: 0, y: 2)
                 } else {
-                    GlossyLessonBubbleBackground(baseColor: node.isLocked ? Color.gray.opacity(0.3) : Color.brandDarkBlue)
+                    GlossyLessonBubbleBackground(baseColor: Color.brandDarkBlue, isLocked: node.isLocked)
                 }
             }
             
             if node.nodeType == .lesson {
-                Image(systemName: node.isLocked ? "lock.fill" : ACLJourneyModels.lessonIconSystemName(for: node.title))
+                Image(systemName: ACLJourneyModels.lessonIconSystemName(for: node.title))
                     .font(.system(size: 36, weight: .medium))
                     .foregroundStyle(.white)
             }

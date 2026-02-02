@@ -362,7 +362,7 @@ struct JourneyMapView: View {
     
     /// indexInPhase: 0 = first node of phase (starts center), then S-curve flows left/right as index increases.
     private func safeNodeX(indexInPhase: Int, width: CGFloat) -> CGFloat {
-        let bubbleRadius: CGFloat = 30
+        let bubbleRadius: CGFloat = ACLJourneyModels.lessonBubbleRadius
         let innerMargin: CGFloat = 55
         let minX = bubbleRadius + innerMargin
         let maxX = max(minX, width - bubbleRadius - innerMargin)
@@ -383,28 +383,25 @@ struct JourneyMapView: View {
             Group {
                 if node.nodeType == .benchmark {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 44))
+                        .font(.system(size: 66))
                         .foregroundStyle(node.isLocked ? Color.gray.opacity(0.5) : Color.brandDarkBlue)
                         .shadow(color: (node.isLocked ? Color.gray : Color.brandDarkBlue).opacity(0.3), radius: 12, x: 0, y: 2)
                 } else {
-                    Circle()
-                        .fill(node.isLocked ? Color.gray.opacity(0.3) : Color.brandDarkBlue)
-                        .frame(width: 60, height: 60)
-                        .shadow(color: node.isLocked ? Color.gray.opacity(0.2) : Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
+                    GlossyLessonBubbleBackground(baseColor: node.isLocked ? Color.gray.opacity(0.3) : Color.brandDarkBlue)
                 }
             }
             
             if node.nodeType == .lesson {
                 Image(systemName: node.isLocked ? "lock.fill" : ACLJourneyModels.lessonIconSystemName(for: node.title))
-                    .font(.system(size: 24, weight: .medium))
+                    .font(.system(size: 36, weight: .medium))
                     .foregroundStyle(.white)
             }
             
             if node.nodeType == .benchmark && node.isLocked {
                 Image(systemName: "lock.fill")
-                    .font(.system(size: 12))
+                    .font(.system(size: 18))
                     .foregroundStyle(.gray)
-                    .offset(x: 20, y: -20)
+                    .offset(x: 30, y: -30)
             }
         }
     }

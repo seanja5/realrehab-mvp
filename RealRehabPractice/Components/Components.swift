@@ -63,6 +63,94 @@ struct SecondaryButton: View {
     }
 }
 
+// MARK: - Glossy Lesson Bubble (oval 3D token style)
+/// Reusable oval, 3D beveled, glossy bubble. Size matches ACLJourneyModels.lessonBubbleDiameter (75); icon/text go on top.
+/// Shine: two diagonal low-opacity white stripes at 45°, clipped to capsule.
+struct GlossyLessonBubbleBackground: View {
+    var baseColor: Color = .brandDarkBlue
+    private let ovalWidth: CGFloat = 75
+    private let ovalHeight: CGFloat = 70
+    private let hitSize: CGFloat = 75
+
+    var body: some View {
+        ZStack {
+            // 1) Darker underside / base shadow (3D thickness)
+            Capsule()
+                .fill(baseColor.opacity(0.45))
+                .frame(width: ovalWidth, height: ovalHeight)
+                .offset(y: 3)
+                .blur(radius: 0)
+
+            // 2) Base oval
+            Capsule()
+                .fill(baseColor)
+                .frame(width: ovalWidth, height: ovalHeight)
+
+            // 3) Vertical lighting + subtle inner shadow at bottom edge (bevel)
+            Capsule()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.12),
+                            Color.white.opacity(0.02),
+                            Color.black.opacity(0.08),
+                            Color.black.opacity(0.12)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: ovalWidth, height: ovalHeight)
+                .allowsHitTesting(false)
+
+            // 4) Shine: two 45° diagonal white low-opacity stripes, clipped to bubble
+            ZStack {
+                // Center stripe (wider)
+                Rectangle()
+                    .fill(Color.white.opacity(0.22))
+                    .frame(width: 12, height: diagonalStripeLength)
+                    .rotationEffect(.degrees(45))
+                // Above-left stripe (thinner), parallel
+                Rectangle()
+                    .fill(Color.white.opacity(0.18))
+                    .frame(width: 6, height: diagonalStripeLength)
+                    .rotationEffect(.degrees(45))
+                    .offset(x: -10, y: -10)
+            }
+            .frame(width: ovalWidth, height: ovalHeight)
+            .clipShape(Capsule())
+            .allowsHitTesting(false)
+
+            // 5) Top-edge rim highlight + bottom-edge darker rim (bevel)
+            Capsule()
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.4),
+                            Color.white.opacity(0.15),
+                            Color.clear,
+                            baseColor.opacity(0.5)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 1.1
+                )
+                .frame(width: ovalWidth, height: ovalHeight)
+                .allowsHitTesting(false)
+        }
+        .frame(width: hitSize, height: hitSize)
+        .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 4)
+        .shadow(color: baseColor.opacity(0.35), radius: 12, x: 0, y: 3)
+    }
+
+    /// Long enough that rotated 45° the stripe reaches the capsule edge (diagonal of bubble).
+    private var diagonalStripeLength: CGFloat {
+        sqrt(ovalWidth * ovalWidth + ovalHeight * ovalHeight) + 10
+    }
+}
+
 // MARK: - Step Indicator (with label + connected dots)
 struct StepIndicator: View {
     let current: Int

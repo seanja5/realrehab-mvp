@@ -888,7 +888,7 @@ struct PTJourneyMapView: View {
     
     /// indexInPhase: 0 = first node of phase (starts center), then S-curve flows left/right as index increases.
     private func safeNodeX(indexInPhase: Int, width: CGFloat) -> CGFloat {
-        let bubbleRadius: CGFloat = 30
+        let bubbleRadius: CGFloat = ACLJourneyModels.lessonBubbleRadius
         let innerMargin: CGFloat = 55
         let minX = bubbleRadius + innerMargin
         let maxX = max(minX, width - bubbleRadius - innerMargin)
@@ -1058,28 +1058,25 @@ struct PTNodeView: View {
             Group {
                 if node.nodeType == .benchmark {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 44 * scale))
+                        .font(.system(size: 66 * scale))
                         .foregroundStyle(Color.brandDarkBlue)
                         .shadow(color: Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
                 } else {
-                    Circle()
-                        .fill(Color.brandDarkBlue)
-                        .frame(width: 60 * scale, height: 60 * scale)
-                        .shadow(color: Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
+                    GlossyLessonBubbleBackground(baseColor: Color.brandDarkBlue)
                 }
             }
             
             if node.nodeType == .lesson {
                 Image(systemName: ACLJourneyModels.lessonIconSystemName(for: node.title))
-                    .font(.system(size: 24 * scale, weight: .medium))
+                    .font(.system(size: 36 * scale, weight: .medium))
                     .foregroundStyle(.white)
             }
             
             if node.isLocked {
                 Image(systemName: "lock.fill")
-                    .font(.system(size: 12 * scale))
+                    .font(.system(size: 18 * scale))
                     .foregroundStyle(node.nodeType == .benchmark ? .gray : .white)
-                    .offset(x: 20 * scale, y: -20 * scale)
+                    .offset(x: 30 * scale, y: -30 * scale)
             }
         }
         .scaleEffect(scale)

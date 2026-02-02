@@ -310,22 +310,27 @@ enum ACLJourneyModels {
         return nodes
     }
     
+    // MARK: - Lesson bubble size (single source of truth)
+    /// Lesson bubble diameter. 75pt (was 90).
+    static let lessonBubbleDiameter: CGFloat = 75
+    static let lessonBubbleRadius: CGFloat = 37.5 // lessonBubbleDiameter / 2
+
     /// Vertical step between nodes (used only when width unknown; constant-segment layout preferred).
     static let baseStep: CGFloat = 60
     /// Vertical gap at each phase transition when using fixed-step layout.
     static let phaseSeparatorClearance: CGFloat = 60
-    
-    /// Target length of each connector segment so lines between bubbles are the same length.
-    static let segmentLength: CGFloat = 80
-    /// Minimum vertical drop per segment so the S-curve always flows downward (no bubble directly to the right).
-    static let minVerticalStep: CGFloat = 30
-    
-    /// Gap from last bubble of a phase to the phase separator line (and separator to first bubble of next phase).
-    static let phaseSeparatorGap: CGFloat = 100
-    
+
+    /// Target length of each connector segment. Was 80; now 110 (80 + 30) so center-to-center increases and edge-to-edge gap stays the same with 90pt bubbles.
+    static let segmentLength: CGFloat = 110
+    /// Minimum vertical drop per segment. Was 30; now 60 (30 + 30) so vertical spacing keeps same visual gap with larger bubbles.
+    static let minVerticalStep: CGFloat = 60
+
+    /// Gap from last bubble center to phase separator. Was 100; now 115 so edge-to-separator gap stays the same with 45pt radius.
+    static let phaseSeparatorGap: CGFloat = 115
+
     /// X position for a node by index-in-phase (matches view safeNodeX: center start, S-curve).
     static func nodeX(indexInPhase: Int, width: CGFloat) -> CGFloat {
-        let bubbleRadius: CGFloat = 30
+        let bubbleRadius: CGFloat = lessonBubbleRadius
         let innerMargin: CGFloat = 55
         let minX = bubbleRadius + innerMargin
         let maxX = max(minX, width - bubbleRadius - innerMargin)

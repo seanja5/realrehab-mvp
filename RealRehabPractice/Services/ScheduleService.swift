@@ -98,11 +98,15 @@ enum ScheduleService {
     // MARK: - Helpers
 
     /// Convert Date (time-of-day) to PostgreSQL time string "HH:mm:ss"
+    /// Rounds to nearest 15-minute block (0, 15, 30, 45)
     static func timeString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
-        formatter.timeZone = TimeZone.current
-        return formatter.string(from: date)
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.hour, .minute], from: date)
+        let h = comps.hour ?? 0
+        var m = comps.minute ?? 0
+        m = (m / 15) * 15
+        if m >= 60 { return String(format: "%02d:00:00", h + 1) }
+        return String(format: "%02d:%02d:00", h, m)
     }
 
     /// Convert (Weekday, Date) pairs to ScheduleSlot array

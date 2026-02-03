@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct RehabOverviewView: View {
     @EnvironmentObject var router: Router
@@ -173,14 +174,7 @@ This rehabilitation journey will take you through a series of lessons and benchm
                     }
                 )
 
-                DatePicker(
-                    "Time",
-                    selection: binding,
-                    displayedComponents: [.hourAndMinute]
-                )
-                .datePickerStyle(.wheel)
-                .labelsHidden()
-                .padding(.vertical, 8)
+                TimePicker15(selection: binding)
 
                 PrimaryButton(title: "Done") {
                     showTimePicker = false
@@ -284,6 +278,37 @@ This rehabilitation journey will take you through a series of lessons and benchm
 }
 
 // MARK: - Helpers
+
+/// Time picker with 15-minute intervals (12:00, 12:15, 12:30, 12:45)
+private struct TimePicker15: UIViewRepresentable {
+    @Binding var selection: Date
+
+    func makeUIView(context: Context) -> UIDatePicker {
+        let picker = UIDatePicker()
+        picker.datePickerMode = .time
+        picker.minuteInterval = 15
+        picker.preferredDatePickerStyle = .wheels
+        picker.addTarget(context.coordinator, action: #selector(Coordinator.changed), for: .valueChanged)
+        return picker
+    }
+
+    func updateUIView(_ picker: UIDatePicker, context: Context) {
+        picker.date = selection
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(selection: $selection)
+    }
+
+    class Coordinator: NSObject {
+        var selection: Binding<Date>
+        init(selection: Binding<Date>) { self.selection = selection }
+
+        @objc func changed(_ picker: UIDatePicker) {
+            selection.wrappedValue = picker.date
+        }
+    }
+}
 
 private struct FieldCard<Content: View>: View {
     @ViewBuilder var content: Content

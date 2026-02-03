@@ -69,5 +69,10 @@ enum CacheKey {
     static func patientProfileId(profileId: UUID) -> String {
         "patient_profile_id:\(profileId.uuidString)"
     }
+    
+    // Patient schedule slots (personalized weekly schedule)
+    static func patientSchedule(patientProfileId: UUID) -> String {
+        "patient_schedule:\(patientProfileId.uuidString)"
+    }
 }
 

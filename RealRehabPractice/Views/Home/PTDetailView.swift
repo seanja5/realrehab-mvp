@@ -4,6 +4,7 @@ import Combine
 struct PTDetailView: View {
     @EnvironmentObject var router: Router
     @StateObject private var vm = PatientPTViewModel()
+    @State private var scheduleSlots: [ScheduleService.ScheduleSlot] = []
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -65,12 +66,17 @@ struct PTDetailView: View {
                                 .foregroundStyle(.primary)
                                 .padding(.top, 10)
                                 .padding(.horizontal, 16)
-                            
-                            SecondaryButton(title: "Edit Schedule") {
+
+                            // My Schedule visualizer
+                            ScheduleVisualizerView(slots: scheduleSlots)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 16)
+
+                            SecondaryButton(title: scheduleSlots.isEmpty ? "Create a Schedule" : "Edit Schedule") {
                                 router.go(.rehabOverview)
                             }
                             .padding(.horizontal, 16)
-                            .padding(.top, 4)
+                            .padding(.top, 16)
                             
                             // Progress this week section
                             RecoveryChartWeekView()
@@ -123,8 +129,25 @@ struct PTDetailView: View {
         }
         .task {
             await vm.load()
+            await loadSchedule()
+        }
+        .onAppear {
+            Task { await loadSchedule() }
         }
         .bluetoothPopupOverlay()
+    }
+
+    private func loadSchedule() async {
+        do {
+            guard let profile = try await AuthService.myProfile() else { return }
+            let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
+            let slots = try await ScheduleService.getSchedule(patientProfileId: patientProfileId)
+            await MainActor.run {
+                scheduleSlots = slots
+            }
+        } catch {
+            scheduleSlots = []
+        }
     }
 }
 

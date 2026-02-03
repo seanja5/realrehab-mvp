@@ -10,6 +10,7 @@
 		C8003FA22EB42E72008DC812 /* SupabaseConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */; };
 		C8003FAD2EB441F1008DC812 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = C8003FAC2EB441F1008DC812 /* Supabase */; };
 		C8003FB52EB7FD57008DC812 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8003FB42EB7FC39008DC812 /* Components.swift */; };
+		C8A2B3D52ED00003004D9348 /* ScheduleVisualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */; };
 		C82537732F2B12C300465343 /* CacheKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82537702F2B12C300465343 /* CacheKey.swift */; };
 		C82537742F2B12C300465343 /* CacheService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82537712F2B12C300465343 /* CacheService.swift */; };
 		C82537752F2B12C300465343 /* CacheEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C825376F2F2B12C300465343 /* CacheEntry.swift */; };
@@ -24,6 +25,7 @@
 		C82D70292EBEB10C004D9347 /* PTProgramEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70252EBEB10C004D9347 /* PTProgramEditorViewModel.swift */; };
 		C82D702A2EBEB10C004D9347 /* LessonSessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70232EBEB10C004D9347 /* LessonSessionViewModel.swift */; };
 		C82D702C2ED00153004D9347 /* PatientService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D702B2ED00153004D9347 /* PatientService.swift */; };
+		C8A2B3D42ED00002004D9348 /* ScheduleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A2B3D42ED00002004D9347 /* ScheduleService.swift */; };
 		C82D70302ED0841A004D9347 /* PatientPTViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */; };
 		C82D70372ED09AC7004D9349 /* PTPatientsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70362ED09AC7004D9349 /* PTPatientsViewModel.swift */; };
 		C82D70382ED09AC7004D9350 /* GenderMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70372ED09AC7004D9350 /* GenderMapper.swift */; };
@@ -91,6 +93,7 @@
 /* Begin PBXFileReference section */
 		C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SupabaseConfig.plist; sourceTree = "<group>"; };
 		C8003FB42EB7FC39008DC812 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleVisualizerView.swift; sourceTree = "<group>"; };
 		C825376F2F2B12C300465343 /* CacheEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheEntry.swift; sourceTree = "<group>"; };
 		C82537702F2B12C300465343 /* CacheKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheKey.swift; sourceTree = "<group>"; };
 		C82537712F2B12C300465343 /* CacheService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheService.swift; sourceTree = "<group>"; };
@@ -105,6 +108,7 @@
 		C82D70242EBEB10C004D9347 /* PatientDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDashboardViewModel.swift; sourceTree = "<group>"; };
 		C82D70252EBEB10C004D9347 /* PTProgramEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTProgramEditorViewModel.swift; sourceTree = "<group>"; };
 		C82D702B2ED00153004D9347 /* PatientService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientService.swift; sourceTree = "<group>"; };
+		C8A2B3D42ED00002004D9347 /* ScheduleService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleService.swift; sourceTree = "<group>"; };
 		C82D702F2ED0841A004D9347 /* PatientPTViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientPTViewModel.swift; sourceTree = "<group>"; };
 		C82D70362ED09AC7004D9349 /* PTPatientsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPatientsViewModel.swift; sourceTree = "<group>"; };
 		C82D70372ED09AC7004D9350 /* GenderMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenderMapper.swift; sourceTree = "<group>"; };
@@ -210,6 +214,7 @@
 				C82D700B2EBE91D3004D9347 /* SupabaseService.swift */,
 				C82D700C2EBE91D3004D9347 /* TelemetryService.swift */,
 				C82D702B2ED00153004D9347 /* PatientService.swift */,
+				C8A2B3D42ED00002004D9347 /* ScheduleService.swift */,
 				C8F4A8212ED2F3B500BADF02 /* PTService.swift */,
 			);
 			path = Services;
@@ -283,6 +288,7 @@
 				C82D70562EC15F90004D9347 /* PTTabBar.swift */,
 				C8D677C82EB839FC00829144 /* Theme.swift */,
 				C8003FB42EB7FC39008DC812 /* Components.swift */,
+				C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -557,6 +563,7 @@
 				C8AEECC92EB2D7A200720188 /* AssessmentView.swift in Sources */,
 				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
 				C8003FB52EB7FD57008DC812 /* Components.swift in Sources */,
+				C8A2B3D52ED00003004D9348 /* ScheduleVisualizerView.swift in Sources */,
 				C8D677C92EB839FC00829144 /* Theme.swift in Sources */,
 				C82D70272EBEB10C004D9347 /* AuthViewModel.swift in Sources */,
 				C82D70282EBEB10C004D9347 /* PatientDashboardViewModel.swift in Sources */,
@@ -571,6 +578,7 @@
 				C82537742F2B12C300465343 /* CacheService.swift in Sources */,
 				C82537752F2B12C300465343 /* CacheEntry.swift in Sources */,
 				C82D702C2ED00153004D9347 /* PatientService.swift in Sources */,
+				C8A2B3D42ED00002004D9348 /* ScheduleService.swift in Sources */,
 				C8D677F02EBA932000829144 /* InjurySelectView.swift in Sources */,
 				C82D70572EC15F90004D9347 /* PatientTabBar.swift in Sources */,
 				C82D70582EC15F90004D9347 /* PTTabBar.swift in Sources */,

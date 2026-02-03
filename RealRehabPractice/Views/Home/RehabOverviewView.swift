@@ -4,19 +4,17 @@ struct RehabOverviewView: View {
     @EnvironmentObject var router: Router
 
     // MARK: - State
-    @State private var startDate: Date = Date()
-    @State private var startDateChosen: Bool = false
-    @State private var showDatePicker: Bool = false
-
     @State private var selectedDays: Set<Weekday> = []
     @State private var times: [Weekday: Date] = [:]
     @State private var timePickerDay: Weekday? = nil
     @State private var showTimePicker: Bool = false
 
     @State private var allowReminders: Bool = false
+    @State private var isSaving: Bool = false
+    @State private var saveError: String?
 
     private var canConfirm: Bool {
-        startDateChosen && !selectedDays.isEmpty
+        !selectedDays.isEmpty
     }
 
     var body: some View {
@@ -46,30 +44,6 @@ This rehabilitation journey will take you through a series of lessons and benchm
                     .foregroundStyle(.secondary)
 
                 Divider().padding(.vertical, 4)
-
-                // Start date
-                Text("When would you like to begin your rehab plan?")
-                    .font(.rrTitle)
-                FieldCard {
-                    Button {
-                        showDatePicker = true
-                    } label: {
-                        HStack {
-                            Text(startDateChosen ? startDate.formatted(date: .abbreviated, time: .omitted)
-                                                 : "Select start date")
-                                .font(.rrBody)
-                                .foregroundStyle(startDateChosen ? .primary : .secondary)
-                            Spacer()
-                            Image(systemName: "chevron.down")
-                                .font(.rrBody)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                    }
-                }
 
                 // Days & Times
                 Text("Which days and times work best for your exercises?")
@@ -131,7 +105,6 @@ This rehabilitation journey will take you through a series of lessons and benchm
 
                 // Summary
                 SummaryCard(
-                    startDate: startDateChosen ? startDate : nil,
                     selected: selectedDays.sorted(by: { $0.order < $1.order }),
                     times: times
                 )
@@ -149,38 +122,21 @@ This rehabilitation journey will take you through a series of lessons and benchm
             .padding(.top, 12)
         }
         .safeAreaInset(edge: .bottom) {
-            // Primary button at very bottom of page (not floating above content)
             VStack {
-                PrimaryButton(title: "Confirm Journey!", isDisabled: !canConfirm) {
-                    // Save schedule data to UserDefaults
-                    if startDateChosen {
-                        UserDefaults.standard.set(startDate, forKey: "scheduleStartDate")
-                        UserDefaults.standard.set(true, forKey: "scheduleStartDateChosen")
-                    } else {
-                        UserDefaults.standard.set(false, forKey: "scheduleStartDateChosen")
-                    }
-                    
-                    // Save selected days by their order (to handle duplicate labels like "T" and "S")
-                    let dayOrders = selectedDays.map { $0.order }
-                    UserDefaults.standard.set(dayOrders, forKey: "scheduleSelectedDays")
-                    
-                    // Save times by day order (not label, to handle duplicate labels)
-                    var timesDict: [Int: TimeInterval] = [:]
-                    for (day, time) in times {
-                        timesDict[day.order] = time.timeIntervalSince1970
-                    }
-                    if let encoded = try? JSONEncoder().encode(timesDict) {
-                        UserDefaults.standard.set(encoded, forKey: "scheduleTimes")
-                    }
-                    
-                    // Navigate forward
-                    router.go(.journeyMap)
+                if let err = saveError {
+                    Text(err)
+                        .font(.rrCaption)
+                        .foregroundStyle(.red)
+                }
+                PrimaryButton(title: isSaving ? "Saving…" : "Confirm Schedule!", isDisabled: !canConfirm || isSaving) {
+                    confirmTapped()
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
             .background(.ultraThinMaterial)
         }
+        .task { await loadExistingSchedule() }
         .navigationTitle("ACL Rehab")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
@@ -195,24 +151,6 @@ This rehabilitation journey will take you through a series of lessons and benchm
         .rrPageBackground()
 
         // MARK: - Sheets
-        .sheet(isPresented: $showDatePicker) {
-            VStack {
-                DatePicker(
-                    "Start Date",
-                    selection: $startDate,
-                    displayedComponents: [.date]
-                )
-                .datePickerStyle(.graphical)
-                .padding()
-
-                PrimaryButton(title: "Set Start Date") {
-                    startDateChosen = true
-                    showDatePicker = false
-                }
-                .padding()
-            }
-            .presentationDetents([.medium])
-        }
         .sheet(isPresented: $showTimePicker) {
             VStack {
                 if let day = timePickerDay {
@@ -255,6 +193,94 @@ This rehabilitation journey will take you through a series of lessons and benchm
         }
         .bluetoothPopupOverlay()
     }
+
+    // MARK: - Actions
+
+    private func confirmTapped() {
+        saveError = nil
+        isSaving = true
+
+        let slots = ScheduleService.slotsFrom(selectedDays: selectedDays, times: times)
+
+        Task {
+            do {
+                guard let profile = try await AuthService.myProfile() else {
+                    throw NSError(domain: "RehabOverview", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profile not found"])
+                }
+                let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
+                try await ScheduleService.saveSchedule(patientProfileId: patientProfileId, slots: slots)
+                await MainActor.run {
+                    isSaving = false
+                    router.reset(to: .ptDetail)
+                }
+            } catch {
+                await MainActor.run {
+                    isSaving = false
+                    saveError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func loadExistingSchedule() async {
+        do {
+            guard let profile = try await AuthService.myProfile() else {
+                await MainActor.run { loadFromUserDefaults() }
+                return
+            }
+            let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
+            let slots = try await ScheduleService.getSchedule(patientProfileId: patientProfileId)
+            await MainActor.run {
+                if slots.isEmpty {
+                    loadFromUserDefaults()
+                } else {
+                    applySlotsToState(slots: slots)
+                }
+            }
+        } catch {
+            await MainActor.run { loadFromUserDefaults() }
+        }
+    }
+
+    private func loadFromUserDefaults() {
+        if let orders = UserDefaults.standard.array(forKey: "scheduleSelectedDays") as? [Int] {
+            selectedDays = Set(orders.compactMap { Weekday(rawValue: $0) })
+        }
+        if let data = UserDefaults.standard.data(forKey: "scheduleTimes"),
+           let dict = try? JSONDecoder().decode([Int: TimeInterval].self, from: data) {
+            var newTimes: [Weekday: Date] = [:]
+            for (order, interval) in dict {
+                if let day = Weekday(rawValue: order) {
+                    newTimes[day] = Date(timeIntervalSince1970: interval)
+                }
+            }
+            times = newTimes
+        }
+    }
+
+    private func applySlotsToState(slots: [ScheduleService.ScheduleSlot]) {
+        var days = Set<Weekday>()
+        var newTimes: [Weekday: Date] = [:]
+        let cal = Calendar.current
+        let ref = cal.startOfDay(for: Date())
+        for slot in slots {
+            guard let day = Weekday(rawValue: slot.day_of_week) else { continue }
+            let parts = slot.slot_time.split(separator: ":")
+            guard parts.count >= 2,
+                  let h = Int(parts[0]),
+                  let m = Int(parts[1]) else { continue }
+            var comps = cal.dateComponents([.year, .month, .day], from: ref)
+            comps.hour = h
+            comps.minute = m
+            comps.second = 0
+            if let d = cal.date(from: comps) {
+                days.insert(day)
+                newTimes[day] = d
+            }
+        }
+        selectedDays = days
+        times = newTimes
+    }
 }
 
 // MARK: - Helpers
@@ -274,7 +300,6 @@ private struct FieldCard<Content: View>: View {
 }
 
 private struct SummaryCard: View {
-    var startDate: Date?
     var selected: [Weekday]
     var times: [Weekday: Date]
 
@@ -282,14 +307,6 @@ private struct SummaryCard: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Schedule Summary:")
                 .font(.rrTitle)
-
-            HStack(alignment: .top) {
-                Text("Start:")
-                    .font(.rrCaption).foregroundStyle(.secondary)
-                Spacer()
-                Text(startDate.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "—")
-                    .font(.rrBody)
-            }
 
             HStack(alignment: .top) {
                 Text("Days:")

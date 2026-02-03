@@ -290,21 +290,28 @@ This rehabilitation journey will take you through a series of lessons and benchm
     private func loadExistingSchedule() async {
         do {
             guard let profile = try await AuthService.myProfile() else {
-                await MainActor.run { loadFromUserDefaults() }
+                await MainActor.run { resetToBlank() }
                 return
             }
             let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
             let slots = try await ScheduleService.getSchedule(patientProfileId: patientProfileId)
             await MainActor.run {
                 if slots.isEmpty {
-                    loadFromUserDefaults()
+                    // Creating schedule: start blank. Do NOT load from UserDefaults (it's not per-account).
+                    resetToBlank()
                 } else {
+                    // Editing schedule: show existing slots
                     applySlotsToState(slots: slots)
                 }
             }
         } catch {
-            await MainActor.run { loadFromUserDefaults() }
+            await MainActor.run { resetToBlank() }
         }
+    }
+
+    private func resetToBlank() {
+        selectedDays = []
+        times = [:]
     }
 
     private func loadFromUserDefaults() {

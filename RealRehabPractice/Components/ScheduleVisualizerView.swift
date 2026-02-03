@@ -1,20 +1,22 @@
 import SwiftUI
 
 /// Calendar-style schedule visualizer: days (S M T W T F S) across top, times on left,
-/// dark brand blue rounded rectangles for 15-minute blocks. Each selected time fills 2 blocks (30 min).
+/// dark brand blue rounded rectangles for 30-minute blocks. Each selected time fills 1 block.
 /// No dates. Time range is dynamic based on slots.
 struct ScheduleVisualizerView: View {
     /// Schedule slots from ScheduleService (day_of_week 0-6, slot_time "HH:mm:ss")
-    /// Each slot is 30 min; it fills 2 consecutive 15-min blocks.
+    /// Each slot is 30 min; it fills 1 block (e.g. 12:00 fills 12:00–12:30 block).
     let slots: [ScheduleService.ScheduleSlot]
 
     private let dayLabels = ["S", "M", "T", "W", "T", "F", "S"]
     private let defaultStartHour = 8
     private let defaultEndHour = 16
     private let slotCornerRadius: CGFloat = 4
-    private let cellHeight: CGFloat = 8
+    private let cellHeight: CGFloat = 12
     private let cellSpacing: CGFloat = 2
-    private let blockMinutes = [0, 15, 30, 45]
+    private let blockMinutes = [0, 30]
+    /// Extra spacing between hour rows so blocks don't touch across hours
+    private let rowSpacing: CGFloat = 6
 
     /// Parse "HH:mm" or "HH:mm:ss" to (hour, minute) or nil
     private func parseTime(_ s: String) -> (hour: Int, minute: Int)? {
@@ -34,10 +36,9 @@ struct ScheduleVisualizerView: View {
         var minH = 23
         var maxH = 0
         for slot in slots {
-            guard let (h, m) = parseTime(slot.slot_time) else { continue }
+            guard let (h, _) = parseTime(slot.slot_time) else { continue }
             minH = min(minH, h)
-            let endH = m == 45 ? h + 1 : h
-            maxH = max(maxH, endH)
+            maxH = max(maxH, h)
         }
         if minH > maxH { return (defaultStartHour, defaultEndHour) }
         let start = max(0, minH - 1)
@@ -45,15 +46,19 @@ struct ScheduleVisualizerView: View {
         return (start, end)
     }
 
-    /// Check if 15-min block (day, hour, minute) is filled by any 30-min slot.
-    /// A slot at (sh, sm) fills blocks (sh, sm) and (sh, sm+15) or (sh+1, 0) when sm==45.
+    /// Days that have at least one slot (selected days)
+    private var selectedDays: Set<Int> {
+        Set(slots.map { $0.day_of_week })
+    }
+
+    /// Check if 30-min block (day, hour, minute) is filled. Each slot fills exactly 1 block.
+    /// Slot at (sh, sm): maps to block (sh, 0) if sm < 30, else (sh, 30).
     private func isFilled(day: Int, hour: Int, minute: Int) -> Bool {
         slots.contains { slot in
             guard slot.day_of_week == day,
                   let (sh, sm) = parseTime(slot.slot_time) else { return false }
-            let block1 = (sh, sm)
-            let block2 = sm == 45 ? (sh + 1, 0) : (sh, sm + 15)
-            return (hour == block1.0 && minute == block1.1) || (hour == block2.0 && minute == block2.1)
+            let blockMin = sm < 30 ? 0 : 30
+            return hour == sh && minute == blockMin
         }
     }
 
@@ -69,10 +74,21 @@ struct ScheduleVisualizerView: View {
                 HStack(spacing: 0) {
                     Color.clear.frame(width: 44, height: 24)
                     ForEach(0..<7, id: \.self) { col in
-                        Text(dayLabels[col])
-                            .font(.rrCaption)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity)
+                        let isSelected = selectedDays.contains(col)
+                        HStack {
+                            Spacer()
+                            Text(dayLabels[col])
+                                .font(.rrCaption)
+                                .foregroundStyle(isSelected ? .white : .secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(isSelected ? Color.brandDarkBlue : Color.clear)
+                                )
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity)
                     }
                 }
                 .padding(.bottom, 4)
@@ -95,7 +111,8 @@ struct ScheduleVisualizerView: View {
                             }
                         }
                     }
-                    .frame(height: CGFloat(blockMinutes.count) * cellHeight + CGFloat(blockMinutes.count - 1) * cellSpacing)
+                    .frame(height: CGFloat(blockMinutes.count) * cellHeight + CGFloat(blockMinutes.count - 1) * cellSpacing + rowSpacing)
+                    .padding(.bottom, rowSpacing)
                 }
             }
             .padding(12)

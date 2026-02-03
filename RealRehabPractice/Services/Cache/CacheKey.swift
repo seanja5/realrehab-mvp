@@ -74,5 +74,10 @@ enum CacheKey {
     static func patientSchedule(patientProfileId: UUID) -> String {
         "patient_schedule:\(patientProfileId.uuidString)"
     }
+
+    // Schedule reminders enabled (patient-level preference)
+    static func scheduleRemindersEnabled(patientProfileId: UUID) -> String {
+        "schedule_reminders_enabled:\(patientProfileId.uuidString)"
+    }
 }
 

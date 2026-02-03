@@ -100,6 +100,7 @@ create table if not exists accounts.patient_profiles (
   last_pt_visit date,
   allow_notifications boolean not null default true,
   allow_camera boolean not null default true,
+  schedule_reminders_enabled boolean not null default false,
   intake_notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

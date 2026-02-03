@@ -7,11 +7,17 @@
 
 import SwiftUI
 import UIKit
+import UserNotifications
 
 @main
 struct RealRehabPracticeApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject var router = Router()
     @StateObject private var session = SessionContext()
+
+    init() {
+        UNUserNotificationCenter.current().delegate = NotificationDelegate()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -82,7 +88,31 @@ struct RealRehabPracticeApp: App {
                     print("❌ Resolve IDs error: \(error)")
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .scheduleReminderTapped)) { _ in
+                router.reset(to: .journeyMap)
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    Task { await rescheduleRemindersIfNeeded() }
+                }
+            }
             .preferredColorScheme(.light)   // <- force Light mode app-wide
+        }
+    }
+
+    private func rescheduleRemindersIfNeeded() async {
+        do {
+            guard let profile = try await AuthService.myProfile(), profile.role == "patient" else { return }
+            let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
+            let enabled = try await PatientService.getScheduleRemindersEnabled(patientProfileId: patientProfileId)
+            guard enabled else { return }
+            let slots = try await ScheduleService.getSchedule(patientProfileId: patientProfileId)
+            guard !slots.isEmpty else { return }
+            let granted = await NotificationManager.authorizationStatus() == .authorized
+            guard granted else { return }
+            await NotificationManager.scheduleScheduleReminders(slots: slots, firstName: profile.first_name)
+        } catch {
+            // Ignore - user may not be signed in or not a patient
         }
     }
 }

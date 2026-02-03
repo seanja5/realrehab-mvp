@@ -24,6 +24,7 @@ enum PatientService {
     let phone: String?
     let surgery_date: String?
     let last_pt_visit: String?
+    let schedule_reminders_enabled: Bool?
   }
 
   struct PTProfileUpsert: Encodable {
@@ -136,7 +137,7 @@ enum PatientService {
     let rows: [PatientProfileRow] = try await client
       .schema("accounts")
       .from("patient_profiles")
-      .select("id,profile_id,first_name,last_name,date_of_birth,gender,phone,surgery_date,last_pt_visit")
+      .select("id,profile_id,first_name,last_name,date_of_birth,gender,phone,surgery_date,last_pt_visit,schedule_reminders_enabled")
       .eq("profile_id", value: profile.id.uuidString)
       .limit(1)
       .decoded()
@@ -150,6 +151,37 @@ enum PatientService {
     print("✅ PatientService.myPatientProfile: cached result")
     
     return row
+  }
+
+  // Get schedule_reminders_enabled for a patient (with caching)
+  static func getScheduleRemindersEnabled(patientProfileId: UUID) async throws -> Bool {
+    let cacheKey = CacheKey.scheduleRemindersEnabled(patientProfileId: patientProfileId)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: Bool.self, useDisk: true) {
+      return cached
+    }
+    struct Row: Decodable { let schedule_reminders_enabled: Bool? }
+    let rows: [Row] = try await client
+      .schema("accounts").from("patient_profiles")
+      .select("schedule_reminders_enabled")
+      .eq("id", value: patientProfileId.uuidString)
+      .limit(1)
+      .decoded()
+    let value = rows.first?.schedule_reminders_enabled ?? false
+    await CacheService.shared.setCached(value, forKey: cacheKey, ttl: CacheService.TTL.profile, useDisk: true)
+    return value
+  }
+
+  // Set schedule_reminders_enabled for a patient
+  static func setScheduleRemindersEnabled(patientProfileId: UUID, enabled: Bool) async throws {
+    struct Payload: Encodable {
+      let schedule_reminders_enabled: Bool
+    }
+    _ = try await client
+      .schema("accounts").from("patient_profiles")
+      .update(Payload(schedule_reminders_enabled: enabled))
+      .eq("id", value: patientProfileId.uuidString)
+      .execute()
+    await CacheService.shared.setCached(enabled, forKey: CacheKey.scheduleRemindersEnabled(patientProfileId: patientProfileId), ttl: CacheService.TTL.profile, useDisk: true)
   }
   
   // Get email from profiles table (with caching)

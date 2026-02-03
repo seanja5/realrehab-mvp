@@ -13,6 +13,7 @@ struct RehabOverviewView: View {
     @State private var pendingTimePickerValue: Date = Date()
 
     @State private var allowReminders: Bool = false
+    @State private var notificationDenied: Bool = false
     @State private var isSaving: Bool = false
     @State private var saveError: String?
     @State private var duplicateTimeMessage: String?
@@ -105,6 +106,30 @@ This rehabilitation journey will take you through a series of lessons and benchm
                     .font(.rrBody)
                     .padding(.top, 4)
                     .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                    .onChange(of: allowReminders) { _, enabled in
+                        if enabled {
+                            Task { await requestPermissionIfNeeded() }
+                        } else {
+                            notificationDenied = false
+                        }
+                    }
+
+                if allowReminders && notificationDenied {
+                    HStack(spacing: 8) {
+                        Text("Notifications are disabled. Enable them in Settings to receive reminders.")
+                            .font(.rrCaption)
+                            .foregroundStyle(.secondary)
+                        Button("Open Settings") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                        .font(.rrCaption)
+                        .fontWeight(.semibold)
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.orange.opacity(0.15)))
+                }
 
                 Spacer().frame(height: 16)
             }
@@ -238,6 +263,13 @@ This rehabilitation journey will take you through a series of lessons and benchm
         }
     }
 
+    private func requestPermissionIfNeeded() async {
+        let granted = await NotificationManager.requestAuthorizationIfNeeded()
+        await MainActor.run {
+            notificationDenied = !granted
+        }
+    }
+
     // MARK: - Actions
 
     private func confirmTapped() {
@@ -274,6 +306,20 @@ This rehabilitation journey will take you through a series of lessons and benchm
                 }
                 let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
                 try await ScheduleService.saveSchedule(patientProfileId: patientProfileId, slots: slots)
+                try await PatientService.setScheduleRemindersEnabled(patientProfileId: patientProfileId, enabled: allowReminders)
+
+                if allowReminders {
+                    let granted = await NotificationManager.requestAuthorizationIfNeeded()
+                    if granted {
+                        let firstName = profile.first_name
+                        await NotificationManager.scheduleScheduleReminders(slots: slots, firstName: firstName)
+                    } else {
+                        await MainActor.run { notificationDenied = true }
+                    }
+                } else {
+                    await NotificationManager.cancelScheduleReminders()
+                }
+
                 await MainActor.run {
                     isSaving = false
                     router.reset(to: .ptDetail)
@@ -295,6 +341,8 @@ This rehabilitation journey will take you through a series of lessons and benchm
             }
             let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
             let slots = try await ScheduleService.getSchedule(patientProfileId: patientProfileId)
+            let remindersEnabled = (try? await PatientService.getScheduleRemindersEnabled(patientProfileId: patientProfileId)) ?? false
+            let authDenied = await NotificationManager.authorizationStatus() == .denied
             await MainActor.run {
                 if slots.isEmpty {
                     // Creating schedule: start blank. Do NOT load from UserDefaults (it's not per-account).
@@ -303,9 +351,15 @@ This rehabilitation journey will take you through a series of lessons and benchm
                     // Editing schedule: show existing slots
                     applySlotsToState(slots: slots)
                 }
+                allowReminders = remindersEnabled
+                notificationDenied = allowReminders && authDenied
             }
         } catch {
-            await MainActor.run { resetToBlank() }
+            await MainActor.run {
+                resetToBlank()
+                allowReminders = false
+                notificationDenied = false
+            }
         }
     }
 

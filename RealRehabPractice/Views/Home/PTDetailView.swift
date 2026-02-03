@@ -67,10 +67,16 @@ struct PTDetailView: View {
                                 .padding(.top, 10)
                                 .padding(.horizontal, 16)
 
+                            Rectangle()
+                                .fill(Color.black.opacity(0.12))
+                                .frame(height: 1)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 8)
+
                             // My Schedule visualizer
                             ScheduleVisualizerView(slots: scheduleSlots)
                                 .padding(.horizontal, 16)
-                                .padding(.top, 16)
+                                .padding(.top, 8)
 
                             SecondaryButton(title: scheduleSlots.isEmpty ? "Create a Schedule" : "Edit Schedule") {
                                 router.go(.rehabOverview)

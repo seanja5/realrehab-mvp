@@ -4,7 +4,7 @@ import PostgREST
 
 struct PatientSettingsView: View {
     @EnvironmentObject private var router: Router
-    @State private var allowReminders = true
+    @State private var allowReminders = false
     @State private var allowCamera = false
     @State private var patientProfile: PatientService.PatientProfileRow? = nil
     @State private var email: String? = nil
@@ -122,6 +122,9 @@ struct PatientSettingsView: View {
             Toggle(isOn: $allowReminders) {
                 Text("Allow reminders")
                     .font(.rrBody)
+            }
+            .onChange(of: allowReminders) { _, enabled in
+                Task { await saveRemindersPreference(enabled: enabled) }
             }
             
             Divider()
@@ -259,6 +262,10 @@ struct PatientSettingsView: View {
             if let profileId = profile.profile_id {
                 self.email = try await PatientService.getEmail(profileId: profileId)
             }
+            
+            // Load schedule reminders preference (synced with RehabOverviewView)
+            let remindersEnabled = (try? await PatientService.getScheduleRemindersEnabled(patientProfileId: profile.id)) ?? false
+            await MainActor.run { allowReminders = remindersEnabled }
         } catch {
             // Ignore cancellation errors when navigating quickly
             if error is CancellationError || Task.isCancelled {
@@ -303,6 +310,25 @@ struct PatientSettingsView: View {
             }
             print("❌ PatientSettingsView.checkIfHasPT error: \(error)")
             hasPT = false
+        }
+    }
+    
+    private func saveRemindersPreference(enabled: Bool) async {
+        guard let patientProfileId = patientProfile?.id else { return }
+        do {
+            try await PatientService.setScheduleRemindersEnabled(patientProfileId: patientProfileId, enabled: enabled)
+            if enabled {
+                let profile = try await AuthService.myProfile()
+                let slots = try await ScheduleService.getSchedule(patientProfileId: patientProfileId)
+                let granted = await NotificationManager.requestAuthorizationIfNeeded()
+                if granted, !slots.isEmpty {
+                    await NotificationManager.scheduleScheduleReminders(slots: slots, firstName: profile?.first_name)
+                }
+            } else {
+                await NotificationManager.cancelScheduleReminders()
+            }
+        } catch {
+            await MainActor.run { errorMessage = error.localizedDescription }
         }
     }
     

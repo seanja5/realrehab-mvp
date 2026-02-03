@@ -412,10 +412,13 @@ struct JourneyMapView: View {
     }
 }
 
-// MARK: - Button style for lesson bubbles – uses Button's built-in scroll delay so ScrollView can scroll when user drags
+// MARK: - Button style for lesson bubbles – uses Button's built-in scroll delay so ScrollView can scroll when user drags.
+// Delays clearing pressed state so the release animation always plays fully, even on quick taps.
 private struct LessonBubbleButtonStyle: ButtonStyle {
     @Binding var pressedNodeIndex: Int?
     let index: Int
+    /// Minimum time to show release animation (matches GlossyLessonBubbleBackground spring)
+    private let releaseAnimationDuration: TimeInterval = 0.25
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -423,7 +426,14 @@ private struct LessonBubbleButtonStyle: ButtonStyle {
                 if isPressed {
                     pressedNodeIndex = index
                 } else {
-                    pressedNodeIndex = nil
+                    // Delay clear so the release animation always plays fully, even on quick taps
+                    let releasedIndex = index
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .seconds(releaseAnimationDuration))
+                        if pressedNodeIndex == releasedIndex {
+                            pressedNodeIndex = nil
+                        }
+                    }
                 }
             }
     }

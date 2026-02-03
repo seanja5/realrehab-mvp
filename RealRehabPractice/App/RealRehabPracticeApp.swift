@@ -31,7 +31,6 @@ struct RealRehabPracticeApp: App {
                             Group {
                                 switch route {
                                 case .welcome: WelcomeView()
-                                case .selectSignUp: SelectSignUpView()
                                 case .createAccount: CreateAccountView()
                                 case .ptCreateAccount: PTCreateAccountView()
                                 case .pairDevice: PairDeviceView()
@@ -81,11 +80,21 @@ struct RealRehabPracticeApp: App {
             .task {
                 do {
                     let ids = try await AuthService.resolveIdsForCurrentUser()
-                    session.profileId = ids.profileId
+                    guard let profileId = ids.profileId else { return }
+                    session.profileId = profileId
                     session.ptProfileId = ids.ptProfileId
-                    print("✅ Resolved IDs: profile=\(ids.profileId?.uuidString ?? "nil"), pt_profile=\(ids.ptProfileId?.uuidString ?? "nil")")
+                    print("✅ Resolved IDs: profile=\(profileId.uuidString), pt_profile=\(ids.ptProfileId?.uuidString ?? "nil")")
+                    let (_, role) = try await AuthService.myProfileIdAndRole()
+                    switch role {
+                    case "pt":
+                        router.reset(to: .patientList)
+                    case "patient":
+                        router.reset(to: .ptDetail)
+                    default:
+                        break
+                    }
                 } catch {
-                    print("❌ Resolve IDs error: \(error)")
+                    print("❌ Resolve IDs error (no session): \(error)")
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .scheduleReminderTapped)) { _ in

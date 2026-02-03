@@ -67,7 +67,6 @@
 		C8D678002EBB095E00829144 /* PTDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FF2EBB095E00829144 /* PTDetailView.swift */; };
 		C8F4A7002ED2C79A00BADF02 /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A7012ED2C79A00BADF02 /* BluetoothManager.swift */; };
 		C8F4A8202ED2F3B500BADF02 /* PTService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8212ED2F3B500BADF02 /* PTService.swift */; };
-		C8F4A8222ED2F3B500BADF02 /* SelectSignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8232ED2F3B500BADF02 /* SelectSignUpView.swift */; };
 		C8F4A8242ED2F3B500BADF02 /* PTCreateAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8252ED2F3B500BADF02 /* PTCreateAccountView.swift */; };
 		C8FF08ED2ED68CB6007FE9DC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */; };
 		C8A1B2C32ED00001004D9348 /* ACLJourneyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A1B2C32ED00001004D9347 /* ACLJourneyModels.swift */; };
@@ -158,7 +157,6 @@
 		C8D677FF2EBB095E00829144 /* PTDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDetailView.swift; sourceTree = "<group>"; };
 		C8F4A7012ED2C79A00BADF02 /* BluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 		C8F4A8212ED2F3B500BADF02 /* PTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTService.swift; sourceTree = "<group>"; };
-		C8F4A8232ED2F3B500BADF02 /* SelectSignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectSignUpView.swift; sourceTree = "<group>"; };
 		C8F4A8252ED2F3B500BADF02 /* PTCreateAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCreateAccountView.swift; sourceTree = "<group>"; };
 		C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C8A1B2C32ED00001004D9347 /* ACLJourneyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ACLJourneyModels.swift; sourceTree = "<group>"; };
@@ -388,7 +386,6 @@
 				C8D677EA2EBA932000829144 /* CategorySelectView.swift */,
 				C8D677EB2EBA932000829144 /* InjurySelectView.swift */,
 				C8D677EC2EBA932000829144 /* PatientListView.swift */,
-				C8F4A8232ED2F3B500BADF02 /* SelectSignUpView.swift */,
 				C8F4A8252ED2F3B500BADF02 /* PTCreateAccountView.swift */,
 			);
 			path = PTViews;
@@ -598,7 +595,6 @@
 				C8D677BE2EB8285A00829146 /* TestPairDeviceView.swift in Sources */,
 				C8D678002EBB095E00829144 /* PTDetailView.swift in Sources */,
 				C8F4A8202ED2F3B500BADF02 /* PTService.swift in Sources */,
-				C8F4A8222ED2F3B500BADF02 /* SelectSignUpView.swift in Sources */,
 				C8F4A8242ED2F3B500BADF02 /* PTCreateAccountView.swift in Sources */,
 			);
 		};

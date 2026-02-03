@@ -101,7 +101,7 @@ struct WelcomeView: View {
                             .padding(.horizontal, 40)
                         
                         PrimaryButton(title: "Get Started!", action: {
-                            router.go(.selectSignUp)
+                            router.go(.createAccount)
                         })
                         .padding(.horizontal, 24)
                     }

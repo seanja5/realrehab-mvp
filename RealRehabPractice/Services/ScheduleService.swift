@@ -109,14 +109,18 @@ enum ScheduleService {
         return String(format: "%02d:%02d:00", h, m)
     }
 
-    /// Convert (Weekday, Date) pairs to ScheduleSlot array
-    static func slotsFrom(selectedDays: Set<Weekday>, times: [Weekday: Date]) -> [ScheduleSlot] {
-        selectedDays.compactMap { day in
-            guard let time = times[day] else { return nil }
-            return ScheduleSlot(
-                day_of_week: day.rawValue,
-                slot_time: timeString(from: time)
-            )
+    /// Convert (Weekday, [Date]) to ScheduleSlot array. Each day can have 0–2 start times.
+    static func slotsFrom(selectedDays: Set<Weekday>, times: [Weekday: [Date]]) -> [ScheduleSlot] {
+        var result: [ScheduleSlot] = []
+        for day in selectedDays {
+            guard let dayTimes = times[day], !dayTimes.isEmpty else { continue }
+            for time in dayTimes {
+                result.append(ScheduleSlot(
+                    day_of_week: day.rawValue,
+                    slot_time: timeString(from: time)
+                ))
+            }
         }
+        return result
     }
 }

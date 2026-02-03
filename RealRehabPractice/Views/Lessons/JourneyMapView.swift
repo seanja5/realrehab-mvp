@@ -115,27 +115,18 @@ struct JourneyMapView: View {
                                     let posY = node.yOffset + 40
                                     let safeX = isValid(nodeX) ? nodeX : (geometry.size.width / 2)
                                     let safeY = isValid(posY) ? posY : 40
-                                    NodeView(node: node, isPressed: pressedNodeIndex == index)
-                                        .position(x: safeX, y: safeY)
-                                        .simultaneousGesture(
-                                            DragGesture(minimumDistance: 0)
-                                                .onChanged { _ in
-                                                    pressedNodeIndex = index
-                                                }
-                                                .onEnded { value in
-                                                    pressedNodeIndex = nil
-                                                    let distSq = value.translation.width * value.translation.width + value.translation.height * value.translation.height
-                                                    let tapThresholdSq: CGFloat = 64
-                                                    if distSq < tapThresholdSq {
-                                                        selectedNodeIndex = index
-                                                        if node.isLocked {
-                                                            showLockedPopup = true
-                                                        } else {
-                                                            showCallout = true
-                                                        }
-                                                    }
-                                                }
-                                        )
+                                    Button {
+                                        selectedNodeIndex = index
+                                        if node.isLocked {
+                                            showLockedPopup = true
+                                        } else {
+                                            showCallout = true
+                                        }
+                                    } label: {
+                                        NodeView(node: node, isPressed: pressedNodeIndex == index)
+                                    }
+                                    .buttonStyle(LessonBubbleButtonStyle(pressedNodeIndex: $pressedNodeIndex, index: index))
+                                    .position(x: safeX, y: safeY)
                                 }
                                 
                                 // Phase separator overlays (positions from node layout)
@@ -419,7 +410,22 @@ struct JourneyMapView: View {
             }
         }
     }
-    
 }
 
+// MARK: - Button style for lesson bubbles – uses Button's built-in scroll delay so ScrollView can scroll when user drags
+private struct LessonBubbleButtonStyle: ButtonStyle {
+    @Binding var pressedNodeIndex: Int?
+    let index: Int
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .onChange(of: configuration.isPressed) { _, isPressed in
+                if isPressed {
+                    pressedNodeIndex = index
+                } else {
+                    pressedNodeIndex = nil
+                }
+            }
+    }
+}
 

@@ -427,7 +427,7 @@ struct JourneyMapView: View {
                         .tint(prog.repsCompleted > 0 ? Color.brandDarkBlue : Color.clear)
                         .frame(width: 24, height: 4)
                 }
-                .offset(x: 2, y: -28)
+                .offset(x: 2, y: -8)
             }
         }
     }

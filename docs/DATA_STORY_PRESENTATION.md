@@ -118,6 +118,7 @@ flowchart LR
 - OutboxSyncManager enqueues payload when sync triggered (start, every rep, every 10s, pause, complete)
 - When online: LessonProgressSync.upsert RPC writes to patient_lesson_progress
 - Validation logic: validateMaxReached, validateMovementSpeed, validateIMU (threshold 7) - used only for real-time feedback, not stored
+- **Sensor error counts (max not reached, speed, IMU) are computed but not persisted today** – see Future Bucket F
 
 **Storage**:
 - Local: RealRehabLessonProgress/{lessonId}.json - disk, until lesson completed or cleared
@@ -168,9 +169,9 @@ Three new modules to capture **exercise quality and movement biomechanics** for 
 - imu_error_count (thigh not centered - dynamic valgus proxy)
 - max_not_reached_count (did not extend leg far enough)
 
-**Processing**: Increment counters in LessonView when validation triggers. On lesson end/pause, include in payload. Aggregate per lesson_id in DB.
+**Processing**: Validation logic increments counters in LessonView when validation triggers. On rep/pause/complete, aggregate into payload; write to local file; enqueue to Outbox. Aggregate per lesson_id in DB.
 
-**Storage**: New table or extend patient_lesson_progress: accounts.lesson_quality_metrics (patient_profile_id, lesson_id, failed_rep_count, speed_error_count, imu_error_count, max_not_reached_count, completed_at). Permanent, processed.
+**Storage**: Local-first: RealRehabSensorInsights + Outbox. Sync to Supabase when online. New table: accounts.lesson_quality_metrics (patient_profile_id, lesson_id, failed_rep_count, speed_error_count, imu_error_count, max_not_reached_count, completed_at). PT views via new dashboard.
 
 **Logical sequence**: Runs during Module 7 (Training), persists at lesson end. Feeds Module 8 (Progress Visibility) for PT dashboard.
 
@@ -185,9 +186,9 @@ Three new modules to capture **exercise quality and movement biomechanics** for 
 - shake_events (optional: timestamps of each shake for timeline analysis)
 - Definition: high-frequency, low-amplitude variation in sensor value over short window (e.g., 200ms)
 
-**Processing**: Add shake detection algorithm (e.g., variance or derivative threshold over sliding window). Increment counter when shake detected. Persist at lesson end.
+**Processing**: Shake detection algorithm (variance or derivative threshold over 200ms sliding window). Validation logic increments counter when shake detected. On rep/pause/complete, aggregate into payload; write to local file; enqueue to Outbox. Persist at lesson end.
 
-**Storage**: New table: accounts.lesson_stability_metrics (patient_profile_id, lesson_id, shake_count, session_duration_seconds). Or extend lesson_quality_metrics. Permanent, processed.
+**Storage**: Local-first: RealRehabSensorInsights + Outbox. Sync to Supabase when online. New table: accounts.lesson_stability_metrics (patient_profile_id, lesson_id, shake_count, session_duration_seconds). PT views via new dashboard.
 
 **Logical sequence**: Runs during Module 7 (Training). Feeds Future Module 3 (Data Analysis).
 
@@ -204,48 +205,90 @@ Three new modules to capture **exercise quality and movement biomechanics** for 
 - IMU already provides lateral drift (validateIMU) - can persist imu_excursion_count or max_imu_deviation per rep
 
 **Processing**:
-- Valgus: Extend current IMU validation to log each excursion event and direction. Persist counts.
+- Valgus: Extend current IMU validation to log each excursion event and direction. Validation logic increments counters. On rep/pause/complete, aggregate into payload; write to local file; enqueue to Outbox.
 - Anterior migration: New sensor (e.g., forward-facing distance) or computer vision from camera. Count events when knee crosses "safe" line.
 
-**Storage**: New table: accounts.lesson_biomechanics_metrics (patient_profile_id, lesson_id, anterior_migration_count, valgus_left_count, valgus_right_count, max_imu_deviation_per_rep). Permanent, processed.
+**Storage**: Local-first: RealRehabSensorInsights + Outbox. Sync to Supabase when online. New table: accounts.lesson_biomechanics_metrics (patient_profile_id, lesson_id, anterior_migration_count, valgus_left_count, valgus_right_count, max_imu_deviation_per_rep). PT views via new dashboard.
 
 **Logical sequence**: Runs during Module 7 (Training). Feeds Future Data Analysis module for PT insights.
 
 ---
 
-### Slide 16: Future Data Flow Diagram
+### Slide 16: Future Bucket F - Sensor-Based Raw Insights
+
+**Purpose**: Capture all sensor-derived events during a lesson for PT analysis. Local-first so data is saved even when offline; syncs to Supabase when online.
+
+**Sensor events to capture**:
+- valgus_left_count, valgus_right_count (IMU lateral drift)
+- max_not_reached_count (flex - did not extend leg far enough)
+- speed_too_slow_count, speed_too_fast_count (flex + time)
+- shake_count (flex or IMU - high-frequency oscillation)
+- anterior_migration_count (IMU or camera - knee over toe)
+
+**Optional raw data**: rep_duration, time_in_error_seconds, max_extension_achieved_per_rep, peak_imu_deviation_per_rep
+
+**Processing**: LessonView validation every 100ms; shake detection over 200ms sliding window; counter aggregation on rep/pause/complete; payload encoding; enqueue to Outbox
+
+**Storage**: Local RealRehabSensorInsights/{lessonId}.json → Outbox → Supabase lesson_sensor_insights (or lesson_quality_metrics, lesson_stability_metrics, lesson_biomechanics_metrics) when online
+
+---
+
+### Slide 17: Future Data Flow Diagram
 
 ```mermaid
 flowchart TB
-    subgraph future_app [Future - During Lesson]
+    subgraph future_app [Application - Sensor Events]
         F1[Lesson runs with validation]
         F2[Shake detection algorithm]
         F3[IMU excursion logging]
         F4[Anterior migration sensor]
     end
 
-    subgraph future_tx [New Transaction Data]
+    subgraph future_proc [Processing]
+        FP1[LessonView validation every 100ms]
+        FP2[Shake detection 200ms window]
+        FP3[Counter aggregation on rep pause complete]
+        FP4[Payload encoding enqueue to Outbox]
+    end
+
+    subgraph future_tx [Transaction - Data]
         T1[failed_rep_count, speed_error_count, imu_error_count]
         T2[shake_count]
         T3[valgus_left_count, valgus_right_count]
         T4[anterior_migration_count]
     end
 
-    subgraph future_dest [New Storage]
-        D1[(lesson_quality_metrics)]
-        D2[(lesson_stability_metrics)]
-        D3[(lesson_biomechanics_metrics)]
+    subgraph future_dest [Destination]
+        D1[Local: RealRehabSensorInsights]
+        D2[Local: RealRehabOutbox]
+        D3[(Supabase: lesson_quality_metrics)]
+        D4[(Supabase: lesson_stability_metrics)]
+        D5[(Supabase: lesson_biomechanics_metrics)]
     end
 
-    F1 --> T1 --> D1
-    F2 --> T2 --> D2
-    F3 --> T3 --> D3
-    F4 --> T4 --> D3
+    F1 --> FP1
+    F2 --> FP2
+    F3 --> FP1
+    F4 --> FP1
+    FP1 --> FP3
+    FP2 --> FP3
+    FP3 --> T1
+    FP3 --> T2
+    FP3 --> T3
+    FP3 --> T4
+    T1 --> D1
+    T2 --> D1
+    T3 --> D1
+    T4 --> D1
+    D1 --> FP4 --> D2
+    D2 -->|when online| D3
+    D2 -->|when online| D4
+    D2 -->|when online| D5
 ```
 
 ---
 
-### Slide 17: Future Module 4 (Optional) - Data Analysis and Reporting
+### Slide 18: Future Module 4 (Optional) - Data Analysis and Reporting
 
 **What it does**: Aggregate quality, stability, and biomechanics metrics across lessons. PT dashboard: trends, recovery charts, "patient improved on valgus this week."
 
@@ -259,6 +302,6 @@ flowchart TB
 
 ## Slide Conversion Notes
 
-- Each `### Slide N:` section maps to one slide.
+- Each `### Slide N:` section maps to one slide (Slides 1–18).
 - Copy into Google Slides, PowerPoint, or Keynote.
 - Mermaid diagrams can be rendered at [mermaid.live](https://mermaid.live) and exported as PNG/SVG for slides.

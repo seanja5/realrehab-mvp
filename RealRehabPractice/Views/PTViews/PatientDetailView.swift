@@ -335,8 +335,11 @@ struct PatientDetailView: View {
             if error is CancellationError || Task.isCancelled {
                 return
             }
-            print("❌ PatientDetailView.loadPatientData error: \(error)")
-            errorMessage = error.localizedDescription
+            // Don't show error when we have cached data to display (e.g. offline after app close)
+            if patient == nil && currentPlan == nil {
+                print("❌ PatientDetailView.loadPatientData error: \(error)")
+                errorMessage = error.localizedDescription
+            }
         }
         isLoading = false
     }

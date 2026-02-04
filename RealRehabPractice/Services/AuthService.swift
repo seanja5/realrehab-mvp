@@ -126,8 +126,62 @@ enum AuthService {
   }
 
   // MARK: - Identity resolution
+  
+  /// Cached session data for offline app launch. Stored when user successfully loads while online.
+  struct ResolvedSessionBootstrap: Codable {
+    let profileId: UUID
+    let ptProfileId: UUID?
+    let role: String
+  }
+  
   struct RRProfileRow: Decodable { let id: UUID }
   struct RRPTProfileRow: Decodable { let id: UUID }
+  
+  /// Cache the resolved session for offline app launch. Call after successful login.
+  static func cacheResolvedSession(profileId: UUID, ptProfileId: UUID?, role: String) async {
+    do {
+      let uid = try currentUserId()
+      let bootstrap = ResolvedSessionBootstrap(profileId: profileId, ptProfileId: ptProfileId, role: role)
+      await CacheService.shared.setCached(bootstrap, forKey: CacheKey.resolvedSession(userId: uid), ttl: CacheService.TTL.resolvedSession, useDisk: true)
+      print("✅ AuthService.cacheResolvedSession: cached for offline")
+    } catch {
+      print("❌ AuthService.cacheResolvedSession: \(error)")
+    }
+  }
+  
+  /// Resolve session for app launch. Uses cache when offline so user can access app without network.
+  /// Returns (profileId, ptProfileId, role) or nil if no valid session.
+  static func resolveSessionForLaunch() async -> ResolvedSessionBootstrap? {
+    // Use currentUser only (sync, from local storage - works offline). Avoid session which is async.
+    guard let user = supabase.auth.currentUser else { return nil }
+    
+    let cacheKey = CacheKey.resolvedSession(userId: user.id)
+    
+    // Check cache first (disk - survives app restart, works offline)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: ResolvedSessionBootstrap.self, useDisk: true) {
+      print("✅ AuthService.resolveSessionForLaunch: cache hit (offline/restart)")
+      return cached
+    }
+    
+    // Fetch from network
+    do {
+      let ids = try await resolveIdsForCurrentUser()
+      guard let profileId = ids.profileId else { return nil }
+      let (_, role) = try await myProfileIdAndRole()
+      
+      let bootstrap = ResolvedSessionBootstrap(
+        profileId: profileId,
+        ptProfileId: ids.ptProfileId,
+        role: role
+      )
+      await CacheService.shared.setCached(bootstrap, forKey: cacheKey, ttl: CacheService.TTL.resolvedSession, useDisk: true)
+      print("✅ AuthService.resolveSessionForLaunch: cached for offline")
+      return bootstrap
+    } catch {
+      print("❌ AuthService.resolveSessionForLaunch: \(error)")
+      return nil
+    }
+  }
   
   /// Resolve the app's base profile id and PT profile id for the current session.
   static func resolveIdsForCurrentUser() async throws -> (profileId: UUID?, ptProfileId: UUID?) {

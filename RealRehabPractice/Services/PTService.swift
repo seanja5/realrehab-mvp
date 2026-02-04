@@ -232,8 +232,8 @@ enum PTService {
     static func listMyPatients(ptProfileId: UUID) async throws -> [SimplePatient] {
         let cacheKey = CacheKey.patientList(ptProfileId: ptProfileId)
         
-        // Check cache first (memory only, 5min TTL)
-        if let cached = await CacheService.shared.getCached(cacheKey, as: [SimplePatient].self, useDisk: false) {
+        // Check cache first (disk persistence for offline/tab switching)
+        if let cached = await CacheService.shared.getCached(cacheKey, as: [SimplePatient].self, useDisk: true) {
             print("✅ PTService.listMyPatients: cache hit")
             return cached
         }
@@ -349,8 +349,8 @@ enum PTService {
             )
         }
         
-        // Cache the result (memory only, 5min TTL)
-        await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.patientList, useDisk: false)
+        // Cache the result (disk persistence for offline/tab switching)
+        await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.patientList, useDisk: true)
         print("✅ PTService.listMyPatients: cached \(result.count) patients")
         
         return result
@@ -360,8 +360,8 @@ enum PTService {
     static func getPatient(patientProfileId: UUID) async throws -> SimplePatient {
         let cacheKey = CacheKey.patientDetail(patientProfileId: patientProfileId)
         
-        // Check cache first (memory only, 10min TTL)
-        if let cached = await CacheService.shared.getCached(cacheKey, as: SimplePatient.self, useDisk: false) {
+        // Check cache first (disk persistence for offline/tab switching)
+        if let cached = await CacheService.shared.getCached(cacheKey, as: SimplePatient.self, useDisk: true) {
             print("✅ PTService.getPatient: cache hit")
             return cached
         }
@@ -439,8 +439,8 @@ enum PTService {
             access_code: patient.access_code
         )
         
-        // Cache the result (memory only, 10min TTL)
-        await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.patientDetail, useDisk: false)
+        // Cache the result (disk persistence for offline/tab switching)
+        await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.patientDetail, useDisk: true)
         print("✅ PTService.getPatient: cached result")
         
         return result

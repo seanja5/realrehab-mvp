@@ -367,7 +367,11 @@ struct CreateAccountView: View {
             auth.accessCode = accessCode
             await auth.signUp()
             if auth.errorMessage == nil {
-                router.go(.ptDetail)
+                if let bootstrap = await AuthService.resolveSessionForLaunch() {
+                    session.profileId = bootstrap.profileId
+                    session.ptProfileId = bootstrap.ptProfileId
+                    router.go(.ptDetail)
+                }
             }
             showValidationErrors = false
 
@@ -415,6 +419,10 @@ struct CreateAccountView: View {
                 specialization: specializationValue
             )
             session.ptProfileId = ptProfileId
+            if let bootstrap = await AuthService.resolveSessionForLaunch() {
+                session.profileId = bootstrap.profileId
+                session.ptProfileId = bootstrap.ptProfileId
+            }
             showValidationErrors = false
             router.go(.patientList)
         } catch {

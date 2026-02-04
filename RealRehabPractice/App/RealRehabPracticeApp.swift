@@ -79,14 +79,12 @@ struct RealRehabPracticeApp: App {
             .environmentObject(router)
             .environmentObject(session)
             .task {
-                do {
-                    let ids = try await AuthService.resolveIdsForCurrentUser()
-                    guard let profileId = ids.profileId else { return }
-                    session.profileId = profileId
-                    session.ptProfileId = ids.ptProfileId
-                    print("✅ Resolved IDs: profile=\(profileId.uuidString), pt_profile=\(ids.ptProfileId?.uuidString ?? "nil")")
-                    let (_, role) = try await AuthService.myProfileIdAndRole()
-                    switch role {
+                // Use resolveSessionForLaunch: checks cache first (works offline after app restart)
+                if let bootstrap = await AuthService.resolveSessionForLaunch() {
+                    session.profileId = bootstrap.profileId
+                    session.ptProfileId = bootstrap.ptProfileId
+                    print("✅ Session restored: profile=\(bootstrap.profileId.uuidString), pt_profile=\(bootstrap.ptProfileId?.uuidString ?? "nil"), role=\(bootstrap.role)")
+                    switch bootstrap.role {
                     case "pt":
                         router.reset(to: .patientList)
                     case "patient":
@@ -94,8 +92,6 @@ struct RealRehabPracticeApp: App {
                     default:
                         break
                     }
-                } catch {
-                    print("❌ Resolve IDs error (no session): \(error)")
                 }
                 await OutboxSyncManager.shared.processQueueIfOnline()
             }

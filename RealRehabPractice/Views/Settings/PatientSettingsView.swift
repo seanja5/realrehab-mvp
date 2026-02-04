@@ -13,6 +13,7 @@ struct PatientSettingsView: View {
     @State private var hasPT: Bool = false
     @State private var accessCode: String = ""
     @State private var isPairing: Bool = false
+    @State private var hasLoadedInitial = false  // Skip onChange when loading (prevents offline error)
     @FocusState private var isAccessCodeFocused: Bool
 
     var body: some View {
@@ -124,6 +125,7 @@ struct PatientSettingsView: View {
                     .font(.rrBody)
             }
             .onChange(of: allowReminders) { _, enabled in
+                guard hasLoadedInitial else { return }  // Skip when loading from cache (prevents offline error)
                 Task { await saveRemindersPreference(enabled: enabled) }
             }
             
@@ -277,6 +279,7 @@ struct PatientSettingsView: View {
                 errorMessage = error.localizedDescription
             }
         }
+        hasLoadedInitial = true
         isLoading = false
     }
     
@@ -318,6 +321,8 @@ struct PatientSettingsView: View {
                 await NotificationManager.cancelScheduleReminders()
             }
         } catch {
+            // Don't show error when offline - save will sync when back online
+            guard NetworkMonitor.shared.isOnline else { return }
             await MainActor.run { errorMessage = error.localizedDescription }
         }
     }

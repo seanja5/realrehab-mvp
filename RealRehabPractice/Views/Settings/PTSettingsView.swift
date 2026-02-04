@@ -241,8 +241,11 @@ struct PTSettingsView: View {
             if error is CancellationError || Task.isCancelled {
                 return
             }
-            print("❌ PTSettingsView.loadProfile error: \(error)")
-            errorMessage = error.localizedDescription
+            // Don't show error when we have cached data to display (e.g. offline after tab switch)
+            if ptProfile == nil {
+                print("❌ PTSettingsView.loadProfile error: \(error)")
+                errorMessage = error.localizedDescription
+            }
         }
         isLoading = false
     }

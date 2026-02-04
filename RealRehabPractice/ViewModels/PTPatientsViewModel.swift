@@ -36,8 +36,11 @@ final class PTPatientsViewModel: ObservableObject {
             if error is CancellationError || Task.isCancelled {
                 return
             }
-            errorMessage = error.localizedDescription
-            print("❌ PTPatientsViewModel.load error: \(error)")
+            // Don't show error when we have cached data to display (e.g. offline after app close)
+            if patients.isEmpty {
+                errorMessage = error.localizedDescription
+                print("❌ PTPatientsViewModel.load error: \(error)")
+            }
         }
         isLoading = false
     }

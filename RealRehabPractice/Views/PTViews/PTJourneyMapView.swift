@@ -1110,17 +1110,25 @@ struct PTNodeView: View {
                 }
             }
             
-            if node.nodeType == .lesson, let prog = progress, prog.isInProgress {
-                HStack(spacing: 4) {
-                    Text("(Paused)")
-                        .font(.system(size: 8, weight: .medium))
-                        .foregroundStyle(.secondary)
+            // Show progress bar + "Paused" for in-progress lessons (matches patient JourneyMapView)
+            if node.nodeType == .lesson, let prog = progress, (prog.isInProgress || prog.repsCompleted > 0) {
+                HStack(spacing: 6) {
+                    if prog.isInProgress {
+                        Text("(Paused)")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
                     ProgressView(value: prog.repsTarget > 0 ? Double(prog.repsCompleted) / Double(prog.repsTarget) : 0)
                         .progressViewStyle(.linear)
-                        .tint(prog.repsCompleted > 0 ? Color.brandDarkBlue : Color.clear)
-                        .frame(width: 24, height: 4)
+                        .tint(prog.repsCompleted > 0 ? Color.brandDarkBlue : Color.gray.opacity(0.5))
+                        .frame(width: 36, height: 6)
                 }
-                .offset(x: 2, y: -8)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .background(Color.white.opacity(0.9))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                .offset(x: 4, y: -12)
             }
         }
         .scaleEffect(scale)

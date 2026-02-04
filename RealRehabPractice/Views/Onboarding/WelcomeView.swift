@@ -78,6 +78,7 @@ struct WelcomeView: View {
                                             print("✅ Login resolved IDs: profile=\(ids.profileId?.uuidString ?? "nil"), pt_profile=\(ids.ptProfileId?.uuidString ?? "nil")")
                                             
                                             let (_, role) = try await AuthService.myProfileIdAndRole()
+                                            await AuthService.cacheResolvedSession(profileId: ids.profileId!, ptProfileId: ids.ptProfileId, role: role)
                                             switch role {
                                             case "pt":
                                                 router.go(.patientList)

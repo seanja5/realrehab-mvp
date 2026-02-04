@@ -194,6 +194,12 @@ struct PTCreateAccountView: View {
             session.ptProfileId = ptProfileId
             print("✅ PTCreateAccountView: Set session.ptProfileId=\(ptProfileId.uuidString)")
 
+            // Cache session for offline app launch
+            if let bootstrap = await AuthService.resolveSessionForLaunch() {
+                session.profileId = bootstrap.profileId
+                session.ptProfileId = bootstrap.ptProfileId
+            }
+
             router.go(.patientList)
         } catch {
             errorMessage = error.localizedDescription

@@ -26,6 +26,7 @@ final class CacheService {
         static let calibrationPoints: TimeInterval = 10 * 60 // 10 minutes
         static let lessonProgress: TimeInterval = 10 * 60 // 10 minutes
         static let plan: TimeInterval = 10 * 60 // 10 minutes
+        static let resolvedSession: TimeInterval = 7 * 24 * 60 * 60 // 7 days (session survives app restarts)
     }
     
     private init() {

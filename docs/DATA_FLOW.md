@@ -96,10 +96,10 @@ From [CacheKey.swift](../RealRehabPractice/Services/Cache/CacheKey.swift): patie
 
 For each bucket, the diagram uses four subgraphs:
 
-- **Application**: User/sensor action (e.g., "Patient starts lesson", "PT saves rehab plan")
-- **Processing**: App logic that validates, aggregates, or transforms raw inputs into the transaction payload (e.g., RehabService.saveACLPlan archives/inserts; LocalLessonProgressStore persists; OutboxSyncManager encodes)
-- **Transaction**: Specific data fields being sent
-- **Destination**: Supabase (table/RPC) or Local (disk path)
+- **Application**: What the user or sensor does (e.g., "Patient taps Begin Lesson", "PT saves plan")
+- **Processing**: What the app does with that action (e.g., "Save plan and replace old one", "Store progress on device so it's not lost offline")
+- **Transaction**: What information is captured or sent (e.g., "Plan details: patient, injury type, lessons", "Reps done, reps goal, time spent")
+- **Destination**: Where it goes (cloud database or device storage)
 
 ### Bucket 1: Rehab Plan and Lesson Progress
 
@@ -115,23 +115,23 @@ flowchart TB
     end
 
     subgraph proc1 [Processing]
-        P1A[RehabService.saveACLPlan archives old, inserts new]
-        P1B[LocalLessonProgressStore persists draft to disk]
-        P1C[OutboxSyncManager encodes payload]
+        P1A[Save new plan and replace the old one]
+        P1B[Store progress on device so it is not lost if offline]
+        P1C[Queue progress to upload when internet is available]
     end
 
-    subgraph tx1 [Transaction - Data]
-        T1A[pt_profile_id, patient_profile_id, category, injury, status, nodes JSON, notes]
-        T1B[lesson_id, reps_completed, reps_target, elapsed_seconds, status]
-        T1C[Same as T1B - from local draft]
+    subgraph tx1 [Transaction - What is captured]
+        T1A[Plan details: patient, injury type, lesson list, notes]
+        T1B[Lesson progress: reps done, reps goal, time spent, status]
+        T1C[Same as T1B - saved locally]
     end
 
     subgraph dest1 [Destination]
-        D1A[(Supabase: accounts.rehab_plans)]
-        D1B[(Supabase: patient_lesson_progress via RPC)]
-        D1C[Local: RealRehabLessonProgress/lessonId.json]
-        D1D[Local: RealRehabOutbox/outbox.json]
-        D1E[Local: Cache lessonProgress]
+        D1A[(Cloud: rehab plans)]
+        D1B[(Cloud: lesson progress)]
+        D1C[Device: lesson draft file]
+        D1D[Device: upload queue]
+        D1E[Device: cached progress]
     end
 
     A1A --> P1A --> T1A
@@ -159,26 +159,26 @@ flowchart TB
     end
 
     subgraph proc2 [Processing]
-        P2A[Supabase Auth creates auth.users]
-        P2B[AuthService.ensureProfile upserts profiles]
-        P2C[PatientService/PTService upsert profiles]
-        P2D[RPCs bypass RLS for secure linking]
+        P2A[Create secure login account]
+        P2B[Create or update user profile]
+        P2C[Save patient or PT info]
+        P2D[Securely link patient to PT]
     end
 
-    subgraph tx2 [Transaction - Data]
-        T2A[email, password, role, first_name, last_name]
-        T2B[profile_id, date_of_birth, gender, surgery_date, phone]
-        T2C[profile_id, practice_name, license_number, NPI, etc.]
-        T2D[access_code, patient_profile_id]
-        T2E[patient_profile_id, pt_profile_id]
+    subgraph tx2 [Transaction - What is captured]
+        T2A[Login info: email, password, name]
+        T2B[Patient info: DOB, gender, surgery date, phone]
+        T2C[PT info: practice name, license, NPI]
+        T2D[Access code and patient link]
+        T2E[Patient and PT link]
     end
 
     subgraph dest2 [Destination]
-        D2A[(Supabase Auth)]
-        D2B[(Supabase: accounts.profiles)]
-        D2C[(Supabase: accounts.patient_profiles)]
-        D2D[(Supabase: accounts.pt_profiles)]
-        D2E[(Supabase: pt_patient_map via RPC)]
+        D2A[(Cloud: login accounts)]
+        D2B[(Cloud: user profiles)]
+        D2C[(Cloud: patient profiles)]
+        D2D[(Cloud: PT profiles)]
+        D2E[(Cloud: patient-PT links)]
     end
 
     A2A --> P2A --> T2A --> D2A
@@ -200,21 +200,21 @@ flowchart TB
     end
 
     subgraph proc3 [Processing]
-        P3A[ScheduleService replace slots delete plus insert]
-        P3B[PatientService.setScheduleRemindersEnabled updates]
-        P3C[NotificationManager schedules local notifications]
+        P3A[Replace old schedule with new selected times]
+        P3B[Update reminder preference]
+        P3C[Schedule reminder notifications on device]
     end
 
-    subgraph tx3 [Transaction - Data]
-        T3A[day_of_week, slot_time for each 30-min block]
-        T3B[schedule_reminders_enabled boolean]
+    subgraph tx3 [Transaction - What is captured]
+        T3A[Selected days and 30-min time slots]
+        T3B[Whether reminders are on or off]
     end
 
     subgraph dest3 [Destination]
-        D3A[(Supabase: patient_schedule_slots)]
-        D3B[(Supabase: patient_profiles.schedule_reminders_enabled)]
-        D3C[Local: Cache patientSchedule]
-        D3D[Local: iOS NotificationManager]
+        D3A[(Cloud: schedule slots)]
+        D3B[(Cloud: reminder preference)]
+        D3C[Device: cached schedule]
+        D3D[Device: notification schedule]
     end
 
     A3A --> T3A
@@ -229,31 +229,31 @@ flowchart TB
 ```mermaid
 flowchart TB
     subgraph appF [Application - Sensor Events]
-        AF1[IMU lateral drift left or right]
-        AF2[Flex - max not reached]
-        AF3[Flex plus time - too slow or too fast]
-        AF4[Flex or IMU - shake detected]
-        AF5[IMU or camera - anterior migration]
+        AF1[Leg drifts left or right]
+        AF2[Did not extend leg far enough]
+        AF3[Moving too slow or too fast]
+        AF4[Leg shakes or wobbles]
+        AF5[Knee goes over toe]
     end
 
     subgraph procF [Processing]
-        PF1[LessonView validation every 100ms]
-        PF2[Shake detection 200ms sliding window]
-        PF3[Counter aggregation on rep pause complete]
-        PF4[Payload encoding enqueue to Outbox]
+        PF1[Check movement quality every tenth of a second]
+        PF2[Detect leg instability]
+        PF3[Add up error counts when rep ends or lesson pauses]
+        PF4[Queue for upload when internet is available]
     end
 
-    subgraph txF [Transaction - Data]
-        TF1[valgus_left_count, valgus_right_count]
-        TF2[max_not_reached_count, speed_too_slow_count, speed_too_fast_count]
-        TF3[shake_count, anterior_migration_count]
-        TF4[Optional: rep_duration, time_in_error_seconds]
+    subgraph txF [Transaction - What is captured]
+        TF1[Times leg drifted left or right]
+        TF2[Reps not completed fully, too slow, too fast]
+        TF3[Times leg shook, knee over toe]
+        TF4[Rep duration, time spent in error]
     end
 
     subgraph destF [Destination]
-        DF1[Local: RealRehabSensorInsights/lessonId.json]
-        DF2[Local: RealRehabOutbox/outbox.json]
-        DF3[(Supabase: lesson_sensor_insights via RPC)]
+        DF1[Device: sensor insights file]
+        DF2[Device: upload queue]
+        DF3[(Cloud: PT dashboard)]
     end
 
     AF1 --> PF1
@@ -284,5 +284,5 @@ To recreate these diagrams in your preferred tool (e.g., Figma, Lucidchart, draw
 
 1. **Render Mermaid**: Use [mermaid.live](https://mermaid.live), GitHub, or VS Code (Mermaid extension) to view the diagrams.
 2. **Export**: From Mermaid Live Editor, export as PNG or SVG.
-3. **Manual recreation**: Each subgraph maps to a swimlane or container. Nodes are boxes; arrows show flow. Use the same labels for Application, Processing, Transaction, and Destination sections.
+3. **Manual recreation**: Each subgraph maps to a swimlane or container. Nodes are boxes; arrows show flow. Use plain-language labels: Application (what the user does), Processing (what the app does), Transaction (what is captured), Destination (where it goes).
 4. **Color coding**: Consider using distinct colors for Application (blue), Transaction (yellow), and Destination (green) for clarity.

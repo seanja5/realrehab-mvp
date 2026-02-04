@@ -227,9 +227,9 @@ Three new modules to capture **exercise quality and movement biomechanics** for 
 
 **Optional raw data**: rep_duration, time_in_error_seconds, max_extension_achieved_per_rep, peak_imu_deviation_per_rep
 
-**Processing**: LessonView validation every 100ms; shake detection over 200ms sliding window; counter aggregation on rep/pause/complete; payload encoding; enqueue to Outbox
+**Processing**: App checks movement quality every tenth of a second; detects leg instability; adds up error counts when a rep ends or lesson pauses; queues data for upload when internet is available
 
-**Storage**: Local RealRehabSensorInsights/{lessonId}.json → Outbox → Supabase lesson_sensor_insights (or lesson_quality_metrics, lesson_stability_metrics, lesson_biomechanics_metrics) when online
+**Storage**: Device file → upload queue → Cloud (PT dashboard) when online
 
 ---
 
@@ -239,31 +239,31 @@ Three new modules to capture **exercise quality and movement biomechanics** for 
 flowchart TB
     subgraph future_app [Application - Sensor Events]
         F1[Lesson runs with validation]
-        F2[Shake detection algorithm]
-        F3[IMU excursion logging]
-        F4[Anterior migration sensor]
+        F2[Shake detection]
+        F3[Leg drift logging]
+        F4[Knee over toe detection]
     end
 
     subgraph future_proc [Processing]
-        FP1[LessonView validation every 100ms]
-        FP2[Shake detection 200ms window]
-        FP3[Counter aggregation on rep pause complete]
-        FP4[Payload encoding enqueue to Outbox]
+        FP1[Check movement quality every tenth of a second]
+        FP2[Detect leg instability]
+        FP3[Add up error counts when rep ends or lesson pauses]
+        FP4[Queue for upload when internet is available]
     end
 
-    subgraph future_tx [Transaction - Data]
-        T1[failed_rep_count, speed_error_count, imu_error_count]
-        T2[shake_count]
-        T3[valgus_left_count, valgus_right_count]
-        T4[anterior_migration_count]
+    subgraph future_tx [Transaction - What is captured]
+        T1[Failed reps, speed errors, leg drift errors]
+        T2[Times leg shook]
+        T3[Times leg drifted left or right]
+        T4[Times knee went over toe]
     end
 
     subgraph future_dest [Destination]
-        D1[Local: RealRehabSensorInsights]
-        D2[Local: RealRehabOutbox]
-        D3[(Supabase: lesson_quality_metrics)]
-        D4[(Supabase: lesson_stability_metrics)]
-        D5[(Supabase: lesson_biomechanics_metrics)]
+        D1[Device: sensor insights file]
+        D2[Device: upload queue]
+        D3[(Cloud: quality metrics)]
+        D4[(Cloud: stability metrics)]
+        D5[(Cloud: biomechanics metrics)]
     end
 
     F1 --> FP1

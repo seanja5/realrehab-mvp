@@ -688,9 +688,27 @@ struct RecoveryChartWeekView: View {
                 isLoading = false
             }
         } catch {
-            await MainActor.run {
-                errorMessage = "Failed to load calibration data: \(error.localizedDescription)"
-                isLoading = false
+            // Try cache fallback when offline (e.g. after tab switch)
+            let cacheKey: String
+            if let pid = patientProfileId {
+                cacheKey = CacheKey.calibrationPoints(patientProfileId: pid)
+            } else if let profile = try? await AuthService.myProfile(),
+                      let patientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id) {
+                cacheKey = CacheKey.calibrationPoints(patientProfileId: patientProfileId)
+            } else {
+                cacheKey = ""
+            }
+            if !cacheKey.isEmpty,
+               let cached = await CacheService.shared.getCached(cacheKey, as: [TelemetryService.MaximumCalibrationPoint].self, useDisk: true) {
+                await MainActor.run {
+                    allCalibrationPoints = cached
+                    isLoading = false
+                }
+            } else {
+                await MainActor.run {
+                    errorMessage = "Failed to load calibration data: \(error.localizedDescription)"
+                    isLoading = false
+                }
             }
         }
     }

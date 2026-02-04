@@ -79,5 +79,20 @@ enum CacheKey {
     static func scheduleRemindersEnabled(patientProfileId: UUID) -> String {
         "schedule_reminders_enabled:\(patientProfileId.uuidString)"
     }
+
+    // Calibration points for recovery chart (patient or PT view)
+    static func calibrationPoints(patientProfileId: UUID) -> String {
+        "calibration_points:\(patientProfileId.uuidString)"
+    }
+
+    // Lesson progress for journey map
+    static func lessonProgress(patientProfileId: UUID) -> String {
+        "lesson_progress:\(patientProfileId.uuidString)"
+    }
+
+    // Plan by ID (for PT editing)
+    static func plan(planId: UUID) -> String {
+        "plan:\(planId.uuidString)"
+    }
 }
 

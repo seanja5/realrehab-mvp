@@ -121,8 +121,11 @@ public final class JourneyMapViewModel: ObservableObject {
                 isLoading = false
                 return
             }
-            errorMessage = error.localizedDescription
-            print("❌ JourneyMapViewModel.load error: \(error)")
+            // Don't show error when we have cached data to display (e.g. offline after tab switch)
+            if nodes.isEmpty {
+                errorMessage = error.localizedDescription
+                print("❌ JourneyMapViewModel.load error: \(error)")
+            }
         }
         
         isLoading = false

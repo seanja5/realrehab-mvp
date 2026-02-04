@@ -125,6 +125,9 @@ final class OutboxSyncManager: ObservableObject {
             .from("patient_lesson_progress")
             .upsert(AnyEncodable(payloadDict), onConflict: "patient_profile_id,lesson_id")
             .executeAsync()
+
+        // Invalidate cache so next load reflects the update
+        await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: p.patientProfileId))
     }
 
     // MARK: - Persistence

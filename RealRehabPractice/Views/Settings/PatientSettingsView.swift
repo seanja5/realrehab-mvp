@@ -271,8 +271,11 @@ struct PatientSettingsView: View {
             if error is CancellationError || Task.isCancelled {
                 return
             }
-            print("❌ PatientSettingsView.loadProfile error: \(error)")
-            errorMessage = error.localizedDescription
+            // Don't show error when we have cached data to display (e.g. offline after tab switch)
+            if patientProfile == nil {
+                print("❌ PatientSettingsView.loadProfile error: \(error)")
+                errorMessage = error.localizedDescription
+            }
         }
         isLoading = false
     }
@@ -284,22 +287,9 @@ struct PatientSettingsView: View {
                 return
             }
             
-            // Check if patient has a PT by trying to get patient profile ID and checking for mapping
+            // Use PatientService.hasPT (disk-cached) so data persists when switching tabs/offline
             if let patientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id) {
-                // Check if there's a PT mapping
-                struct MapRow: Decodable {
-                    let pt_profile_id: UUID
-                }
-                
-                let mapRows: [MapRow] = try await SupabaseService.shared.client
-                    .schema("accounts")
-                    .from("pt_patient_map")
-                    .select("pt_profile_id")
-                    .eq("patient_profile_id", value: patientProfileId.uuidString)
-                    .limit(1)
-                    .decoded()
-                
-                hasPT = mapRows.first != nil
+                hasPT = (try? await PatientService.hasPT(patientProfileId: patientProfileId)) ?? false
             } else {
                 hasPT = false
             }

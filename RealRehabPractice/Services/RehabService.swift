@@ -174,15 +174,28 @@ enum RehabService {
   
   /// Fetch lesson progress for a patient. Used by journey maps to show progress indicators.
   /// RLS: patients can select own; PTs need policy to select their patients'.
+  /// Uses disk cache so data persists when switching tabs or offline.
   static func getLessonProgress(patientProfileId: UUID) async throws -> [UUID: PatientLessonProgressRow] {
+    let cacheKey = CacheKey.lessonProgress(patientProfileId: patientProfileId)
+
+    // Check cache first (disk persistence for tab switching/offline)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: [PatientLessonProgressRow].self, useDisk: true) {
+      return Dictionary(uniqueKeysWithValues: cached.map { ($0.lesson_id, $0) })
+    }
+
     let rows: [PatientLessonProgressRow] = try await supabase
       .schema("accounts")
       .from("patient_lesson_progress")
       .select("lesson_id,reps_completed,reps_target,status")
       .eq("patient_profile_id", value: patientProfileId.uuidString)
       .decoded(as: [PatientLessonProgressRow].self)
-    
-    return Dictionary(uniqueKeysWithValues: rows.map { ($0.lesson_id, $0) })
+
+    let result = Dictionary(uniqueKeysWithValues: rows.map { ($0.lesson_id, $0) })
+
+    // Cache as array (UUID keys don't encode well to JSON)
+    await CacheService.shared.setCached(rows, forKey: cacheKey, ttl: CacheService.TTL.lessonProgress, useDisk: true)
+
+    return result
   }
   
   // MARK: - Rehab Plans (MVP)
@@ -192,8 +205,8 @@ enum RehabService {
     
     let cacheKey = CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
     
-    // Check cache first (memory only, 5min TTL)
-    if let cached = await CacheService.shared.getCached(cacheKey, as: PlanRow?.self, useDisk: false) {
+    // Check cache first (disk persistence for tab switching/offline)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: PlanRow?.self, useDisk: true) {
       print("✅ RehabService.currentPlan: cache hit")
       return cached
     }
@@ -217,8 +230,8 @@ enum RehabService {
         print("ℹ️ RehabService.currentPlan: no active plan found for pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
       }
       
-      // Cache the result (memory only, 5min TTL)
-      await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.rehabPlan, useDisk: false)
+      // Cache the result (disk persistence for tab switching/offline)
+      await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.rehabPlan, useDisk: true)
       print("✅ RehabService.currentPlan: cached result")
       
       return result
@@ -320,7 +333,13 @@ enum RehabService {
   // MARK: - Fetch plan by ID (for loading saved plans)
   static func fetchPlan(planId: UUID) async throws -> PlanRow? {
     print("🔍 RehabService.fetchPlan: planId=\(planId.uuidString)")
-    
+    let cacheKey = CacheKey.plan(planId: planId)
+
+    // Check cache first (disk persistence for tab switching/offline)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: PlanRow?.self, useDisk: true) {
+      return cached
+    }
+
     do {
       let rows: [PlanRow] = try await supabase
         .schema("accounts")
@@ -330,13 +349,15 @@ enum RehabService {
         .limit(1)
         .decoded(as: [PlanRow].self)
       
-      if let plan = rows.first {
+      let result = rows.first
+      if let plan = result {
         print("✅ RehabService.fetchPlan: found plan id=\(plan.id.uuidString), nodes=\(plan.nodes?.count ?? 0)")
+        await CacheService.shared.setCached(plan, forKey: cacheKey, ttl: CacheService.TTL.plan, useDisk: true)
       } else {
         print("ℹ️ RehabService.fetchPlan: no plan found for planId=\(planId.uuidString)")
       }
-      
-      return rows.first
+
+      return result
     } catch {
       if let postgrestError = error as? PostgrestError {
         if postgrestError.code == "42501" || postgrestError.code == "PGRST301" {
@@ -405,9 +426,9 @@ enum RehabService {
         .eq("id", value: plan.id.uuidString)
         .executeAsync()
       
-      // Invalidate cache for this plan
-      let cacheKey = CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
-      await CacheService.shared.invalidate(cacheKey)
+      // Invalidate caches for this plan
+      await CacheService.shared.invalidate(CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId))
+      await CacheService.shared.invalidate(CacheKey.plan(planId: plan.id))
       print("✅ RehabService.updatePlanNotes: invalidated cache")
       
       print("✅ RehabService.updatePlanNotes: successfully updated notes")

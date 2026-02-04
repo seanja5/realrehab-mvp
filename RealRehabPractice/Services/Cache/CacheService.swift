@@ -23,6 +23,9 @@ final class CacheService {
         static let lessons: TimeInterval = 10 * 60 // 10 minutes
         static let hasPT: TimeInterval = 60 * 60 // 1 hour
         static let patientSchedule: TimeInterval = 24 * 60 * 60 // 24 hours
+        static let calibrationPoints: TimeInterval = 10 * 60 // 10 minutes
+        static let lessonProgress: TimeInterval = 10 * 60 // 10 minutes
+        static let plan: TimeInterval = 10 * 60 // 10 minutes
     }
     
     private init() {

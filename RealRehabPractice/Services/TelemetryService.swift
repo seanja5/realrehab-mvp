@@ -167,6 +167,12 @@ enum TelemetryService {
       .from("calibrations")
       .insert(payload)
       .execute()
+
+    // Invalidate calibration cache so chart shows new data
+    if let profile = try? await AuthService.myProfile(),
+       let patientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id) {
+      await CacheService.shared.invalidate(CacheKey.calibrationPoints(patientProfileId: patientProfileId))
+    }
     
     print("✅ TelemetryService: Saved calibration - stage: \(stage), flex_value: \(flexValue)")
   }
@@ -227,7 +233,7 @@ enum TelemetryService {
   
   // MARK: - Fetch All Maximum Calibrations for Patient
   
-  struct MaximumCalibrationPoint: Identifiable {
+  struct MaximumCalibrationPoint: Identifiable, Codable {
     let id: UUID
     let degrees: Int
     let recordedAt: Date
@@ -245,7 +251,15 @@ enum TelemetryService {
   }
   
     // Fetch all maximum calibration values for a specific patient by patientProfileId
+    // Uses disk cache so data persists when switching tabs or offline
     static func getAllMaximumCalibrationsForPatient(patientProfileId: UUID) async throws -> [MaximumCalibrationPoint] {
+      let cacheKey = CacheKey.calibrationPoints(patientProfileId: patientProfileId)
+
+      // Check cache first (disk persistence for tab switching/offline)
+      if let cached = await CacheService.shared.getCached(cacheKey, as: [MaximumCalibrationPoint].self, useDisk: true) {
+        return cached
+      }
+
       // Fetch all device assignments for this patient
       let assignments: [DeviceAssignmentRow] = try await supabase
         .schema("telemetry")
@@ -255,7 +269,10 @@ enum TelemetryService {
         .decoded(as: [DeviceAssignmentRow].self)
       
       guard !assignments.isEmpty else {
-        return [] // No device assignments, so no calibrations
+        // Cache empty result so we don't refetch when offline
+        let empty: [MaximumCalibrationPoint] = []
+        await CacheService.shared.setCached(empty, forKey: cacheKey, ttl: CacheService.TTL.calibrationPoints, useDisk: true)
+        return empty
       }
       
       // Get all assignment IDs
@@ -320,7 +337,12 @@ enum TelemetryService {
       }
       
       // Sort by recorded_at to ensure chronological order
-      return calibrationPoints.sorted { $0.recordedAt < $1.recordedAt }
+      let result = calibrationPoints.sorted { $0.recordedAt < $1.recordedAt }
+
+      // Cache the result (disk persistence for tab switching/offline)
+      await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.calibrationPoints, useDisk: true)
+
+      return result
     }
   
   // Convert raw flex sensor value to degrees (same formula as CalibrateDeviceView)

@@ -87,12 +87,12 @@ enum PatientService {
     return r.id
   }
   
-  // Check if patient has a PT (with caching)
+  // Check if patient has a PT (with caching - disk persistence for tab switching)
   static func hasPT(patientProfileId: UUID) async throws -> Bool {
     let cacheKey = CacheKey.hasPT(patientProfileId: patientProfileId)
     
-    // Check cache first (memory only)
-    if let cached = await CacheService.shared.getCached(cacheKey, as: Bool.self, useDisk: false) {
+    // Check cache first (disk persistence for offline/tab switching)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: Bool.self, useDisk: true) {
       print("✅ PatientService.hasPT: cache hit")
       return cached
     }
@@ -112,8 +112,8 @@ enum PatientService {
     
     let hasPT = mapRows.first != nil
     
-    // Cache the result (memory only)
-    await CacheService.shared.setCached(hasPT, forKey: cacheKey, ttl: CacheService.TTL.hasPT, useDisk: false)
+    // Cache the result (disk persistence for offline/tab switching)
+    await CacheService.shared.setCached(hasPT, forKey: cacheKey, ttl: CacheService.TTL.hasPT, useDisk: true)
     print("✅ PatientService.hasPT: cached result = \(hasPT)")
     
     return hasPT
@@ -216,12 +216,12 @@ enum PatientService {
     return email
   }
   
-  // Get PT profile ID from patient profile ID (with caching)
+  // Get PT profile ID from patient profile ID (with caching - disk persistence for tab switching)
   static func getPTProfileId(patientProfileId: UUID) async throws -> UUID? {
     let cacheKey = CacheKey.ptProfileIdFromPatient(patientProfileId: patientProfileId)
     
-    // Check cache first (memory only, 1h TTL)
-    if let cached = await CacheService.shared.getCached(cacheKey, as: UUID?.self, useDisk: false) {
+    // Check cache first (disk persistence for offline/tab switching)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: UUID?.self, useDisk: true) {
       print("✅ PatientService.getPTProfileId: cache hit")
       return cached
     }
@@ -241,8 +241,8 @@ enum PatientService {
     
     let result = mapRows.first?.pt_profile_id
     
-    // Cache the result (memory only, 1h TTL)
-    await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.hasPT, useDisk: false)
+    // Cache the result (disk persistence for offline/tab switching)
+    await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.hasPT, useDisk: true)
     print("✅ PatientService.getPTProfileId: cached result")
     
     return result
@@ -260,8 +260,8 @@ enum PatientService {
   static func getPTInfo(ptProfileId: UUID) async throws -> PTInfo? {
     let actualKey = "pt_info_by_id:\(ptProfileId.uuidString)"
     
-    // Check cache first (memory only, 1h TTL)
-    if let cached = await CacheService.shared.getCached(actualKey, as: PTInfo?.self, useDisk: false) {
+    // Check cache first (disk persistence for offline/tab switching)
+    if let cached = await CacheService.shared.getCached(actualKey, as: PTInfo?.self, useDisk: true) {
       print("✅ PatientService.getPTInfo: cache hit")
       return cached
     }
@@ -287,8 +287,8 @@ enum PatientService {
       PTInfo(id: pt.id, email: pt.email, first_name: pt.first_name, last_name: pt.last_name, phone: pt.phone)
     }
     
-    // Cache the result (memory only, 1h TTL)
-    await CacheService.shared.setCached(result, forKey: actualKey, ttl: CacheService.TTL.ptInfo, useDisk: false)
+    // Cache the result (disk persistence for offline/tab switching)
+    await CacheService.shared.setCached(result, forKey: actualKey, ttl: CacheService.TTL.ptInfo, useDisk: true)
     print("✅ PatientService.getPTInfo: cached result")
     
     return result
@@ -391,6 +391,9 @@ enum PatientService {
         .execute()
     }.value
     
+    // Invalidate caches so next load reflects the new PT link
+    await CacheService.shared.invalidate(CacheKey.hasPT(patientProfileId: patientProfileId))
+    await CacheService.shared.invalidate(CacheKey.ptProfileIdFromPatient(patientProfileId: patientProfileId))
     print("✅ PatientService.linkPatientViaAccessCode: successfully linked patient_profile \(patientProfileId) via access code")
   }
 

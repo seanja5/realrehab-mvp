@@ -107,27 +107,19 @@ final class OutboxSyncManager: ObservableObject {
 
     private func syncLessonProgress(payload: Data) async throws {
         let p = try JSONDecoder().decode(LessonProgressPayload.self, from: payload)
-        let client = SupabaseService.shared.client
-        let iso = ISO8601DateFormatter()
+        let patientProfileId = p.patientProfileId
 
-        let payloadDict: [String: Any] = [
-            "patient_profile_id": p.patientProfileId.uuidString,
-            "lesson_id": p.lessonId.uuidString,
-            "reps_completed": p.repsCompleted,
-            "reps_target": p.repsTarget,
-            "elapsed_seconds": p.elapsedSeconds,
-            "status": p.status,
-            "updated_at": iso.string(from: Date())
-        ]
-
-        _ = try await client
-            .schema("accounts")
-            .from("patient_lesson_progress")
-            .upsert(AnyEncodable(payloadDict), onConflict: "patient_profile_id,lesson_id")
-            .executeAsync()
+        // RPC call in LessonProgressSync (nonisolated) to avoid Sendable/Encodable isolation error
+        try await LessonProgressSync.upsert(
+            lessonId: p.lessonId.uuidString,
+            repsCompleted: p.repsCompleted,
+            repsTarget: p.repsTarget,
+            elapsedSeconds: p.elapsedSeconds,
+            status: p.status
+        )
 
         // Invalidate cache so next load reflects the update
-        await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: p.patientProfileId))
+        await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
     }
 
     // MARK: - Persistence

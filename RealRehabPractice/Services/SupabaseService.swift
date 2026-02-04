@@ -29,3 +29,25 @@ final class SupabaseService {
         print("✅ Supabase initialized")
     }
 }
+
+// RPC params for accounts.upsert_patient_lesson_progress. Manual nonisolated encode to satisfy Sendable.
+struct UpsertLessonProgressParams: Encodable, Sendable {
+    let p_lesson_id: String
+    let p_reps_completed: Int
+    let p_reps_target: Int
+    let p_elapsed_seconds: Int
+    let p_status: String
+
+    private enum CodingKeys: String, CodingKey {
+        case p_lesson_id, p_reps_completed, p_reps_target, p_elapsed_seconds, p_status
+    }
+
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_lesson_id, forKey: .p_lesson_id)
+        try container.encode(p_reps_completed, forKey: .p_reps_completed)
+        try container.encode(p_reps_target, forKey: .p_reps_target)
+        try container.encode(p_elapsed_seconds, forKey: .p_elapsed_seconds)
+        try container.encode(p_status, forKey: .p_status)
+    }
+}

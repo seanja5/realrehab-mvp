@@ -76,6 +76,7 @@
 		C8B1B2C72ED00001004D9349 /* LocalLessonProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B1B2C62ED00001004D9349 /* LocalLessonProgressStore.swift */; };
 		C8B1B2C92ED00001004D934A /* OutboxItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B1B2C82ED00001004D934A /* OutboxItem.swift */; };
 		C8B1B2CB2ED00001004D934B /* OutboxSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B1B2CA2ED00001004D934B /* OutboxSyncManager.swift */; };
+		C8F4A8332ED2F3B600BADF02 /* LessonProgressSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8322ED2F3B600BADF02 /* LessonProgressSync.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -168,6 +169,7 @@
 		C8B1B2C62ED00001004D9349 /* LocalLessonProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLessonProgressStore.swift; sourceTree = "<group>"; };
 		C8B1B2C82ED00001004D934A /* OutboxItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutboxItem.swift; sourceTree = "<group>"; };
 		C8B1B2CA2ED00001004D934B /* OutboxSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutboxSyncManager.swift; sourceTree = "<group>"; };
+		C8F4A8322ED2F3B600BADF02 /* LessonProgressSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonProgressSync.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -415,6 +417,7 @@
 			children = (
 				C8B1B2C82ED00001004D934A /* OutboxItem.swift */,
 				C8B1B2CA2ED00001004D934B /* OutboxSyncManager.swift */,
+				C8F4A8322ED2F3B600BADF02 /* LessonProgressSync.swift */,
 			);
 			path = Outbox;
 			sourceTree = "<group>";
@@ -608,6 +611,7 @@
 				C8B1B2C72ED00001004D9349 /* LocalLessonProgressStore.swift in Sources */,
 				C8B1B2C92ED00001004D934A /* OutboxItem.swift in Sources */,
 				C8B1B2CB2ED00001004D934B /* OutboxSyncManager.swift in Sources */,
+				C8F4A8332ED2F3B600BADF02 /* LessonProgressSync.swift in Sources */,
 				C8D677F02EBA932000829144 /* InjurySelectView.swift in Sources */,
 				C82D70572EC15F90004D9347 /* PatientTabBar.swift in Sources */,
 				C82D70582EC15F90004D9347 /* PTTabBar.swift in Sources */,

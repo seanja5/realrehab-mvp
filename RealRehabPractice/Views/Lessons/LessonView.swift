@@ -441,6 +441,11 @@ struct LessonView: View {
                     startSensorValidation()
                     // Start countdown immediately (initial countdown)
                     startCountdown(isInitial: true)
+                    // Sync "started" (0 reps) so PT sees progress immediately
+                    if let lessonId = lessonId {
+                        LocalLessonProgressStore.shared.saveDraft(lessonId: lessonId, repsCompleted: 0, repsTarget: engine.repTarget, elapsedSeconds: 0, status: "inProgress")
+                        enqueueAndSyncLessonProgress(lessonId: lessonId, repsCompleted: 0, repsTarget: engine.repTarget, elapsedSeconds: 0, status: "inProgress")
+                    }
                 }
             }
             .padding(.horizontal, 24)
@@ -517,7 +522,7 @@ struct LessonView: View {
                 if !isUserPaused {
                     pauseLesson()
                 } else {
-                    persistLessonDraft()
+                    persistLessonDraft(enqueueForSync: true)
                 }
             } else {
                 engine.stopGuidedSimulation()
@@ -532,12 +537,17 @@ struct LessonView: View {
                 if hasStarted && !isUserPaused {
                     pauseLesson()
                 } else {
-                    persistLessonDraft()
+                    persistLessonDraft(enqueueForSync: true)
                 }
             }
         }
-        .onChange(of: engine.repCount) { _, _ in
+        .onChange(of: engine.repCount) { _, newCount in
             persistLessonDraft()
+            // Sync to Supabase on every rep so PT sees progress in real time
+            if newCount > 0, let lessonId = lessonId {
+                let status = newCount >= engine.repTarget ? "completed" : "inProgress"
+                enqueueAndSyncLessonProgress(lessonId: lessonId, repsCompleted: newCount, repsTarget: engine.repTarget, elapsedSeconds: currentElapsedSeconds(), status: status)
+            }
         }
         .onChange(of: ble.currentFlexSensorValue) { oldValue, newValue in
             if let value = newValue {
@@ -581,7 +591,7 @@ struct LessonView: View {
         elapsedTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { _ in
             Task { @MainActor in
                 elapsedDisplaySeconds = currentElapsedSeconds()
-                persistLessonDraft()
+                persistLessonDraft(enqueueForSync: true)
             }
         }
         RunLoop.main.add(elapsedTimer!, forMode: .common)
@@ -603,7 +613,7 @@ struct LessonView: View {
         countdownTimer = nil
         stopSensorValidation()
         engine.pauseAnimation()
-        persistLessonDraft()
+        persistLessonDraft(enqueueForSync: true)
     }
 
     private func resumeLesson() {
@@ -647,13 +657,16 @@ struct LessonView: View {
         engine.fill = 0.0
     }
 
-    private func persistLessonDraft() {
+    private func persistLessonDraft(enqueueForSync: Bool = false) {
         guard let lessonId = lessonId else { return }
         let repsCompleted = engine.repCount
         let repsTarget = engine.repTarget
         let elapsed = currentElapsedSeconds()
         let status = repsCompleted >= repsTarget ? "completed" : "inProgress"
         LocalLessonProgressStore.shared.saveDraft(lessonId: lessonId, repsCompleted: repsCompleted, repsTarget: repsTarget, elapsedSeconds: elapsed, status: status)
+        if enqueueForSync {
+            enqueueAndSyncLessonProgress(lessonId: lessonId, repsCompleted: repsCompleted, repsTarget: repsTarget, elapsedSeconds: elapsed, status: status)
+        }
     }
 
     private func persistAndCompleteLesson() {
@@ -662,13 +675,19 @@ struct LessonView: View {
         let repsTarget = engine.repTarget
         let elapsed = currentElapsedSeconds()
         LocalLessonProgressStore.shared.saveDraft(lessonId: lessonId, repsCompleted: repsCompleted, repsTarget: repsTarget, elapsedSeconds: elapsed, status: "completed")
+        enqueueAndSyncLessonProgress(lessonId: lessonId, repsCompleted: repsCompleted, repsTarget: repsTarget, elapsedSeconds: elapsed, status: "completed")
+        LocalLessonProgressStore.shared.clearDraft(lessonId: lessonId)
+        stopElapsedTimer()
+    }
+
+    /// Enqueue lesson progress for Supabase sync and process immediately when online.
+    private func enqueueAndSyncLessonProgress(lessonId: UUID, repsCompleted: Int, repsTarget: Int, elapsedSeconds: Int, status: String) {
         Task {
             guard let profile = try? await AuthService.myProfile(),
                   let patientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id) else { return }
-            OutboxSyncManager.shared.enqueueLessonProgress(patientProfileId: patientProfileId, lessonId: lessonId, repsCompleted: repsCompleted, repsTarget: repsTarget, elapsedSeconds: elapsed, status: "completed")
-            LocalLessonProgressStore.shared.clearDraft(lessonId: lessonId)
+            OutboxSyncManager.shared.enqueueLessonProgress(patientProfileId: patientProfileId, lessonId: lessonId, repsCompleted: repsCompleted, repsTarget: repsTarget, elapsedSeconds: elapsedSeconds, status: status)
+            await OutboxSyncManager.shared.processQueueIfOnline()
         }
-        stopElapsedTimer()
     }
 
     // MARK: - Calibration Loading

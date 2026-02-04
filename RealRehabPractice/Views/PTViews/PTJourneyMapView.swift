@@ -427,6 +427,11 @@ struct PTJourneyMapView: View {
             await loadPlan()
             ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
         }
+        .refreshable {
+            await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
+            await loadPlan()
+            ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
+        }
         .onAppear {
             ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
         }

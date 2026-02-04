@@ -74,6 +74,8 @@ struct GlossyLessonBubbleBackground: View {
     var isLocked: Bool = false
     /// When true (patient press): top layer shifts down to cover underside for button-click effect.
     var isPressed: Bool = false
+    /// When true (lesson completed): bright green top, dark green underside, keep shine.
+    var isCompleted: Bool = false
     /// Ellipse: 80pt wide, 70pt tall.
     private let ovalWidth: CGFloat = 80
     private let ovalHeight: CGFloat = 70
@@ -81,12 +83,14 @@ struct GlossyLessonBubbleBackground: View {
     private let pressOffset: CGFloat = 6
     private static let lockedLightGray = Color(white: 0.72)
     private static let lockedDarkGray = Color(white: 0.38)
+    private static let completedBrightGreen = Color(red: 0.2, green: 0.85, blue: 0.35)
+    private static let completedDarkGreen = Color(red: 0.1, green: 0.5, blue: 0.2)
 
     var body: some View {
         ZStack {
             // 1) Underside: stays fixed; top layer presses down over it when isPressed
             Ellipse()
-                .fill(isLocked ? Self.lockedDarkGray : Color.brandDarkerBlue)
+                .fill(isLocked ? Self.lockedDarkGray : (isCompleted ? Self.completedDarkGreen : Color.brandDarkerBlue))
                 .frame(width: ovalWidth, height: ovalHeight)
                 .offset(y: pressOffset)
                 .blur(radius: 0)
@@ -95,7 +99,7 @@ struct GlossyLessonBubbleBackground: View {
             ZStack {
                 // 2) Base ellipse
                 Ellipse()
-                    .fill(isLocked ? Self.lockedLightGray : baseColor)
+                    .fill(isLocked ? Self.lockedLightGray : (isCompleted ? Self.completedBrightGreen : baseColor))
                     .frame(width: ovalWidth, height: ovalHeight)
 
                 if !isLocked {

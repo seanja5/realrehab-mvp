@@ -27,8 +27,17 @@ public struct JourneyNode: Identifiable {
     }
 }
 
+/// Progress info for a lesson (from local draft or Supabase)
+public struct LessonProgressInfo {
+    public let repsCompleted: Int
+    public let repsTarget: Int
+    public let isCompleted: Bool
+    public let isInProgress: Bool  // started but not completed (paused)
+}
+
 public final class JourneyMapViewModel: ObservableObject {
     @Published public var nodes: [JourneyNode] = []
+    @Published public var lessonProgress: [UUID: LessonProgressInfo] = [:]
     @Published public var isLoading: Bool = false
     @Published public var errorMessage: String?
     
@@ -80,6 +89,29 @@ public final class JourneyMapViewModel: ObservableObject {
                     return JourneyNode(id: lessonId, icon: iconName, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
                 }
                 print("✅ JourneyMapViewModel: loaded \(nodes.count) nodes from plan")
+                
+                // Load lesson progress (merge local drafts + Supabase)
+                var progress: [UUID: LessonProgressInfo] = [:]
+                let remoteProgress = (try? await RehabService.getLessonProgress(patientProfileId: patientProfileId)) ?? [:]
+                for node in nodes where node.nodeType == .lesson {
+                    let lessonId = node.id
+                    if let local = LocalLessonProgressStore.shared.loadDraft(lessonId: lessonId) {
+                        progress[lessonId] = LessonProgressInfo(
+                            repsCompleted: local.repsCompleted,
+                            repsTarget: local.repsTarget,
+                            isCompleted: local.status == "completed",
+                            isInProgress: local.status == "inProgress"
+                        )
+                    } else if let remote = remoteProgress[lessonId] {
+                        progress[lessonId] = LessonProgressInfo(
+                            repsCompleted: remote.reps_completed,
+                            repsTarget: remote.reps_target,
+                            isCompleted: remote.status == "completed",
+                            isInProgress: remote.status == "inProgress"
+                        )
+                    }
+                }
+                lessonProgress = progress
             } else {
                 print("ℹ️ JourneyMapViewModel: plan has no nodes")
             }

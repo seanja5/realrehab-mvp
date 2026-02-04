@@ -19,6 +19,8 @@ struct LessonView: View {
     @StateObject private var engine: LessonEngine
     @StateObject private var ble = BluetoothManager.shared
     @State private var hasStarted = false
+    @State private var isUserPaused = false  // User tapped pause, back, or app went to background
+    @State private var showRestartConfirmation = false
     
     // Lesson progress (offline resume)
     @State private var elapsedBaseSeconds: Int = 0
@@ -151,6 +153,11 @@ struct LessonView: View {
             return "You're Done!"
         }
         
+        // User paused (via pause button, back, or background)
+        if isUserPaused {
+            return "Waiting to Begin..."
+        }
+        
         // Show error message if present (including IMU errors)
         if let error = errorMessage {
             return error
@@ -200,6 +207,11 @@ struct LessonView: View {
         // If all reps are completed, show full green
         if engine.repCount >= engine.repTarget {
             return Color.green.opacity(0.25)
+        }
+        
+        // User paused - gray
+        if isUserPaused {
+            return Color.gray.opacity(0.3)
         }
         
         // Show red if there's an error (IMU error or any other error)
@@ -254,8 +266,8 @@ struct LessonView: View {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(backgroundColor())
                 
-                // Green fill overlay during strokes or when completed
-                if engine.phase == .upstroke || engine.phase == .downstroke || engine.repCount >= engine.repTarget {
+                // Green fill overlay during strokes or when completed (hidden when user paused)
+                if !isUserPaused && (engine.phase == .upstroke || engine.phase == .downstroke || engine.repCount >= engine.repTarget) {
                     GeometryReader { geo in
                         let h = geo.size.height
                         // Bottom-anchored fill whose height animates with engine.fill
@@ -365,6 +377,52 @@ struct LessonView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 12)
             
+            // Pause/Resume and Restart buttons (only when lesson has started)
+            if hasStarted {
+                HStack(spacing: 12) {
+                    Button {
+                        if isUserPaused {
+                            resumeLesson()
+                        } else {
+                            pauseLesson()
+                        }
+                    } label: {
+                        Image(systemName: isUserPaused ? "play.fill" : "pause.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(isUserPaused ? .white : Color.brandDarkBlue)
+                            .frame(width: 44, height: 44)
+                            .background(
+                                Circle()
+                                    .fill(isUserPaused ? Color.brandDarkBlue : Color.clear)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.brandDarkBlue, lineWidth: 2)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Button {
+                        showRestartConfirmation = true
+                    } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(Color.brandDarkBlue)
+                            .frame(width: 44, height: 44)
+                            .background(
+                                Circle()
+                                    .fill(Color.clear)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.brandDarkBlue, lineWidth: 2)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.bottom, 8)
+            }
+            
             // Controls row (secondary begin button)
             HStack {
                 SecondaryButton(
@@ -403,16 +461,46 @@ struct LessonView: View {
             .safeAreaPadding(.bottom)
         }
         .rrPageBackground()
+        .overlay {
+            if showRestartConfirmation {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture { showRestartConfirmation = false }
+                    .overlay {
+                        VStack(spacing: 20) {
+                            Text("Restart this lesson?")
+                                .font(.rrTitle)
+                                .foregroundStyle(.primary)
+                                .multilineTextAlignment(.center)
+                            
+                            PrimaryButton(title: "Restart", useLargeFont: true) {
+                                restartLesson()
+                                showRestartConfirmation = false
+                            }
+                            .padding(.horizontal, 24)
+                            
+                            SecondaryButton(title: "Close") {
+                                showRestartConfirmation = false
+                            }
+                            .padding(.horizontal, 24)
+                        }
+                        .padding(24)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
+                        )
+                    }
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton {
-                    // Clean up running session before going back to JourneyMapView
                     if hasStarted {
-                        engine.stopGuidedSimulation()
+                        pauseLesson()
                     }
-                    // Navigate to JourneyMapView instead of going back through directions
                     router.reset(to: .journeyMap)
                 }
             }
@@ -425,16 +513,27 @@ struct LessonView: View {
             restoreLessonProgressIfNeeded()
         }
         .onDisappear {
-            engine.stopGuidedSimulation()
-            stopSensorValidation()
-            countdownTimer?.invalidate()
-            countdownTimer = nil
-            stopElapsedTimer()
-            persistLessonDraft()
+            if hasStarted {
+                if !isUserPaused {
+                    pauseLesson()
+                } else {
+                    persistLessonDraft()
+                }
+            } else {
+                engine.stopGuidedSimulation()
+                stopSensorValidation()
+                countdownTimer?.invalidate()
+                countdownTimer = nil
+                stopElapsedTimer()
+            }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
-                persistLessonDraft()
+                if hasStarted && !isUserPaused {
+                    pauseLesson()
+                } else {
+                    persistLessonDraft()
+                }
             }
         }
         .onChange(of: engine.repCount) { _, _ in
@@ -473,7 +572,7 @@ struct LessonView: View {
     }
 
     private func currentElapsedSeconds() -> Int {
-        guard let ref = elapsedReferenceTime else { return 0 }
+        guard let ref = elapsedReferenceTime else { return elapsedBaseSeconds }
         return elapsedBaseSeconds + Int(Date().timeIntervalSince(ref))
     }
 
@@ -494,19 +593,58 @@ struct LessonView: View {
         elapsedTimer = nil
     }
 
+    private func pauseLesson() {
+        guard !isUserPaused else { return }
+        isUserPaused = true
+        elapsedBaseSeconds = currentElapsedSeconds()
+        elapsedReferenceTime = nil
+        stopElapsedTimer()
+        countdownTimer?.invalidate()
+        countdownTimer = nil
+        stopSensorValidation()
+        engine.pauseAnimation()
+        persistLessonDraft()
+    }
+
+    private func resumeLesson() {
+        guard isUserPaused else { return }
+        isUserPaused = false
+        elapsedReferenceTime = Date()
+        startElapsedTimer()
+        startSensorValidation()
+        startCountdown(isInitial: false)
+    }
+
+    private func restartLesson() {
+        engine.stopGuidedSimulation()
+        stopSensorValidation()
+        countdownTimer?.invalidate()
+        countdownTimer = nil
+        stopElapsedTimer()
+        engine.reset()
+        hasStarted = false
+        isUserPaused = false
+        elapsedBaseSeconds = 0
+        elapsedReferenceTime = nil
+        elapsedDisplaySeconds = 0
+        if let lessonId = lessonId {
+            LocalLessonProgressStore.shared.clearDraft(lessonId: lessonId)
+        }
+    }
+
     private func restoreLessonProgressIfNeeded() {
         guard let lessonId = lessonId else { return }
         guard let draft = LocalLessonProgressStore.shared.loadDraft(lessonId: lessonId) else { return }
         guard draft.status != "completed" else { return }
         engine.restoreSession(repCount: draft.repsCompleted)
         elapsedBaseSeconds = draft.elapsedSeconds
-        elapsedReferenceTime = draft.updatedAt
+        elapsedReferenceTime = nil
         elapsedDisplaySeconds = draft.elapsedSeconds
         hasStarted = true
-        startElapsedTimer()
+        isUserPaused = true
         setupRepCountingCallback()
-        startSensorValidation()
-        engine.startGuidedSimulation(skipInitialWait: true)
+        engine.phase = .idle
+        engine.fill = 0.0
     }
 
     private func persistLessonDraft() {
@@ -794,11 +932,11 @@ struct LessonView: View {
                     self.showGoMessage = true
                     self.goMessageStartTime = Date()
                     
-                    // Use different start method based on whether this is initial or after error
+                    // Use different start method based on whether this is initial or after error/resume
                     if self.isInitialCountdown {
                         self.engine.startGuidedSimulation(skipInitialWait: true)
                     } else {
-                        self.engine.restartFromBottom()
+                        self.engine.startOrRestartFromBottom()
                     }
                     
                     // Clear "Go!" message after 5 seconds

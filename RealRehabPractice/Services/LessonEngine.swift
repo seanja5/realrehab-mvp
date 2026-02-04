@@ -265,6 +265,16 @@ final class LessonEngine: ObservableObject {
         fill = 0.1
         runUpstroke(token: token)
     }
+
+    /// Start or restart animation from the bottom. Use when resuming from pause (countdown finished).
+    /// If simulation was running (paused), restarts from bottom. If never started (e.g. restored draft), starts fresh.
+    func startOrRestartFromBottom() {
+        if guidedRunToken != nil {
+            restartFromBottom()
+        } else {
+            startGuidedSimulation(skipInitialWait: true)
+        }
+    }
     
     private func runIncorrectHold(duration: TimeInterval, token: UUID) {
         guard guidedRunToken == token else { return }

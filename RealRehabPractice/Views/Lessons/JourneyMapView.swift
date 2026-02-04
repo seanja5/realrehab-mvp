@@ -123,7 +123,7 @@ struct JourneyMapView: View {
                                             showCallout = true
                                         }
                                     } label: {
-                                        NodeView(node: node, isPressed: pressedNodeIndex == index)
+                                        NodeView(node: node, isPressed: pressedNodeIndex == index, progress: vm.lessonProgress[node.id])
                                     }
                                     .buttonStyle(LessonBubbleButtonStyle(pressedNodeIndex: $pressedNodeIndex, index: index))
                                     .position(x: safeX, y: safeY)
@@ -381,32 +381,53 @@ struct JourneyMapView: View {
         return x
     }
     
-    private func NodeView(node: JourneyNode, isPressed: Bool = false) -> some View {
-        ZStack {
-            Group {
-                if node.nodeType == .benchmark {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 66))
-                        .foregroundStyle(node.isLocked ? Color.gray.opacity(0.5) : Color.brandDarkBlue)
-                        .shadow(color: (node.isLocked ? Color.gray : Color.brandDarkBlue).opacity(0.3), radius: 12, x: 0, y: 2)
-                } else {
-                    GlossyLessonBubbleBackground(baseColor: Color.brandDarkBlue, isLocked: node.isLocked, isPressed: isPressed)
+    private func NodeView(node: JourneyNode, isPressed: Bool = false, progress: LessonProgressInfo? = nil) -> some View {
+        ZStack(alignment: .topTrailing) {
+            ZStack {
+                Group {
+                    if node.nodeType == .benchmark {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 66))
+                            .foregroundStyle(node.isLocked ? Color.gray.opacity(0.5) : Color.brandDarkBlue)
+                            .shadow(color: (node.isLocked ? Color.gray : Color.brandDarkBlue).opacity(0.3), radius: 12, x: 0, y: 2)
+                    } else {
+                        let isCompleted = progress?.isCompleted ?? false
+                        GlossyLessonBubbleBackground(
+                            baseColor: isCompleted ? Color.green : Color.brandDarkBlue,
+                            isLocked: node.isLocked,
+                            isPressed: isPressed,
+                            isCompleted: isCompleted
+                        )
+                    }
+                }
+                
+                if node.nodeType == .lesson {
+                    Image(systemName: ACLJourneyModels.lessonIconSystemName(for: node.title))
+                        .font(.system(size: 36, weight: .medium))
+                        .foregroundStyle(.white)
+                        .offset(y: isPressed ? 6 : 0)
+                        .animation(.interactiveSpring(response: 0.2, dampingFraction: 0.7), value: isPressed)
+                }
+                
+                if node.nodeType == .benchmark && node.isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(.gray)
+                        .offset(x: 30, y: -30)
                 }
             }
             
-            if node.nodeType == .lesson {
-                Image(systemName: ACLJourneyModels.lessonIconSystemName(for: node.title))
-                    .font(.system(size: 36, weight: .medium))
-                    .foregroundStyle(.white)
-                    .offset(y: isPressed ? 6 : 0)
-                    .animation(.interactiveSpring(response: 0.2, dampingFraction: 0.7), value: isPressed)
-            }
-            
-            if node.nodeType == .benchmark && node.isLocked {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 18))
-                    .foregroundStyle(.gray)
-                    .offset(x: 30, y: -30)
+            if node.nodeType == .lesson, let prog = progress, prog.isInProgress {
+                HStack(spacing: 4) {
+                    Text("(Paused)")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    ProgressView(value: prog.repsTarget > 0 ? Double(prog.repsCompleted) / Double(prog.repsTarget) : 0)
+                        .progressViewStyle(.linear)
+                        .tint(prog.repsCompleted > 0 ? Color.brandDarkBlue : Color.clear)
+                        .frame(width: 24, height: 4)
+                }
+                .offset(x: 2, y: -28)
             }
         }
     }

@@ -163,6 +163,28 @@ enum RehabService {
       .executeAsync()
   }
   
+  // MARK: - Patient Lesson Progress (for journey map indicators)
+  
+  struct PatientLessonProgressRow: Codable {
+    let lesson_id: UUID
+    let reps_completed: Int
+    let reps_target: Int
+    let status: String
+  }
+  
+  /// Fetch lesson progress for a patient. Used by journey maps to show progress indicators.
+  /// RLS: patients can select own; PTs need policy to select their patients'.
+  static func getLessonProgress(patientProfileId: UUID) async throws -> [UUID: PatientLessonProgressRow] {
+    let rows: [PatientLessonProgressRow] = try await supabase
+      .schema("accounts")
+      .from("patient_lesson_progress")
+      .select("lesson_id,reps_completed,reps_target,status")
+      .eq("patient_profile_id", value: patientProfileId.uuidString)
+      .decoded(as: [PatientLessonProgressRow].self)
+    
+    return Dictionary(uniqueKeysWithValues: rows.map { ($0.lesson_id, $0) })
+  }
+  
   // MARK: - Rehab Plans (MVP)
   
   static func currentPlan(ptProfileId: UUID, patientProfileId: UUID) async throws -> PlanRow? {

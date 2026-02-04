@@ -42,6 +42,7 @@ struct PTJourneyMapView: View {
     @State private var isDragging = false
     @State private var pressedIndex: Int? = nil // Index of bubble that is "pressed"/enlarged by tap
     @State private var lastLayoutWidth: CGFloat = 0
+    @State private var lessonProgress: [UUID: LessonProgressInfo] = [:]
     
     private var exerciseTypes: [String] { ACLJourneyModels.allExerciseNamesForPicker }
     private var activePhase: Int { activePhaseId }
@@ -139,6 +140,20 @@ struct PTJourneyMapView: View {
                 }
                 ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
                 print("✅ PTJourneyMapView: loaded \(nodes.count) nodes from plan")
+                
+                let remoteProgress = (try? await RehabService.getLessonProgress(patientProfileId: patientProfileId)) ?? [:]
+                var progress: [UUID: LessonProgressInfo] = [:]
+                for node in nodes where node.nodeType == .lesson {
+                    if let remote = remoteProgress[node.id] {
+                        progress[node.id] = LessonProgressInfo(
+                            repsCompleted: remote.reps_completed,
+                            repsTarget: remote.reps_target,
+                            isCompleted: remote.status == "completed",
+                            isInProgress: remote.status == "inProgress"
+                        )
+                    }
+                }
+                lessonProgress = progress
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -220,7 +235,8 @@ struct PTJourneyMapView: View {
                             
                             PTNodeView(
                                 node: node,
-                                scale: (draggingIndex == index || pressedIndex == index) ? 1.2 : 1.0
+                                scale: (draggingIndex == index || pressedIndex == index) ? 1.2 : 1.0,
+                                progress: lessonProgress[node.id]
                             )
                             .contentShape(Rectangle()) // Ensure full hit area
                             
@@ -1060,31 +1076,51 @@ struct PhaseGoalsPopover: View {
 struct PTNodeView: View {
     let node: LessonNode
     var scale: CGFloat = 1.0
+    var progress: LessonProgressInfo? = nil
     
     var body: some View {
-        ZStack {
-            Group {
-                if node.nodeType == .benchmark {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 66 * scale))
-                        .foregroundStyle(Color.brandDarkBlue)
-                        .shadow(color: Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
-                } else {
-                    GlossyLessonBubbleBackground(baseColor: Color.brandDarkBlue)
+        ZStack(alignment: .topTrailing) {
+            ZStack {
+                Group {
+                    if node.nodeType == .benchmark {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 66 * scale))
+                            .foregroundStyle(Color.brandDarkBlue)
+                            .shadow(color: Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
+                    } else {
+                        let isCompleted = progress?.isCompleted ?? false
+                        GlossyLessonBubbleBackground(
+                            baseColor: isCompleted ? Color.green : Color.brandDarkBlue,
+                            isCompleted: isCompleted
+                        )
+                    }
+                }
+                
+                if node.nodeType == .lesson {
+                    Image(systemName: ACLJourneyModels.lessonIconSystemName(for: node.title))
+                        .font(.system(size: 36 * scale, weight: .medium))
+                        .foregroundStyle(.white)
+                }
+                
+                if node.isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 18 * scale))
+                        .foregroundStyle(node.nodeType == .benchmark ? .gray : .white)
+                        .offset(x: 30 * scale, y: -30 * scale)
                 }
             }
             
-            if node.nodeType == .lesson {
-                Image(systemName: ACLJourneyModels.lessonIconSystemName(for: node.title))
-                    .font(.system(size: 36 * scale, weight: .medium))
-                    .foregroundStyle(.white)
-            }
-            
-            if node.isLocked {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 18 * scale))
-                    .foregroundStyle(node.nodeType == .benchmark ? .gray : .white)
-                    .offset(x: 30 * scale, y: -30 * scale)
+            if node.nodeType == .lesson, let prog = progress, prog.isInProgress {
+                HStack(spacing: 4) {
+                    Text("(Paused)")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    ProgressView(value: prog.repsTarget > 0 ? Double(prog.repsCompleted) / Double(prog.repsTarget) : 0)
+                        .progressViewStyle(.linear)
+                        .tint(prog.repsCompleted > 0 ? Color.brandDarkBlue : Color.clear)
+                        .frame(width: 24, height: 4)
+                }
+                .offset(x: 2, y: -28)
             }
         }
         .scaleEffect(scale)

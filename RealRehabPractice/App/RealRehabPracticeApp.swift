@@ -14,6 +14,7 @@ struct RealRehabPracticeApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject var router = Router()
     @StateObject private var session = SessionContext()
+    @StateObject private var networkMonitor = NetworkMonitor.shared
 
     init() {
         UNUserNotificationCenter.current().delegate = NotificationDelegate()
@@ -42,9 +43,9 @@ struct RealRehabPracticeApp: App {
                                 case .rehabOverview: RehabOverviewView()
                                 case .journeyMap: JourneyMapView()
                                 case .patientSettings: PatientSettingsView()
-                                case .directionsView1(let reps, let restSec): DirectionsView1(reps: reps, restSec: restSec)
-                                case .directionsView2(let reps, let restSec): DirectionsView2(reps: reps, restSec: restSec)
-                                case .lesson(let reps, let restSec): LessonView(reps: reps, restSec: restSec)                // ← single lesson screen
+                                case .directionsView1(let reps, let restSec, let lessonId): DirectionsView1(reps: reps, restSec: restSec, lessonId: lessonId)
+                                case .directionsView2(let reps, let restSec, let lessonId): DirectionsView2(reps: reps, restSec: restSec, lessonId: lessonId)
+                                case .lesson(let reps, let restSec, let lessonId): LessonView(reps: reps, restSec: restSec, lessonId: lessonId)
                                 case .assessment: AssessmentView()
                                 case .completion: CompletionView()
                                 case .ptSettings: PTSettingsView()
@@ -96,13 +97,22 @@ struct RealRehabPracticeApp: App {
                 } catch {
                     print("❌ Resolve IDs error (no session): \(error)")
                 }
+                await OutboxSyncManager.shared.processQueueIfOnline()
             }
             .onReceive(NotificationCenter.default.publisher(for: .scheduleReminderTapped)) { _ in
                 router.reset(to: .journeyMap)
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
-                    Task { await rescheduleRemindersIfNeeded() }
+                    Task {
+                        await rescheduleRemindersIfNeeded()
+                        await OutboxSyncManager.shared.processQueueIfOnline()
+                    }
+                }
+            }
+            .onChange(of: networkMonitor.isOnline) { _, isOnline in
+                if isOnline {
+                    Task { await OutboxSyncManager.shared.processQueueIfOnline() }
                 }
             }
             .preferredColorScheme(.light)   // <- force Light mode app-wide

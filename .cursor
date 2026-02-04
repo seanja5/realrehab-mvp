@@ -2,9 +2,9 @@
 
 ## Product Goals
 
-- **Patients**: Complete prescribed rehab exercises with sensor (BLE) feedback; see journey map and lesson progression; link to a PT via access code; manage profile and settings.
+- **Patients**: Complete prescribed rehab exercises with sensor (BLE) feedback; see journey map and lesson progression; link to a PT via access code; manage profile and settings; set personalized weekly schedule with optional reminders (T-15 and T); view "My Schedule" visualizer and progress charts.
 - **PTs**: Manage patient list; assign and customize rehab plans (category/injury, lesson nodes with reps/rest); view/edit patient notes; manage own profile.
-- **Data**: Auth and all app data in Supabase; RLS and RPCs for security; caching for performance; telemetry (sessions, calibration) for progress.
+- **Data**: Auth and all app data in Supabase; RLS and RPCs for security; caching for performance; telemetry (sessions, calibration) for progress; patient_schedule_slots and schedule_reminders_enabled for scheduling.
 
 ---
 
@@ -12,17 +12,17 @@
 
 **Real Rehab** is a rehabilitation assistant that connects patients with physical therapists. Two user flows:
 
-- **Patient**: Onboarding (Welcome → CreateAccount or SelectSignUp → PairDevice → CalibrateDevice → AllSet) → Tab bar (PT Detail, Journey Map, Settings). From PT Detail: view PT info, rehab plan; tap plan → Journey Map → Lessons (Directions → Lesson → Assessment → Completion). Settings: profile, link to PT via access code, sign out.
-- **PT**: SelectSignUp → PTCreateAccount or sign in → Patient List → Patient Detail (notes, rehab plan) → Category/Injury select → PT Journey Map (edit nodes, save plan). Tab: PT Settings.
+- **Patient**: Onboarding (Welcome → Login or Get Started → CreateAccount with account type) → Tab bar (Dashboard, Journey, Settings, Add). CreateAccount: unified form with Patient/PT type selector; patient goes to ptDetail; PT goes to patientList. Pairing/calibration: accessed via Add button (pairDevice → calibrateDevice → allSet → ptDetail). Dashboard (PTDetailView): PT info, rehab plan, "My Schedule" visualizer, Create/Edit Schedule, RecoveryChartWeekView, ActivityConsistencyCard. Lesson flow: Directions → Lesson → Assessment → Completion. Settings: profile, Allow reminders toggle, link to PT via access code, sign out.
+- **PT**: Same WelcomeView; Get Started → CreateAccount (PT type) or Login → Patient List → Patient Detail (notes, rehab plan, RecoveryChartWeekView, ActivityConsistencyCard) → Category/Injury select → PT Journey Map (edit nodes, save plan). Tab: PT Settings.
 
-**Backend**: Supabase (auth, `accounts` schema: profiles, patient_profiles, pt_profiles, pt_patient_map, rehab_plans; `rehab` schema: assignments, programs, lessons). **Cache**: `CacheService` (memory + optional disk, TTLs). **BLE**: `BluetoothManager` for sensor pairing/calibration; telemetry saved via `TelemetryService`.
+**Backend**: Supabase (auth, `accounts` schema: profiles, patient_profiles, pt_profiles, pt_patient_map, rehab_plans, patient_schedule_slots; `rehab` schema: assignments, programs, lessons). **Cache**: `CacheService` (memory + optional disk, TTLs). **BLE**: `BluetoothManager` for sensor pairing/calibration; telemetry saved via `TelemetryService`. **Schedule**: `ScheduleService` for patient_schedule_slots; `NotificationManager` for schedule reminders (T-15, T); `patient_profiles.schedule_reminders_enabled`.
 
 ---
 
 ## Routing (`AppRouter.swift`)
 
-**Route enum** (simplified):
-- Patient: `welcome`, `selectSignUp`, `createAccount`, `pairDevice`, `calibrateDevice`, `allSet`, `ptDetail`, `home`, `homeSubCategory`, `rehabOverview`, `journeyMap`, `patientSettings`, `directionsView1(reps,restSec)`, `directionsView2`, `lesson(reps,restSec)`, `assessment`, `completion`.
+**Route enum**:
+- Patient: `welcome`, `createAccount`, `pairDevice`, `calibrateDevice`, `allSet`, `ptDetail`, `home`, `homeSubCategory`, `rehabOverview`, `journeyMap`, `patientSettings`, `directionsView1(reps,restSec)`, `directionsView2`, `lesson(reps,restSec)`, `assessment`, `completion`.
 - PT: `ptCreateAccount`, `ptSettings`, `patientList`, `ptPatientDetail(patientProfileId)`, `ptCategorySelect(patientProfileId)`, `ptInjurySelect(patientProfileId)`, `ptJourneyMap(patientProfileId, planId)`.
 
 **Tab bar routes** (Router): `ptDetail`, `journeyMap`, `patientSettings`, `ptSettings`, `patientList`.
@@ -35,38 +35,40 @@
 
 - **SupabaseService**: Shared `SupabaseClient`; `SupabaseConfig.plist` for URL/key.
 - **AuthService**: `signUp`, `signIn`, `signOut`, `currentUserId`, `myProfile`, `myProfileIdAndRole`, `resolveIdsForCurrentUser`; uses `accounts.profiles`.
-- **PatientService**: Patient profile CRUD, `myPatientProfileId`, `hasPT`, `getPTProfileId`, `linkPatientToPT`, `linkPatientViaAccessCode`, `findPatientByAccessCode`; uses RPCs and `accounts` tables; caches via CacheService.
+- **PatientService**: Patient profile CRUD, `myPatientProfileId`, `hasPT`, `getPTProfileId`, `linkPatientToPT`, `linkPatientViaAccessCode`, `findPatientByAccessCode`, `getScheduleRemindersEnabled`, `setScheduleRemindersEnabled`; uses RPCs and `accounts` tables; caches via CacheService.
 - **PTService**: `ensurePTProfile`, `myPTProfile`, `listMyPatients`, `getPatient`, `addPatient` (RPC `add_patient_with_mapping`), `deletePatientMapping`, `updatePTProfile`; uses `accounts`; caches.
 - **RehabService**: `myActiveAssignment`, `lessons(for:)`, `program(id:)`, `currentPlan`, `saveACLPlan`, `fetchPlan`, `updatePlanNotes`; uses `rehab.assignments`, `rehab.lessons`, `rehab.programs`, `accounts.rehab_plans`; caches plans/lessons/program. Uses `executeAsync()` (AuthService extension) for non-decoding writes.
+- **ScheduleService**: `getSchedule(patientProfileId)`, `saveSchedule(patientProfileId, slots)`, `timeString(from:)`, `slotsFrom(selectedDays:times:)`; uses `accounts.patient_schedule_slots`; caches via `CacheKey.patientSchedule`; 30-min blocks, 15-min granularity.
+- **NotificationManager**: `requestAuthorizationIfNeeded`, `authorizationStatus`, `scheduleScheduleReminders(slots:firstName:)`, `cancelScheduleReminders`; T-15 and T notifications, rolling 14-day window; category `SCHEDULE_REMINDER`; deep link to journeyMap via `userInfo["route"]`.
 - **TelemetryService**: Sessions, calibration (save/fetch), device assignment (RPC `get_or_create_device_assignment`); uses Supabase auth + PatientService for profile.
 - **LessonEngine**: In-memory lesson state (phase, reps, fill, validation); used by LessonView/AssessmentView.
 - **CacheService** (`@MainActor`): `getCached`/`setCached` (async, TTL), `invalidate`/`invalidateMatching`; keys via `CacheKey`; memory-first, optional disk.
 - **BluetoothManager**: BLE scan, connect, flex sensor value; used by PairDeviceView, CalibrateDeviceView, LessonView, AssessmentView.
 
-**When adding features**: Use the service that owns the domain (auth → AuthService, patient profile/linking → PatientService, PT/patients → PTService, plans/lessons → RehabService, sensor/calibration → TelemetryService). For Supabase writes that don’t decode a body, use `.executeAsync()` (AuthService extension). RPCs exist for device assignment, link patient, add patient with mapping; add new RPCs in Supabase and call from the appropriate service. Cache: use `CacheKey` enum for key names; call `invalidate`/`setCached` after writes so UI stays consistent.
+**When adding features**: Use the service that owns the domain (auth → AuthService, patient profile/linking → PatientService, PT/patients → PTService, plans/lessons → RehabService, schedule → ScheduleService, reminders → NotificationManager, sensor/calibration → TelemetryService). For Supabase writes that don't decode a body, use `.executeAsync()` (AuthService extension). RPCs exist for device assignment, link patient, add patient with mapping; add new RPCs in Supabase and call from the appropriate service. Cache: use `CacheKey` enum for key names; call `invalidate`/`setCached` after writes so UI stays consistent.
 
 ---
 
 ## Session & State
 
-- **SessionContext**: `@Published profileId: UUID?`, `@Published ptProfileId: UUID?`. Set after auth (e.g. from `AuthService.resolveIdsForCurrentUser`). Injected as `@EnvironmentObject`; views use it to know “current user’s profile” and “current PT” for API calls and tab state.
+- **SessionContext**: `@Published profileId: UUID?`, `@Published ptProfileId: UUID?`. Set after auth (e.g. from `AuthService.resolveIdsForCurrentUser`). Injected as `@EnvironmentObject`; views use it to know "current user's profile" and "current PT" for API calls and tab state.
 - **ViewModels**: `AuthViewModel`, `PatientDashboardViewModel`, `PatientPTViewModel`, `LessonSessionViewModel`, `JourneyMapViewModel`, `PTPatientsViewModel`, `PTProgramEditorViewModel`; typically `@MainActor`, load from services and drive views.
 
 **View → Service/ViewModel (for adding features)**:
-- Patient: WelcomeView/CreateAccount → AuthViewModel, AuthService. PairDeviceView/CalibrateDeviceView → BluetoothManager, TelemetryService. PTDetailView → PatientPTViewModel (RehabService.currentPlan, PTService.getPTInfo). JourneyMapView → JourneyMapViewModel (RehabService.currentPlan, fetchPlan). Lesson flow → LessonSessionViewModel, LessonEngine, TelemetryService, BluetoothManager. PatientSettingsView → PatientService, AuthService (link PT, profile, sign out).
+- Patient: WelcomeView/CreateAccount → AuthViewModel, AuthService. PairDeviceView/CalibrateDeviceView → BluetoothManager, TelemetryService. PTDetailView → PatientPTViewModel (RehabService.currentPlan, PTService.getPTInfo, ScheduleService.getSchedule). RehabOverviewView → ScheduleService, PatientService (setScheduleRemindersEnabled), NotificationManager. JourneyMapView → JourneyMapViewModel (RehabService.currentPlan, fetchPlan). Lesson flow → LessonSessionViewModel, LessonEngine, TelemetryService, BluetoothManager. PatientSettingsView → PatientService, AuthService (link PT, profile, getScheduleRemindersEnabled/setScheduleRemindersEnabled, sign out), ScheduleService, NotificationManager.
 - PT: PatientListView → PTPatientsViewModel (PTService.listMyPatients, session.ptProfileId). PatientDetailView → PTService.getPatient, RehabService (currentPlan, updatePlanNotes). PTJourneyMapView → RehabService (fetchPlan, saveACLPlan). PTSettingsView → PTService.myPTProfile, AuthService.
 
 ---
 
 ## Views (Concise)
 
-**Patient onboarding**: WelcomeView (Get Started / Log In) → CreateAccount or SelectSignUp → CreateAccount (email, password, DOB, gender, access code, etc.) or PTCreateAccount (PT sign up). Then PairDeviceView (BLE scan, pair) → CalibrateDeviceView or TestCalibrationView (starting/max position) → AllSetView → PTDetailView (tab).
+**Patient onboarding**: WelcomeView (Login / Get Started) → CreateAccountView (account type: Patient or PT; patient fields: DOB, gender, access code, etc.; PT fields: license, NPI, etc.). Patient → ptDetail; PT → patientList. Pairing (optional): Add button → PairDeviceView (BLE scan, pair) → CalibrateDeviceView or TestCalibrationView (starting/max position) → AllSetView → ptDetail.
 
-**Patient main**: PTDetailView shows PT info and current rehab plan; tap plan → JourneyMapView (nodes from RehabService, unlock by order). Lesson flow: DirectionsView1/2 → LessonView (LessonEngine, BLE flex value) → AssessmentView → CompletionView (range gained, etc.). PatientSettingsView: profile, link PT (access code), sign out.
+**Patient main**: PTDetailView (Dashboard tab): PT info, current rehab plan, "My Schedule" (ScheduleVisualizerView), Create/Edit Schedule → RehabOverviewView, RecoveryChartWeekView, ActivityConsistencyCard. RehabOverviewView: days/times (up to 2 per day), Allow Reminders toggle, Confirm Schedule → saves to ScheduleService, PatientService.setScheduleRemindersEnabled, NotificationManager. Lesson flow: DirectionsView1/2 → LessonView (LessonEngine, BLE flex value) → AssessmentView → CompletionView (range gained, etc.). PatientSettingsView: profile, Allow reminders toggle (synced with schedule_reminders_enabled), Allow camera, link PT (access code), sign out.
 
-**PT flow**: SelectSignUpView → PTCreateAccountView or login → PatientListView (PTService.listMyPatients). PatientDetailView: demographics, notes (saved to plan), “Select Rehab Plan” → CategorySelectView → InjurySelectView → PTJourneyMapView (nodes editable, save to RehabService.saveACLPlan). PTSettingsView: profile, sign out.
+**PT flow**: WelcomeView → CreateAccountView (PT type) or login → PatientListView (PTService.listMyPatients). PatientDetailView: demographics, notes (saved to plan), RecoveryChartWeekView, ActivityConsistencyCard, "Select Rehab Plan" → CategorySelectView → InjurySelectView → PTJourneyMapView (nodes editable, save to RehabService.saveACLPlan). PTSettingsView: profile, sign out.
 
-**Shared UI**: Theme (`.rrHeadline`, `.rrTitle`, `.rrBody`, `.rrCallout`, `.rrCaption`; brand colors; RRSpace). Components: PrimaryButton, SecondaryButton, BackButton, FormTextField, FormSecureField, FormDateField, FormMenuField, StepIndicator, BodyPartCard, NodeView, PTNodeView, etc. All screens use `.rrPageBackground()`; toolbar back via `BackButton()` except WelcomeView.
+**Shared UI**: Theme (`.rrHeadline`, `.rrTitle`, `.rrBody`, `.rrCallout`, `.rrCaption`; brand colors; RRSpace). Components: PrimaryButton, SecondaryButton, BackButton, FormTextField, FormSecureField, FormDateField, FormMenuField, StepIndicator, BodyPartCard, NodeView, PTNodeView, BluetoothStatusIndicator, bluetoothPopupOverlay, ScheduleVisualizerView, RecoveryChartWeekView, ActivityConsistencyCard, PatientTabBar (Dashboard, Journey, Settings, Add). All screens use `.rrPageBackground()`; toolbar back via `BackButton()` except WelcomeView.
 
 ---
 
@@ -74,9 +76,11 @@
 
 - **Profiles**: AuthService `Profile` (id, user_id, role, email, first_name, last_name, phone). PatientService `PatientProfileRow`; PTService `PTProfileRow`, `SimplePatient`. RehabService: `AssignmentRow`, `ProgramRow`, `Lesson`, `PlanRow`, `LessonNode` (id, title, icon, isLocked, reps, restSec); plan nodes stored as JSON in `rehab_plans.nodes`.
 - **rehab_plans** (Supabase): id, pt_profile_id, patient_profile_id, category, injury, status (e.g. active/archived), created_at, nodes (JSON array), notes. One active plan per patient; save via RehabService.saveACLPlan/updatePlanNotes.
+- **patient_schedule_slots** (Supabase): id, patient_profile_id, day_of_week (0–6), slot_time ("HH:mm:ss"); 30-min blocks; ScheduleService get/save.
+- **patient_profiles.schedule_reminders_enabled**: Boolean; PatientService.getScheduleRemindersEnabled/setScheduleRemindersEnabled.
 - **Linking**: pt_patient_map links patient_profile_id ↔ pt_profile_id. Patients link via access code (PatientService.linkPatientViaAccessCode, RPCs); PT adds patients via PTService.addPatient (RPC add_patient_with_mapping).
-- **Scheduling**: `SchedulingModels.swift` – Weekday, DayTime; schedule preferences (start date, days, times) used in RehabOverviewView and journey/summary UI.
-- **Cache keys**: `CacheKey` enum (e.g. patientProfile, rehabPlan, patientList, authProfile); use for getCached/setCached/invalidate so keys stay consistent.
+- **Scheduling**: `SchedulingModels.swift` – Weekday, DayTime; ScheduleService.ScheduleSlot (day_of_week, slot_time); schedule preferences used in RehabOverviewView, ScheduleVisualizerView, NotificationManager.
+- **Cache keys**: `CacheKey` enum (e.g. patientProfile, rehabPlan, patientList, authProfile, patientSchedule, scheduleRemindersEnabled); use for getCached/setCached/invalidate so keys stay consistent.
 
 ---
 
@@ -109,11 +113,12 @@ When adding a screen or feature:
 ## Key Files
 
 - **Router**: `RealRehabPractice/App/AppRouter.swift`
-- **App entry**: `RealRehabPractice/App/RealRehabPracticeApp.swift`
+- **App entry**: `RealRehabPractice/App/RealRehabPracticeApp.swift` (NotificationDelegate, rescheduleRemindersIfNeeded on scenePhase, scheduleReminderTapped → journeyMap)
+- **NotificationDelegate**: `RealRehabPractice/App/NotificationDelegate.swift` (deep link on schedule reminder tap)
 - **Theme**: `RealRehabPractice/Components/Theme.swift`
-- **Components**: `RealRehabPractice/Components/Components.swift`
+- **Components**: `RealRehabPractice/Components/Components.swift`, `PatientTabBar.swift`, `ScheduleVisualizerView.swift`
 - **Models**: `RealRehabPractice/Models/SchedulingModels.swift`, `SessionContext.swift`
-- **Services**: `RealRehabPractice/Services/` (Auth, Patient, PT, Rehab, Telemetry, Supabase, Cache, BLE, LessonEngine)
+- **Services**: `RealRehabPractice/Services/` (Auth, Patient, PT, Rehab, Schedule, NotificationManager, Telemetry, Supabase, Cache, BLE, LessonEngine)
 - **Xcode project**: `RealRehabPractice/RealRehabPractice.xcodeproj/project.pbxproj` (edit when adding files)
 
 ---
@@ -124,4 +129,4 @@ When adding a screen or feature:
 
 ---
 
-*Last updated: January 2025 – Supabase backend, BLE, cache, SessionContext, current routes and services.*
+*Last updated: February 2025 – ScheduleService, NotificationManager, patient_schedule_slots, schedule_reminders_enabled, PatientTabBar, ScheduleVisualizerView, RecoveryChartWeekView, ActivityConsistencyCard, unified CreateAccountView, BluetoothStatusIndicator, bluetoothPopupOverlay.*

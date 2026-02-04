@@ -11,12 +11,20 @@ import CoreBluetooth
 
 struct LessonView: View {
     @EnvironmentObject var router: Router
+    @Environment(\.scenePhase) private var scenePhase
     let reps: Int?
     let restSec: Int?
+    let lessonId: UUID?
     
     @StateObject private var engine: LessonEngine
     @StateObject private var ble = BluetoothManager.shared
     @State private var hasStarted = false
+    
+    // Lesson progress (offline resume)
+    @State private var elapsedBaseSeconds: Int = 0
+    @State private var elapsedReferenceTime: Date? = nil
+    @State private var elapsedDisplaySeconds: Int = 0
+    @State private var elapsedTimer: Timer? = nil
     
     // Calibration values
     @State private var maxCalibrationValue: Int? = nil
@@ -114,9 +122,10 @@ struct LessonView: View {
         return CGFloat(clampedPosition)
     }
     
-    init(reps: Int? = nil, restSec: Int? = nil) {
+    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil) {
         self.reps = reps
         self.restSec = restSec
+        self.lessonId = lessonId
         // Initialize engine with parameters if provided (for Knee Extension only)
         if let reps = reps, let restSec = restSec {
             // Convert restSec (Int seconds) to TimeInterval
@@ -223,12 +232,19 @@ struct LessonView: View {
                     .tint(Color.brandDarkBlue)
                     .padding(.horizontal, 16)
                 
-                Text("Repetitions: \(engine.repCount)/\(engine.repTarget)")
-                    .font(.rrCallout)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
-                    .background(Color.gray.opacity(0.25))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                VStack(spacing: 4) {
+                    Text("Repetitions: \(engine.repCount)/\(engine.repTarget)")
+                        .font(.rrCallout)
+                    if hasStarted && elapsedDisplaySeconds > 0 {
+                        Text(formatElapsed(elapsedDisplaySeconds))
+                            .font(.rrCaption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
+                .background(Color.gray.opacity(0.25))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .padding(.top, 8)
             
@@ -357,6 +373,9 @@ struct LessonView: View {
                 ) {
                     guard !hasStarted else { return }
                     hasStarted = true
+                    elapsedBaseSeconds = 0
+                    elapsedReferenceTime = Date()
+                    startElapsedTimer()
                     // Zero IMU value when lesson begins
                     ble.zeroIMUValue()
                     engine.reset()
@@ -376,6 +395,7 @@ struct LessonView: View {
                 useLargeFont: true
             ) {
                 engine.stopGuidedSimulation()
+                persistAndCompleteLesson()
                 router.go(.assessment)
             }
             .padding(.horizontal, 24)
@@ -402,12 +422,23 @@ struct LessonView: View {
         }
         .onAppear {
             loadCalibrationData()
+            restoreLessonProgressIfNeeded()
         }
         .onDisappear {
             engine.stopGuidedSimulation()
             stopSensorValidation()
             countdownTimer?.invalidate()
             countdownTimer = nil
+            stopElapsedTimer()
+            persistLessonDraft()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                persistLessonDraft()
+            }
+        }
+        .onChange(of: engine.repCount) { _, _ in
+            persistLessonDraft()
         }
         .onChange(of: ble.currentFlexSensorValue) { oldValue, newValue in
             if let value = newValue {
@@ -433,6 +464,75 @@ struct LessonView: View {
         .bluetoothPopupOverlay()
     }
     
+    // MARK: - Lesson Progress (Offline Resume)
+
+    private func formatElapsed(_ seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return String(format: "%dm %ds", m, s)
+    }
+
+    private func currentElapsedSeconds() -> Int {
+        guard let ref = elapsedReferenceTime else { return 0 }
+        return elapsedBaseSeconds + Int(Date().timeIntervalSince(ref))
+    }
+
+    private func startElapsedTimer() {
+        stopElapsedTimer()
+        elapsedTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { _ in
+            Task { @MainActor in
+                elapsedDisplaySeconds = currentElapsedSeconds()
+                persistLessonDraft()
+            }
+        }
+        RunLoop.main.add(elapsedTimer!, forMode: .common)
+        elapsedDisplaySeconds = currentElapsedSeconds()
+    }
+
+    private func stopElapsedTimer() {
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
+    }
+
+    private func restoreLessonProgressIfNeeded() {
+        guard let lessonId = lessonId else { return }
+        guard let draft = LocalLessonProgressStore.shared.loadDraft(lessonId: lessonId) else { return }
+        guard draft.status != "completed" else { return }
+        engine.restoreSession(repCount: draft.repsCompleted)
+        elapsedBaseSeconds = draft.elapsedSeconds
+        elapsedReferenceTime = draft.updatedAt
+        elapsedDisplaySeconds = draft.elapsedSeconds
+        hasStarted = true
+        startElapsedTimer()
+        setupRepCountingCallback()
+        startSensorValidation()
+        engine.startGuidedSimulation(skipInitialWait: true)
+    }
+
+    private func persistLessonDraft() {
+        guard let lessonId = lessonId else { return }
+        let repsCompleted = engine.repCount
+        let repsTarget = engine.repTarget
+        let elapsed = currentElapsedSeconds()
+        let status = repsCompleted >= repsTarget ? "completed" : "inProgress"
+        LocalLessonProgressStore.shared.saveDraft(lessonId: lessonId, repsCompleted: repsCompleted, repsTarget: repsTarget, elapsedSeconds: elapsed, status: status)
+    }
+
+    private func persistAndCompleteLesson() {
+        guard let lessonId = lessonId else { return }
+        let repsCompleted = engine.repCount
+        let repsTarget = engine.repTarget
+        let elapsed = currentElapsedSeconds()
+        LocalLessonProgressStore.shared.saveDraft(lessonId: lessonId, repsCompleted: repsCompleted, repsTarget: repsTarget, elapsedSeconds: elapsed, status: "completed")
+        Task {
+            guard let profile = try? await AuthService.myProfile(),
+                  let patientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id) else { return }
+            OutboxSyncManager.shared.enqueueLessonProgress(patientProfileId: patientProfileId, lessonId: lessonId, repsCompleted: repsCompleted, repsTarget: repsTarget, elapsedSeconds: elapsed, status: "completed")
+            LocalLessonProgressStore.shared.clearDraft(lessonId: lessonId)
+        }
+        stopElapsedTimer()
+    }
+
     // MARK: - Calibration Loading
     
     private func loadCalibrationData() {

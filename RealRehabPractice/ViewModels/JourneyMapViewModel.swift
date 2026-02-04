@@ -4,7 +4,7 @@ import Supabase
 import PostgREST
 
 public struct JourneyNode: Identifiable {
-    public let id = UUID()
+    public let id: UUID
     public let icon: String
     public let isLocked: Bool
     public let title: String
@@ -14,7 +14,8 @@ public struct JourneyNode: Identifiable {
     public let nodeType: JourneyNodeType
     public let phase: Int
     
-    public init(icon: String, isLocked: Bool, title: String, yOffset: CGFloat, reps: Int = 20, restSec: Int = 3, nodeType: JourneyNodeType = .lesson, phase: Int = 1) {
+    public init(id: UUID, icon: String, isLocked: Bool, title: String, yOffset: CGFloat, reps: Int = 20, restSec: Int = 3, nodeType: JourneyNodeType = .lesson, phase: Int = 1) {
+        self.id = id
         self.icon = icon
         self.isLocked = isLocked
         self.title = title
@@ -71,11 +72,12 @@ public final class JourneyMapViewModel: ObservableObject {
                 let phases = planNodes.map { max(1, min(4, $0.phase ?? 1)) }
                 let yOffsets = ACLJourneyModels.layoutYOffsets(phases: phases, width: 390)
                 nodes = planNodes.enumerated().map { index, dto in
+                    let lessonId = UUID(uuidString: dto.id) ?? UUID()
                     let iconName = dto.icon == "person" ? "figure.stand" : "video.fill"
                     let yOffset = index < yOffsets.count ? yOffsets[index] : CGFloat(index) * ACLJourneyModels.baseStep
                     let nodeType: JourneyNodeType = (dto.nodeType == "benchmark") ? .benchmark : .lesson
                     let phase = phases[index]
-                    return JourneyNode(icon: iconName, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
+                    return JourneyNode(id: lessonId, icon: iconName, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
                 }
                 print("✅ JourneyMapViewModel: loaded \(nodes.count) nodes from plan")
             } else {

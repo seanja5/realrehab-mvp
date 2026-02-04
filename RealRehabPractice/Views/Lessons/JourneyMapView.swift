@@ -251,9 +251,9 @@ struct JourneyMapView: View {
                                     }
                                     let node = vm.nodes[idx]
                                     if node.title.lowercased().contains("knee extension") {
-                                        router.go(.directionsView1(reps: node.reps, restSec: node.restSec))
+                                        router.go(.directionsView1(reps: node.reps, restSec: node.restSec, lessonId: node.id))
                                     } else {
-                                        router.go(.directionsView1(reps: nil, restSec: nil))
+                                        router.go(.directionsView1(reps: nil, restSec: nil, lessonId: node.id))
                                     }
                                     showCallout = false
                                     selectedNodeIndex = nil

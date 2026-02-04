@@ -63,6 +63,11 @@ final class LessonEngine: ObservableObject {
         pausedFill = 0.0
         stopGuidedSimulation()
     }
+
+    /// Restore session state for offline resume (sets repCount without full reset)
+    func restoreSession(repCount: Int) {
+        self.repCount = min(repCount, repTarget)
+    }
     
     // Pause animation at current fill level
     func pauseAnimation() {

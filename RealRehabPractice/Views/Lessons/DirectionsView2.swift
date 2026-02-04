@@ -11,6 +11,13 @@ struct DirectionsView2: View {
     @EnvironmentObject var router: Router
     let reps: Int?
     let restSec: Int?
+    let lessonId: UUID?
+    
+    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil) {
+        self.reps = reps
+        self.restSec = restSec
+        self.lessonId = lessonId
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -30,7 +37,7 @@ struct DirectionsView2: View {
                 title: "Next",
                 useLargeFont: true
             ) {
-                router.go(.lesson(reps: reps, restSec: restSec))
+                router.go(.lesson(reps: reps, restSec: restSec, lessonId: lessonId))
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 24)

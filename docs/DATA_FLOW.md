@@ -194,39 +194,66 @@ flowchart TB
 | **Destination** | Cloud: rehab.session_metrics.range_of_motion_deg or derived from calibrations. Device: cache for display. |
 
 ```mermaid
-flowchart LR
-    subgraph app [Application]
-        A1[1. Set start + max]
-        A2[2. Move leg / reps]
-        A3[3. Set max again]
-        A4[4. View completion]
+flowchart TB
+    subgraph Calibration ["1. Calibration - Before Lesson"]
+        A1[User sets starting position]
+        A2[User sets maximum position]
+        T1[Transaction: stage, flex_value, knee_angle_deg]
+        P1[Processing: TelemetryService.saveCalibration]
+        D1[Cloud: telemetry.calibrations]
+        D2[Device: cache]
+        A1 --> T1
+        A2 --> T1
+        T1 --> P1
+        P1 --> D1
+        P1 --> D2
     end
 
-    subgraph tx [Transaction]
-        T1[stage, flex_value]
-        T2[Raw flex, IMU]
-        T3[New max flex_value]
-        T4[Original max, reassessment max]
+    subgraph Realtime ["2. Realtime Lesson - During"]
+        B1[User extends leg up]
+        B2[User flexes leg down]
+        B3[User keeps or drifts thigh]
+        B4[Animation at top - user at max or not]
+        T2[Transaction: Raw flex, IMU, calibration rest/max, PT restSec]
+        P2[Processing: Convert to degrees, compare to animation, check 25 deg, 10 deg max, IMU plus minus 7]
+        R1[Green: on pace, centered, max reached - Display only]
+        R2[Red: Speed up, Slow down, Center thigh, Extend further - Display only]
+        B1 --> T2
+        B2 --> T2
+        B3 --> T2
+        B4 --> T2
+        T2 --> P2
+        P2 --> R1
+        P2 --> R2
     end
 
-    subgraph proc [Processing]
-        P1[saveCalibration]
-        P2[Convert, compare, validate]
-        P3[saveCalibration]
-        P4[Compute difference]
+    subgraph Reassessment ["3. Reassessment - After Lesson"]
+        C1[User extends to max again]
+        C2[User taps Set Maximum Position]
+        T3[Transaction: New maximum_position flex_value]
+        P3[Processing: TelemetryService.saveCalibration]
+        D3[Cloud: telemetry.calibrations]
+        D4[Device: cache invalidated]
+        C1 --> C2
+        C2 --> T3
+        T3 --> P3
+        P3 --> D3
+        P3 --> D4
     end
 
-    subgraph dest [Destination]
-        D1[(telemetry.calibrations)]
-        D2[Screen only]
-        D3[(telemetry.calibrations)]
-        D4[(session_metrics) + cache]
+    subgraph RangeGained ["4. Range Gained"]
+        T4[Transaction: Original max, Reassessment max]
+        P4[Processing: Compute difference]
+        D5[Cloud: session_metrics or derived]
+        D6[Device: cache for display]
+        T4 --> P4
+        P4 --> D5
+        P4 --> D6
     end
 
-    A1 --> T1 --> P1 --> D1
-    A2 --> T2 --> P2 --> D2
-    A3 --> T3 --> P3 --> D3
-    A4 --> T4 --> P4 --> D4
+    Calibration --> Realtime
+    Realtime --> Reassessment
+    Reassessment --> RangeGained
 ```
 
 **Realtime green/red** (during lesson):

@@ -2,131 +2,167 @@
 
 **RealRehab**: Connecting patients and physical therapists through sensor-guided rehabilitation.
 
+*Layout: Each slide title = user action. Left = app screen (add screenshot). Right = data stored (Supabase tables/columns).*
+
 ---
 
 ## Part A: Project to Date
 
-### Slide 1: The 3 Most Important Modules (In Order)
+### Slide 1: Sign Up, Login, Link to PT
 
-**1. Identity** → **2. Rehab Plan** → **3. Lesson Engine**
+**Action**: User signs up (email, password), logs in, or patient enters PT access code.
 
-| Order | Module | What it does |
-|-------|--------|--------------|
-| 1 | Identity | Sign up, login, link patient to PT |
-| 2 | Rehab Plan | PT creates lesson plan; patient progress saved |
-| 3 | Lesson Engine | During lesson: green/red feedback from sensors |
+**Left**: Screenshot of sign-up, login, or "Link to PT" (access code) screen.  
+**Right**: Data stored (see table below).
 
----
-
-### Slide 2: Module 1 – Identity (Data Flow)
-
-```mermaid
-flowchart LR
-    A[User signs up or links to PT] --> B[App writes to cloud database]
-    B --> C[(Cloud - permanent)]
-    B -.-> D[Cache on device for offline launch]
-```
-
-**What happens**: Sign up, login, patient links to PT via code.  
-**Data**: Login, name, DOB, surgery date, practice info.  
-**Stored**: Cloud database (permanent). Device cache (temporary, for offline).
+| Data collected | Processing | Where stored | Duration |
+|----------------|------------|--------------|----------|
+| email, password | Supabase Auth | auth.users | Permanent |
+| user_id, role, email, first_name, last_name, phone | AuthService.ensureProfile | accounts.profiles | Permanent |
+| profile_id, date_of_birth, gender, surgery_date, phone | PatientService | accounts.patient_profiles | Permanent |
+| profile_id, practice_name, license_number, npi_number | PTService | accounts.pt_profiles | Permanent |
+| patient_profile_id, pt_profile_id, status | RPC link_patient_via_access_code | accounts.pt_patient_map | Permanent |
+| authProfile, resolvedSession | CacheService | Device cache | 24h–7 days (offline) |
 
 ---
 
-### Slide 3: Module 2 – Rehab Plan (Data Flow)
+### Slide 2: PT Saves Rehab Plan
 
-```mermaid
-flowchart LR
-    A[PT saves plan] --> B[(Cloud - permanent)]
-    A2[Patient does lesson] --> C[Device file]
-    C --> D[Upload queue]
-    D -->|when online| B
-```
+**Action**: PT selects patient, builds journey map (lessons, reps, rest), taps Confirm.
 
-**What happens**: PT creates plan → cloud. Patient does lesson → device file → upload queue → cloud when online.  
-**Data**: Lesson list, reps done, time spent.  
-**Stored**: Cloud (plans). Device file + queue (progress) → Cloud (when online).
+**Left**: Screenshot of PT Journey Map or Confirm Journey screen.  
+**Right**: Data stored (see table below).
+
+| Data collected | Processing | Where stored | Duration |
+|----------------|------------|--------------|----------|
+| pt_profile_id, patient_profile_id, category, injury, status, nodes (JSONB), notes | RehabService.saveACLPlan | accounts.rehab_plans | Permanent |
+| rehabPlan, plan | CacheService | Device cache | 5–10 min |
 
 ---
 
-### Slide 4: Module 3 – Lesson Engine (Data Flow)
+### Slide 3: Patient Pairs Device + Calibrates
 
-```mermaid
-flowchart LR
-    A[Patient moves leg] --> B[Sensors check every 100ms]
-    B --> C[Display green or red on screen]
-    C --> D[Not stored anywhere]
-```
+**Action**: Patient pairs BLE knee brace; holds starting position, then max extension.
 
-**What happens**: Flex + IMU check every 100ms. Green = on pace; red = too fast, too slow, leg drift, or max not reached.  
-**Data**: Sensor values (flex, IMU).  
-**Stored**: Screen only. Nothing persisted today.
+**Left**: Screenshot of Pair Device or Calibrate screen.  
+**Right**: Data stored (see table below).
+
+| Data collected | Processing | Where stored | Duration |
+|----------------|------------|--------------|----------|
+| hardware_serial, status | RPC get_or_create_device_assignment | telemetry.devices | Permanent |
+| device_id, patient_profile_id, pt_profile_id | RPC | telemetry.device_assignments | Permanent |
+| device_assignment_id, stage, flex_value, knee_angle_deg | TelemetryService.saveCalibration | telemetry.calibrations | Permanent |
+| calibrationPoints | CacheService | Device cache | 10 min |
 
 ---
 
-### Slide 5: Full Order of All Modules
+### Slide 4: Patient Sets Schedule
 
-```mermaid
-flowchart LR
-    M1[1. Registration] --> M2[2. PT-Patient Link]
-    M2 --> M3[3. Prescription]
-    M3 --> M4[4. Device Pairing]
-    M4 --> M5[5. Calibration]
-    M5 --> M6[6. Schedule]
-    M6 --> M7[7. Training]
-    M7 --> M8[8. Progress]
-```
+**Action**: Patient selects days and 30‑min slots; toggles Allow Reminders.
+
+**Left**: Screenshot of My Schedule or schedule picker screen.  
+**Right**: Data stored (see table below).
+
+| Data collected | Processing | Where stored | Duration |
+|----------------|------------|--------------|----------|
+| patient_profile_id, day_of_week, slot_time | ScheduleService.saveSchedule | accounts.patient_schedule_slots | Permanent |
+| schedule_reminders_enabled | PatientService.setScheduleRemindersEnabled | accounts.patient_profiles | Permanent |
+| patientSchedule | CacheService | Device cache | 24h |
+| T-15, T notifications | NotificationManager | iOS local | 14-day window |
+
+---
+
+### Slide 5: Patient Does Lesson
+
+**Action**: Patient taps Begin Lesson, performs reps, pauses or completes.
+
+**Left**: Screenshot of lesson screen (green/red box, rep count).  
+**Right**: Data stored (see table below).
+
+| Data collected | Processing | Where stored | Duration |
+|----------------|------------|--------------|----------|
+| lesson_id, reps_completed, reps_target, elapsed_seconds, status | LocalLessonProgressStore | RealRehabLessonProgress/{lessonId}.json | Until sync/complete |
+| Same payload | OutboxSyncManager | RealRehabOutbox/outbox.json | Until sync succeeds |
+| Same payload | RPC upsert_patient_lesson_progress | accounts.patient_lesson_progress | Permanent |
+| lessonProgress | CacheService | Device cache | 10 min |
+
+---
+
+### Slide 6: Lesson Engine (During Lesson – Screen Only)
+
+**Action**: Patient moves leg; sensors check pace and form every 100ms.
+
+**Left**: Screenshot of lesson screen showing green or red feedback.  
+**Right**: Not stored (screen only). See table for what is processed.
+
+| Data collected | Processing | Where stored | Duration |
+|----------------|------------|--------------|----------|
+| flex_value, IMU value (raw) | Convert to degrees; compare to animation | Screen (green/red) | Not stored |
+| — | validateMaxReached (10°), validateMovementSpeed (25°), validateIMU (±7) | — | — |
+
+*Nothing persisted today. Future: Bucket G will store error counts.*
+
+---
+
+### Slide 7: Patient or PT Views Progress
+
+**Action**: Patient/PT opens journey map; sees reps done per lesson.
+
+**Left**: Screenshot of Journey Map with progress bars.  
+**Right**: Data read from (see table below).
+
+| Data used | Processing | Where read from | Duration |
+|-----------|------------|-----------------|----------|
+| patient_profile_id, lesson_id, reps_completed, reps_target, status | RehabService.getLessonProgress | accounts.patient_lesson_progress | Permanent |
+| Merged with local draft | — | LocalLessonProgressStore | Until sync |
+| lessonProgress | CacheService | Device cache | 10 min |
 
 ---
 
 ## Part B: Next Three Future Modules
 
-### Slide 6: Future 1 – Schedule (Done)
+### Slide 8: Future – Sensor Insights (Bucket G)
 
-```mermaid
-flowchart LR
-    A[Patient picks days and times] --> B[Writes to cloud database]
-    B --> C[(Cloud - permanent)]
-    B --> D[Schedules notifications on device]
-```
+**Action**: Lesson turns red or green; app counts each error type.
 
-**What happens**: Patient selects days and 30‑min slots; toggles reminders.  
-**Data**: Days, times, reminders on/off.  
-**Stored**: Cloud database (permanent). Device notifications (local).
+**Left**: Same as Slide 6 (lesson screen).  
+**Right**: Data stored (see table below).
+
+| Data to collect | Processing | Where stored | Duration |
+|-----------------|------------|--------------|----------|
+| valgus_left_count, valgus_right_count, max_not_reached_count, speed_too_slow_count, speed_too_fast_count, shake_count, anterior_migration_count | LessonView validation; aggregate on rep/pause/complete | RealRehabSensorInsights (device) → Outbox → accounts.lesson_sensor_insights (cloud) | Device until sync; Cloud permanent |
 
 ---
 
-### Slide 7: Future 2 – Sensor Insights (Bucket G)
+### Slide 9: Future – Schedule (Already Done)
 
-```mermaid
-flowchart LR
-    A[Lesson turns red or green] --> B[Count each error type]
-    B --> C[Write to device file]
-    C --> D[Add to upload queue]
-    D -->|when online| E[(Cloud - PT dashboard)]
-```
+**Action**: Patient picks days and times; toggles reminders.
 
-**What happens**: Count errors (too fast, too slow, leg drift, max not reached, shake, knee over toe). Write to device file; add to queue; sync to cloud when online.  
-**Data**: Error counts per lesson.  
-**Stored**: Device file → Upload queue → Cloud (when online).
+**Left**: Screenshot of My Schedule screen.  
+**Right**: Data stored (see table below).
+
+| Data collected | Processing | Where stored | Duration |
+|----------------|------------|--------------|----------|
+| patient_profile_id, day_of_week, slot_time | ScheduleService | accounts.patient_schedule_slots | Permanent |
+| schedule_reminders_enabled | PatientService | accounts.patient_profiles | Permanent |
 
 ---
 
-### Slide 8: Future 3 – Data Analysis
+### Slide 10: Future – Data Analysis
 
-```mermaid
-flowchart LR
-    A[(Cloud - existing data)] --> B[PT queries by patient and date]
-    B --> C[Display trends and recovery charts]
-```
+**Action**: PT queries by patient and date; views trends and recovery charts.
 
-**What happens**: PT views trends, recovery charts, “patient improved on X this week.”  
-**Data**: Quality, stability, biomechanics across lessons.  
-**Stored**: Reads from cloud. No new writes.
+**Left**: Screenshot of PT dashboard with trends (future UI).  
+**Right**: Data read from (see table below).
+
+| Data used | Processing | Where read from | Duration |
+|-----------|------------|-----------------|----------|
+| lesson_quality_metrics, lesson_stability_metrics, lesson_biomechanics_metrics | Queries by patient_profile_id, date range | Cloud (read-only) | — |
 
 ---
 
-## Slide Conversion Notes
+## Slide Layout Notes
 
-- Slides 1–8. One module per slide.
-- Mermaid: [mermaid.live](https://mermaid.live) → export PNG/SVG for slides.
+- **Left**: Add screenshot of the app screen for that action.
+- **Right**: Use the tables above (or a simplified box) showing Supabase table.column and storage location.
+- Mermaid: [mermaid.live](https://mermaid.live) for any diagrams. Export PNG/SVG for slides.

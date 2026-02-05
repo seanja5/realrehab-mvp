@@ -120,10 +120,10 @@ public enum ACLPhase: Int, CaseIterable {
 }
 
 // MARK: - Lesson Node Model (shared between PT and Patient)
+// Note: Display icons come from lessonIconSystemName(for: title), not from a stored icon field.
 struct LessonNode: Identifiable {
     let id = UUID()
     var title: String
-    var icon: IconType
     var isLocked: Bool
     var reps: Int
     var restSec: Int
@@ -143,21 +143,8 @@ struct LessonNode: Identifiable {
     var enableKneeBendAngle: Bool = false
     var enableTimeHoldingPosition: Bool = false
     
-    enum IconType {
-        case person
-        case video
-        
-        var systemName: String {
-            switch self {
-            case .person: return "figure.stand"
-            case .video: return "video.fill"
-            }
-        }
-    }
-    
     init(
         title: String,
-        icon: IconType = .video,
         isLocked: Bool = false,
         reps: Int = 12,
         restSec: Int = 3,
@@ -165,7 +152,6 @@ struct LessonNode: Identifiable {
         phase: Int = 1
     ) {
         self.title = title
-        self.icon = icon
         self.isLocked = isLocked
         self.reps = reps
         self.restSec = restSec
@@ -173,8 +159,8 @@ struct LessonNode: Identifiable {
         self.phase = phase
     }
     
-    static func lesson(title: String, icon: IconType = .video, isLocked: Bool = false, reps: Int = 12, restSec: Int = 3, phase: Int) -> LessonNode {
-        var node = LessonNode(title: title, icon: icon, isLocked: isLocked, reps: reps, restSec: restSec, nodeType: .lesson, phase: phase)
+    static func lesson(title: String, isLocked: Bool = false, reps: Int = 12, restSec: Int = 3, phase: Int) -> LessonNode {
+        var node = LessonNode(title: title, isLocked: isLocked, reps: reps, restSec: restSec, nodeType: .lesson, phase: phase)
         if node.title.lowercased().contains("wall sit") {
             node.enableReps = false
             node.enableRestBetweenReps = false
@@ -189,7 +175,7 @@ struct LessonNode: Identifiable {
     }
     
     static func benchmark(title: String, phase: Int, isLocked: Bool = false) -> LessonNode {
-        LessonNode(title: title, icon: .video, isLocked: isLocked, reps: 0, restSec: 0, nodeType: .benchmark, phase: phase)
+        LessonNode(title: title, isLocked: isLocked, reps: 0, restSec: 0, nodeType: .benchmark, phase: phase)
     }
 }
 

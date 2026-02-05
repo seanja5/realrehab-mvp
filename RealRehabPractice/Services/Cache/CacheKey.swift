@@ -95,6 +95,11 @@ enum CacheKey {
         "plan:\(planId.uuidString)"
     }
 
+    // Default plan template (category/injury)
+    static func defaultPlanTemplate(category: String, injury: String) -> String {
+        "plan_template:\(category):\(injury)"
+    }
+
     // Resolved session (profileId, ptProfileId, role) for offline app launch
     static func resolvedSession(userId: UUID) -> String {
         "resolved_session:\(userId.uuidString)"

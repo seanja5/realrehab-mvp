@@ -33,7 +33,7 @@ enum RehabService {
   struct PlanNodeDTO: Codable {
     let id: String  // UUID as string
     let title: String
-    let icon: String  // "person" or "video"
+    let icon: String?  // Legacy; display uses lessonIconSystemName(for: title). Optional for backward compat.
     let isLocked: Bool
     let reps: Int
     let restSec: Int
@@ -51,6 +51,34 @@ enum RehabService {
     let created_at: Date?
     let nodes: [PlanNodeDTO]?  // Optional for backward compatibility
     let notes: String?  // Optional notes for the patient
+  }
+
+  struct PlanTemplateRow: Codable {
+    let id: UUID
+    let category: String
+    let injury: String
+    let nodes: [PlanNodeDTO]
+  }
+
+  /// Maps PlanNodeDTO array to LessonNode array (shared by loadPlan and loadDefaultPlan).
+  /// Display icons come from lessonIconSystemName(for: title), not from stored icon.
+  static func lessonNodes(from dtos: [PlanNodeDTO]) -> [LessonNode] {
+    dtos.map { dto in
+      let nodeType: JourneyNodeType = (dto.nodeType == "benchmark") ? .benchmark : .lesson
+      let phase = max(1, min(4, dto.phase ?? 1))
+      var node = LessonNode(title: dto.title, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
+      if node.nodeType == .lesson && node.title.lowercased().contains("wall sit") {
+        node.enableReps = false
+        node.enableRestBetweenReps = false
+        node.enableSets = false
+        node.enableRestBetweenSets = false
+        node.enableKneeBendAngle = true
+        node.enableTimeHoldingPosition = true
+        node.kneeBendAngle = 120
+        node.timeHoldingPosition = 30
+      }
+      return node
+    }
   }
 
   // Active assignment for current (patient) user
@@ -271,7 +299,7 @@ enum RehabService {
         PlanNodeDTO(
           id: node.id.uuidString,
           title: node.title,
-          icon: node.icon.systemName == "figure.stand" ? "person" : "video",
+          icon: "video",  // Legacy field; display uses lessonIconSystemName(for: title)
           isLocked: node.isLocked,
           reps: node.reps,
           restSec: node.restSec,
@@ -370,6 +398,35 @@ enum RehabService {
         }
       }
       print("❌ RehabService.fetchPlan error: \(error)")
+      throw error
+    }
+  }
+
+  // MARK: - Fetch default plan template (for new plans)
+  static func fetchDefaultPlan(category: String, injury: String) async throws -> [PlanNodeDTO]? {
+    let cacheKey = CacheKey.defaultPlanTemplate(category: category, injury: injury)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: [PlanNodeDTO].self, useDisk: true) {
+      print("✅ RehabService.fetchDefaultPlan: cache hit for \(category)/\(injury)")
+      return cached
+    }
+    do {
+      let rows: [PlanTemplateRow] = try await supabase
+        .schema("content")
+        .from("plan_templates")
+        .select("id,category,injury,nodes")
+        .eq("category", value: category)
+        .eq("injury", value: injury)
+        .limit(1)
+        .decoded(as: [PlanTemplateRow].self)
+      guard let template = rows.first else {
+        print("ℹ️ RehabService.fetchDefaultPlan: no template for \(category)/\(injury)")
+        return nil
+      }
+      print("✅ RehabService.fetchDefaultPlan: fetched \(template.nodes.count) nodes for \(category)/\(injury)")
+      await CacheService.shared.setCached(template.nodes, forKey: cacheKey, ttl: CacheService.TTL.plan, useDisk: true)
+      return template.nodes
+    } catch {
+      print("❌ RehabService.fetchDefaultPlan error: \(error)")
       throw error
     }
   }

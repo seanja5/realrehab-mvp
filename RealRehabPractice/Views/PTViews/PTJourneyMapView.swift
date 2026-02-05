@@ -9,7 +9,7 @@ struct PTJourneyMapView: View {
     @State private var errorMessage: String?
     
     // MARK: - State
-    @State private var nodes: [LessonNode] = ACLJourneyModels.defaultACLPlanNodes()
+    @State private var nodes: [LessonNode] = []
     
     @State private var showingAddPopover = false
     @State private var addSelection = 0
@@ -51,12 +51,18 @@ struct PTJourneyMapView: View {
         ZStack(alignment: .bottom) {
             content
             
+            if nodes.isEmpty && isLoading {
+                ProgressView("Loading plan...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.white.opacity(0.8))
+            }
+            
             // Confirm Journey button fixed at bottom
             VStack(spacing: 0) {
                 Spacer()
                 PrimaryButton(
                     title: isLoading ? "Saving..." : "Confirm Journey",
-                    isDisabled: isLoading
+                    isDisabled: isLoading || nodes.isEmpty
                 ) {
                     Task {
                         await confirmJourney()
@@ -102,45 +108,21 @@ struct PTJourneyMapView: View {
         isLoading = false
     }
     
-    // MARK: - Load Plan
+    // MARK: - Load Plan (edit existing)
     private func loadPlan() async {
-        guard let planId = planId else {
-            // No planId means creating new plan - use default nodes
-            return
-        }
-        
+        guard let planId = planId else { return }
         isLoading = true
         errorMessage = nil
-        
         do {
             guard let plan = try await RehabService.fetchPlan(planId: planId) else {
                 errorMessage = "Plan not found"
                 isLoading = false
                 return
             }
-            
-            // Convert PlanNodeDTO array to LessonNode array
             if let savedNodes = plan.nodes {
-                nodes = savedNodes.map { dto in
-                    let iconType: LessonNode.IconType = dto.icon == "person" ? .person : .video
-                    let nodeType: JourneyNodeType = (dto.nodeType == "benchmark") ? .benchmark : .lesson
-                    let phase = max(1, min(4, dto.phase ?? 1))
-                    var node = LessonNode(title: dto.title, icon: iconType, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
-                    if node.nodeType == .lesson && node.title.lowercased().contains("wall sit") {
-                        node.enableReps = false
-                        node.enableRestBetweenReps = false
-                        node.enableSets = false
-                        node.enableRestBetweenSets = false
-                        node.enableKneeBendAngle = true
-                        node.enableTimeHoldingPosition = true
-                        node.kneeBendAngle = 120
-                        node.timeHoldingPosition = 30
-                    }
-                    return node
-                }
+                nodes = RehabService.lessonNodes(from: savedNodes)
                 ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
                 print("✅ PTJourneyMapView: loaded \(nodes.count) nodes from plan")
-                
                 let remoteProgress = (try? await RehabService.getLessonProgress(patientProfileId: patientProfileId)) ?? [:]
                 var progress: [UUID: LessonProgressInfo] = [:]
                 for node in nodes where node.nodeType == .lesson {
@@ -159,7 +141,27 @@ struct PTJourneyMapView: View {
             errorMessage = error.localizedDescription
             print("❌ PTJourneyMapView.loadPlan error: \(error)")
         }
-        
+        isLoading = false
+    }
+
+    // MARK: - Load Default Plan (new plan from Supabase, fallback to ACLJourneyModels)
+    private func loadDefaultPlan() async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            if let templateNodes = try? await RehabService.fetchDefaultPlan(category: "Knee", injury: "ACL"),
+               !templateNodes.isEmpty {
+                nodes = RehabService.lessonNodes(from: templateNodes)
+                ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
+                print("✅ PTJourneyMapView: loaded \(nodes.count) nodes from default template")
+            } else {
+                nodes = ACLJourneyModels.defaultACLPlanNodes()
+                print("✅ PTJourneyMapView: using fallback default (\(nodes.count) nodes)")
+            }
+        } catch {
+            nodes = ACLJourneyModels.defaultACLPlanNodes()
+            print("⚠️ PTJourneyMapView: fetch failed, using fallback (\(nodes.count) nodes): \(error)")
+        }
         isLoading = false
     }
     
@@ -424,12 +426,21 @@ struct PTJourneyMapView: View {
             }
         }
         .task {
-            await loadPlan()
+            if planId != nil {
+                await loadPlan()
+            } else {
+                await loadDefaultPlan()
+            }
             ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
         }
         .refreshable {
             await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
-            await loadPlan()
+            if planId != nil {
+                await loadPlan()
+            } else {
+                await CacheService.shared.invalidate(CacheKey.defaultPlanTemplate(category: "Knee", injury: "ACL"))
+                await loadDefaultPlan()
+            }
             ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
         }
         .onAppear {

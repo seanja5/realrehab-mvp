@@ -45,12 +45,12 @@ From [CacheKey.swift](../RealRehabPractice/Services/Cache/CacheKey.swift): patie
 - **Flow**: Sign up → Supabase Auth + profiles; Create account → patient_profiles/pt_profiles; Link PT → pt_patient_map (RPC); Add patient → pt_patient_map (RPC)
 - **Storage**: Supabase only (no local-first for identity)
 
-### Bucket B: Rehab Plan and Lesson Progress
+### Bucket B: PT Creates Rehab Plan
 
-- **Tables**: accounts.rehab_plans, accounts.patient_lesson_progress
-- **Data**: Plan nodes (id, title, icon, isLocked, reps, restSec, nodeType, phase), notes; Lesson progress (reps_completed, reps_target, elapsed_seconds, status)
-- **Flow**: PT creates/edits plan → Supabase rehab_plans; Patient does lesson → LocalLessonProgressStore (disk) → OutboxSyncManager (disk) → RPC upsert when online → Supabase patient_lesson_progress; PT/Patient views journey map → Supabase → Cache → UI
-- **Storage**: Local-first for lesson progress (draft + outbox); Cloud for plans and synced progress
+- **Tables**: accounts.rehab_plans
+- **Data**: Plan metadata (category, injury, status, notes); Lesson nodes as JSONB: order, node types (lesson vs benchmark), phase (1–4), lesson parameters (reps, restSec, sets, restBetweenSets, kneeBendAngle, timeHoldingPosition), title, icon, isLocked
+- **Flow**: PT selects patient → builds journey map (Knee/ACL, phases, lesson order, types within each phase, parameters per lesson) → taps Confirm → RehabService.saveACLPlan → Supabase rehab_plans; Cache invalidated
+- **Storage**: Cloud (Supabase); Cache for UI (short TTL)
 
 ### Bucket C: Schedule Data
 
@@ -59,12 +59,12 @@ From [CacheKey.swift](../RealRehabPractice/Services/Cache/CacheKey.swift): patie
 - **Flow**: Patient sets schedule → Supabase patient_schedule_slots; Toggle reminders → Supabase patient_profiles; NotificationManager schedules local notifications from slots
 - **Storage**: Supabase; Cache for UI; Notifications stored locally by iOS
 
-### Bucket D: Device and Calibration Data
+### Bucket D: Device Pairing
 
-- **Tables**: telemetry.devices, telemetry.device_assignments, telemetry.calibrations
-- **Data**: bluetooth_identifier, stage (starting_position/maximum_position), flex_value, knee_angle_deg
-- **Flow**: Pair device → RPC get_or_create_device_assignment; Calibrate → Supabase calibrations; Used by LessonView for degree conversion
-- **Storage**: Supabase only
+- **Tables**: telemetry.devices, telemetry.device_assignments
+- **Data**: bluetooth_identifier, device_id, patient_profile_id, pt_profile_id
+- **Flow**: Pair device → RPC get_or_create_device_assignment → telemetry.devices, telemetry.device_assignments
+- **Storage**: Supabase only. *Calibration data (min/max) is in Bucket F (Lesson Engine).*
 
 ### Bucket E: PT-Patient Management
 
@@ -73,12 +73,12 @@ From [CacheKey.swift](../RealRehabPractice/Services/Cache/CacheKey.swift): patie
 - **Flow**: PT adds patient (RPC), deletes mapping; PT views list/detail → Supabase → Cache
 - **Storage**: Supabase; Cache for list/detail
 
-### Bucket F: Lesson Engine – Real-Time Display (Green/Red)
+### Bucket F: Lesson Engine – Calibration, Realtime Display, Reassessment, Range Gained
 
-- **Tables**: None (display only; not stored)
-- **Data**: Raw flex sensor value, raw IMU value; converted to degrees and position; compared to animation expected position
-- **Flow**: User moves leg → Flex sensor + IMU stream → Convert to degrees (calibration) → Compare to animation (PT-set speed via restSec) → Show green or red on screen
-- **Storage**: Screen only. Validation runs every 100ms. **Not persisted anywhere today** – see Bucket G (Future) for where this will be stored.
+- **Tables**: telemetry.calibrations, telemetry.devices, telemetry.device_assignments; rehab.session_metrics (range_of_motion_deg for range gained)
+- **Data**: Calibration (stage, flex_value, knee_angle_deg); raw flex/IMU during lesson; reassessment max; range gained (computed: reassessment max − original max)
+- **Flow**: (1) Patient calibrates: starting_position, maximum_position → TelemetryService.saveCalibration → telemetry.calibrations; cache. (2) Patient does lesson: flex/IMU stream → convert to degrees (uses calibration) → compare to animation → green/red on screen (not stored). (3) Reassessment after lesson: patient extends to max → save new maximum_position → telemetry.calibrations. (4) Range gained: original max + reassessment max → compute difference → display; stored locally and in cloud (rehab.session_metrics or derived from calibrations)
+- **Storage**: Calibration and reassessment → Cloud (telemetry.calibrations); Device (cache). Range gained → computed from calibrations; stored locally (cache) and cloud (rehab.session_metrics or calibration-derived). Realtime green/red → screen only (Bucket G future for error counts).
 - **Tolerances** (from LessonView/LessonEngine): Flex position = 25° (keep pace); Max extension = 10°; IMU = ±7 (keep thigh centered). PT sets rep speed via restSec per lesson.
 
 ### Bucket G: Sensor-Based Raw Insights (During Lesson) – FUTURE
@@ -88,17 +88,24 @@ From [CacheKey.swift](../RealRehabPractice/Services/Cache/CacheKey.swift): patie
 - **Flow**: Same as Bucket F validation → increment counters → Local file (RealRehabSensorInsights) + Outbox → RPC when online → Supabase; PT views via dashboard
 - **Storage**: Local-first (RealRehabSensorInsights, Outbox); Supabase when synced
 
+### Bucket H: Lesson Progress (Saving Reps and Status)
+
+- **Tables**: accounts.patient_lesson_progress
+- **Data**: lesson_id, reps_completed, reps_target, elapsed_seconds, status
+- **Flow**: Patient does lesson → LocalLessonProgressStore (disk) → OutboxSyncManager (disk) → RPC upsert when online → Supabase patient_lesson_progress; PT/Patient views journey map → Supabase → Cache → UI
+- **Storage**: Local-first (draft + outbox); Cloud when synced
+
 ---
 
-## 3. Top 3 Most Impactful Buckets
+## 3. Top 3 Most Impactful Buckets (Project to Date)
 
 | Rank | Bucket                             | Rationale                                                                                                                                                                                         |
 | ---- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | **Rehab Plan and Lesson Progress** | Core product flow. Most complex: local-first lesson draft, outbox sync, RPC upsert, bidirectional PT/patient views. Highest data volume during lessons (reps, elapsed, status every rep + timer). |
-| 2    | **Lesson Engine – Real-Time Display** | Heart of the lesson experience. Flex + IMU stream, degree conversion, animation sync. Every rep: green/red feedback based on 25° pace, 10° max, ±7 IMU. PT sets speed. Not stored today.           |
-| 3    | **Identity and Account Data**      | Foundation for all flows. Auth, profiles, PT-patient linking. Every user touches this on signup, login, and profile/link actions.                                                                 |
+| 1    | **Identity and Account Data**      | Foundation for all flows. Auth, profiles, PT-patient linking. Every user touches this on signup, login, and profile/link actions.                                                                 |
+| 2    | **PT Creates Rehab Plan**          | Core prescription flow. PT defines knee/ACL plan, phases, lesson order, types, and parameters (reps, restSec, sets, etc.). Stored in rehab_plans.                                                  |
+| 3    | **Lesson Engine** | Calibration (min/max) → lesson (green/red) → reassessment (new max) → range gained. Calibration and reassessment in telemetry.calibrations; range gained computed and stored locally + cloud. Realtime feedback uses calibration; not persisted (Bucket G future). |
 
-*Schedule Data (Bucket C) supports engagement but is not core data capture; it can be reviewed under Bucket C.*
+*Schedule (Bucket C), Lesson Progress (Bucket H), and Sensor Insights (Bucket G) support the core flow.*
 
 ---
 
@@ -111,111 +118,109 @@ For each bucket, the diagram uses four subgraphs:
 - **Transaction**: What information is captured or sent (e.g., "Plan details: patient, injury type, lessons", "Reps done, reps goal, time spent")
 - **Destination**: Where it goes (cloud database or device storage)
 
-### Bucket 1: Rehab Plan and Lesson Progress
+### Bucket B: PT Creates Rehab Plan
 
 ```mermaid
 flowchart TB
-    subgraph app1 [Application - User Actions]
-        A1A[PT creates/edits plan in Journey Map]
-        A1B[PT taps Confirm Journey]
-        A1C[Patient taps Begin Lesson]
-        A1D[Patient completes rep / pauses / leaves]
-        A1E[PT opens patient Journey Map]
-        A1F[Patient opens Journey Map]
+    subgraph appB [Application - User Actions]
+        AB1[PT selects patient]
+        AB2[PT builds journey map: Knee/ACL, phases, lesson order]
+        AB3[PT sets lesson types and parameters per node]
+        AB4[PT taps Confirm Journey]
     end
 
-    subgraph proc1 [Processing]
-        P1A[Save new plan and replace the old one]
-        P1B[Store progress on device so it is not lost if offline]
-        P1C[Queue progress to upload when internet is available]
+    subgraph procB [Processing]
+        PB1[Archive existing active plan for patient]
+        PB2[Save new plan with nodes as JSONB]
+        PB3[Invalidate plan cache]
     end
 
-    subgraph tx1 [Transaction - What is captured]
-        T1A[Plan details: patient, injury type, lesson list, notes]
-        T1B[Lesson progress: reps done, reps goal, time spent, status]
-        T1C[Same as T1B - saved locally]
+    subgraph txB [Transaction - What is captured]
+        TB1[Plan metadata: category, injury, status, notes]
+        TB2[Lesson nodes: order, nodeType, phase, reps, restSec, sets, restBetweenSets, kneeBendAngle, timeHoldingPosition, title, icon, isLocked]
     end
 
-    subgraph dest1 [Destination]
-        D1A[(Cloud: rehab plans)]
-        D1B[(Cloud: lesson progress)]
-        D1C[Device: lesson draft file]
-        D1D[Device: upload queue]
-        D1E[Device: cached progress]
+    subgraph destB [Destination]
+        DB1[(Cloud: accounts.rehab_plans)]
+        DB2[Device: cached plan for UI]
     end
 
-    A1A --> P1A --> T1A
-    A1B --> P1A --> T1A --> D1A
-    A1C --> P1B --> T1B --> D1C
-    A1D --> P1B --> T1B --> D1C
-    A1D --> P1C --> T1C --> D1D
-    D1D -->|when online| D1B
-    A1E --> D1B
-    A1E --> D1E
-    A1F --> D1B
-    A1F --> D1E
+    AB1 --> AB2 --> AB3 --> AB4
+    AB4 --> PB1 --> PB2 --> TB1
+    PB2 --> TB2
+    TB1 --> DB1
+    TB2 --> DB1
+    PB3 --> DB2
 ```
 
-### Bucket 2: Lesson Engine – Real-Time Display (Green/Red)
+### Bucket F: Lesson Engine – Calibration, Realtime Display, Reassessment, Range Gained
 
-*This diagram shows what happens during every lesson, in real time, on screen. Data is processed but **not stored** today.*
+*Full flow: Calibrate (min/max) → Do lesson (green/red) → Reassessment (new max) → Range gained (computed and stored).*
 
 ```mermaid
 flowchart TB
-    subgraph appLE [Application - User Actions]
-        LE1[User extends leg up]
-        LE2[User flexes leg down]
-        LE3[User keeps thigh centered]
-        LE4[User drifts thigh left or right]
-        LE5[Animation reaches top - user at max]
-        LE6[Animation reaches top - user not at max]
+    subgraph flow [Lesson Flow - Module 3]
+        direction TB
+        F1[1. Calibrate]
+        F2[2. Do Lesson]
+        F3[3. Reassessment]
+        F4[4. Range Gained]
     end
 
-    subgraph txLE [Transaction - What is captured]
-        TLE1[Raw flex sensor value]
-        TLE2[Raw IMU value zeroed at lesson start]
-        TLE3[Calibration: rest degrees, max degrees]
-        TLE4[PT-set speed: restSec per lesson]
+    subgraph cal [1. Calibration - Before Lesson]
+        AC1[Patient sets starting position]
+        AC2[Patient sets maximum position]
+        TC1[stage, flex_value, knee_angle_deg]
+        PC1[TelemetryService.saveCalibration]
+        DC1[(Cloud: telemetry.calibrations)]
+        DC2[Device: cache]
     end
 
-    subgraph procLE [Processing - Every 100ms]
-        PLE1[Convert flex to degrees using calibration]
-        PLE2[Compare leg position to animation expected position]
-        PLE3[Check if within 25 degrees of expected]
-        PLE4[Check if within 10 degrees of max at top]
-        PLE5[Check if IMU within plus minus 7 of center]
+    subgraph lesson [2. Realtime Display - During Lesson]
+        AL1[Patient moves leg]
+        TL1[Raw flex, IMU; calibration rest/max]
+        PL1[Convert to degrees; compare to animation]
+        RL1[Green or red on screen - not stored]
     end
 
-    subgraph resultLE [Result - Display Only]
-        R1[Green box - on pace, centered, max reached]
-        R2[Red box - Slow down - more than 25 deg ahead, rate 1.5x]
-        R3[Red box - Speed up - more than 25 deg behind, rate 0.5x]
-        R4[Red box - Keep thigh centered - IMU outside plus minus 7]
-        R5[Red box - Extend leg further - not within 10 deg of max]
+    subgraph reassess [3. Reassessment - After Lesson]
+        AR1[Patient extends to max again]
+        TR1[New maximum_position flex_value]
+        PR1[TelemetryService.saveCalibration]
+        DR1[(Cloud: telemetry.calibrations)]
+        DR2[Device: cache invalidated]
     end
 
-    LE1 --> TLE1
-    LE2 --> TLE1
-    LE3 --> TLE2
-    LE4 --> TLE2
-    LE5 --> TLE1
-    LE6 --> TLE1
-    TLE1 --> PLE1
-    TLE2 --> PLE5
-    TLE3 --> PLE1
-    TLE4 --> PLE2
-    PLE1 --> PLE2
-    PLE2 --> PLE3
-    PLE3 --> R1
-    PLE3 --> R2
-    PLE3 --> R3
-    PLE4 --> R1
-    PLE4 --> R5
-    PLE5 --> R1
-    PLE5 --> R4
+    subgraph range [4. Range Gained]
+        TR2[Original max from calibration]
+        TR3[Reassessment max from step 3]
+        PR2[Compute: reassessment max - original max]
+        DR3[(Cloud: rehab.session_metrics or derived from calibrations)]
+        DR4[Device: cache for display]
+    end
+
+    F1 --> cal
+    F2 --> lesson
+    F3 --> reassess
+    F4 --> range
+    AC1 --> PC1 --> TC1 --> DC1
+    AC2 --> PC1 --> TC1 --> DC1
+    DC1 --> DC2
+    AL1 --> TL1 --> PL1 --> RL1
+    DC1 -.->|read for lesson| TL1
+    AR1 --> TR1 --> PR1 --> DR1
+    DR1 --> DR2
+    DR1 --> TR3
+    DC1 --> TR2
+    TR2 --> PR2
+    TR3 --> PR2
+    PR2 --> DR3
+    PR2 --> DR4
 ```
 
-**When the box turns red:**
+**Calibration and reassessment** both write to `telemetry.calibrations` (device_assignment_id, stage, flex_value, knee_angle_deg, recorded_at). **Range gained** is computed from the two most recent maximum_position records; stored locally (cache) and in cloud (rehab.session_metrics.range_of_motion_deg or derived).
+
+**Realtime green/red** (during lesson):
 
 | Scenario | Tolerance | Processing | Message |
 |----------|-----------|------------|---------|
@@ -307,6 +312,41 @@ flowchart TB
     A4B --> P4C --> T4A --> D4C
     A4B --> P4C --> T4A --> D4D
     A4C --> P4B --> T4B --> D4B
+```
+
+### Bucket H: Lesson Progress
+
+```mermaid
+flowchart TB
+    subgraph appH [Application - User Actions]
+        AH1[Patient taps Begin Lesson]
+        AH2[Patient completes rep / pauses / leaves]
+        AH3[PT or Patient opens Journey Map]
+    end
+
+    subgraph procH [Processing]
+        PH1[Store progress on device so it is not lost if offline]
+        PH2[Queue progress to upload when internet is available]
+        PH3[Read progress from cloud and merge with local draft]
+    end
+
+    subgraph txH [Transaction - What is captured]
+        TH1[lesson_id, reps_completed, reps_target, elapsed_seconds, status]
+    end
+
+    subgraph destH [Destination]
+        DH1[Device: RealRehabLessonProgress draft file]
+        DH2[Device: RealRehabOutbox upload queue]
+        DH3[(Cloud: accounts.patient_lesson_progress)]
+        DH4[Device: cached progress for UI]
+    end
+
+    AH1 --> PH1 --> TH1 --> DH1
+    AH2 --> PH1 --> TH1 --> DH1
+    AH2 --> PH2 --> TH1 --> DH2
+    DH2 -->|when online| DH3
+    AH3 --> PH3 --> DH3
+    AH3 --> DH4
 ```
 
 ### Bucket G: Sensor-Based Raw Insights (During Lesson) – FUTURE

@@ -418,7 +418,7 @@ flowchart TB
 
     subgraph txH [Transaction - What is captured]
         TH1[lesson_id, reps_completed, reps_target, elapsed_seconds, status]
-        TH2[lesson_id (restart request)]
+        TH2["lesson_id (restart request)"]
     end
 
     subgraph procH [Processing]
@@ -433,7 +433,7 @@ flowchart TB
         DH2[Device: RealRehabOutbox]
         DH3[(Cloud: accounts.patient_lesson_progress)]
         DH4[Device: cached progress for UI]
-        DH5[Device: draft removed (restart)]
+        DH5["Device: draft removed (restart)"]
     end
 
     AH1 --> TH1 --> PH1 --> DH1

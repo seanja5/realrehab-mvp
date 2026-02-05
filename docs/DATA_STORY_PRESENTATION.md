@@ -264,13 +264,16 @@ Three new modules to capture **exercise quality and movement biomechanics** for 
 
 ### Slide 17: Future Data Flow Diagram
 
+*Aligned with [DATA_FLOW.md](DATA_FLOW.md) Bucket G. Shows three cloud tables per Future Modules 1–3.*
+
 ```mermaid
 flowchart TB
     subgraph future_app [Application - Sensor Events]
-        F1[Lesson runs with validation]
-        F2[Shake detection]
-        F3[Leg drift logging]
-        F4[Knee over toe detection]
+        F1[Leg drifts left or right]
+        F2[Did not extend leg far enough]
+        F3[Moving too slow or too fast]
+        F4[Leg shakes or wobbles]
+        F5[Knee goes over toe]
     end
 
     subgraph future_proc [Processing]
@@ -281,10 +284,10 @@ flowchart TB
     end
 
     subgraph future_tx [Transaction - What is captured]
-        T1[Failed reps, speed errors, leg drift errors]
-        T2[Times leg shook]
-        T3[Times leg drifted left or right]
-        T4[Times knee went over toe]
+        T1[Times leg drifted left or right]
+        T2[Reps not completed fully, too slow, too fast]
+        T3[Times leg shook, knee over toe]
+        T4[Rep duration, time spent in error]
     end
 
     subgraph future_dest [Destination]
@@ -296,9 +299,10 @@ flowchart TB
     end
 
     F1 --> FP1
-    F2 --> FP2
+    F2 --> FP1
     F3 --> FP1
-    F4 --> FP1
+    F4 --> FP2
+    F5 --> FP1
     FP1 --> FP3
     FP2 --> FP3
     FP3 --> T1

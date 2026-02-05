@@ -340,7 +340,9 @@ flowchart TB
     subgraph destG [Destination]
         DG1[Device: sensor insights file]
         DG2[Device: upload queue]
-        DG3[(Cloud: PT dashboard)]
+        DG3[(Cloud: quality metrics)]
+        DG4[(Cloud: stability metrics)]
+        DG5[(Cloud: biomechanics metrics)]
     end
 
     AG1 --> PG1
@@ -361,6 +363,8 @@ flowchart TB
     PG4 --> DG2
     DG1 --> DG2
     DG2 -->|when online| DG3
+    DG2 -->|when online| DG4
+    DG2 -->|when online| DG5
 ```
 
 ---

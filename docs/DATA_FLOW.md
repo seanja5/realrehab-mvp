@@ -405,24 +405,27 @@ flowchart TB
 
 ### Bucket H: Lesson Progress
 
-*Processing: **Device** for draft and queue. **Cloud** when syncing (RPC validates status, upserts).*
+*Processing: **Device** for draft, restart reset, and queue. **Cloud** when syncing (RPC validates status, upserts).*
 
 ```mermaid
 flowchart TB
     subgraph appH [Application - User Actions]
         AH1[Patient taps Begin Lesson]
         AH2[Patient completes rep / pauses / leaves]
+        AH4[Patient taps Restart Lesson]
         AH3[PT or Patient opens Journey Map]
     end
 
     subgraph txH [Transaction - What is captured]
         TH1[lesson_id, reps_completed, reps_target, elapsed_seconds, status]
+        TH2[lesson_id (restart request)]
     end
 
     subgraph procH [Processing]
         PH1[Device: Store draft for offline resume]
         PH2[Device: Queue for upload; when online Cloud: RPC validates status inProgress or completed; upsert]
         PH3[Device: Read from cloud; merge with local draft]
+        PH4[Device: Clear local draft; reset progress state]
     end
 
     subgraph destH [Destination]
@@ -430,11 +433,13 @@ flowchart TB
         DH2[Device: RealRehabOutbox]
         DH3[(Cloud: accounts.patient_lesson_progress)]
         DH4[Device: cached progress for UI]
+        DH5[Device: draft removed (restart)]
     end
 
     AH1 --> TH1 --> PH1 --> DH1
     AH2 --> TH1 --> PH1 --> DH1
     AH2 --> TH1 --> PH2 --> DH2
+    AH4 --> TH2 --> PH4 --> DH5
     DH2 -->|when online sent to RPC| DH3
     AH3 --> PH3 --> DH3
     AH3 --> PH3 --> DH4

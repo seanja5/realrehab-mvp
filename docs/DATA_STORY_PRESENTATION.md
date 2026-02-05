@@ -220,6 +220,7 @@
 
 **User Action**
 - Patient taps Begin Lesson; performs reps; pauses, leaves, or completes
+- Patient can restart a lesson (resets progress)
 - PT or patient opens Journey Map to view progress
 
 **Suggested Screenshot:** Lesson screen with rep count, or Journey Map with progress bars.
@@ -231,6 +232,7 @@
 | App Action | Data Captured | Processing (Raw→Processed) | Storage & Retention |
 |------------|---------------|----------------------------|---------------------|
 | Rep/pause/complete | lesson_id, reps_completed, reps_target, elapsed_seconds, status | Store draft for offline resume | Device: RealRehabLessonProgress/{lessonId}.json |
+| Restart lesson | lesson_id | Clear local draft; reset progress | Device: delete RealRehabLessonProgress/{lessonId}.json |
 | — | Same payload | Queue for upload when online | Device: RealRehabOutbox/outbox.json |
 | When online | Same payload | RPC validates status (inProgress \| completed); upsert | Cloud: accounts.patient_lesson_progress |
 | View Journey Map | — | Read from cloud; merge with local draft | Device: cache (lessonProgress) |

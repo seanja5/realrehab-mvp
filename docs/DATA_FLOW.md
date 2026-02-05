@@ -131,7 +131,7 @@ flowchart TB
 
     subgraph procB [Processing]
         PB1[Archive existing active plan for patient]
-        PB2[Save new plan with nodes as JSONB]
+        PB2[Convert LessonNode to PlanNodeDTO; encode JSONB; hardcode category=Knee injury=ACL; trim notes]
         PB3[Invalidate plan cache]
     end
 
@@ -153,6 +153,33 @@ flowchart TB
     PB3 --> DB2
 ```
 
+### Bucket D: Device Pairing
+
+```mermaid
+flowchart TB
+    subgraph appD [Application - User Actions]
+        AD1[Patient pairs BLE knee brace]
+    end
+
+    subgraph procD [Processing]
+        PD1[RPC get_or_create_device_assignment]
+    end
+
+    subgraph txD [Transaction - What is captured]
+        TD1[bluetooth_identifier]
+        TD2[device_id, patient_profile_id, pt_profile_id]
+    end
+
+    subgraph destD [Destination]
+        DD1[(Cloud: telemetry.devices)]
+        DD2[(Cloud: telemetry.device_assignments)]
+    end
+
+    AD1 --> TD1 --> PD1 --> TD2
+    PD1 --> DD1
+    PD1 --> DD2
+```
+
 ### Bucket F: Lesson Engine – Calibration, Realtime Display, Reassessment, Range Gained
 
 *Full flow: Calibrate (min/max) → Do lesson (green/red) → Reassessment (new max) → Range gained (computed and stored).*
@@ -162,8 +189,8 @@ flowchart TB
 | | |
 |---|---|
 | **Application** | Patient taps "Set Starting Position" while leg is bent ~90°; then taps "Set Maximum Position" while leg is fully extended. |
-| **Transaction** | device_assignment_id, stage (starting_position \| maximum_position), flex_value (degrees), knee_angle_deg, recorded_at |
-| **Processing** | TelemetryService.saveCalibration → insert into telemetry.calibrations; invalidate calibration cache |
+| **Transaction** | Raw flex sensor value (185–300) → convertToDegrees() → flex_value (degrees), stage, knee_angle_deg, recorded_at |
+| **Processing** | Convert raw sensor to degrees; TelemetryService.saveCalibration → insert into telemetry.calibrations; invalidate calibration cache |
 | **Destination** | Cloud: telemetry.calibrations. Device: cache (calibrationPoints, used when lesson loads) |
 
 #### Step 2: Realtime Display (During Lesson)
@@ -180,8 +207,8 @@ flowchart TB
 | | |
 |---|---|
 | **Application** | Patient extends leg to max again; taps "Set Maximum Position." |
-| **Transaction** | device_assignment_id, stage (maximum_position), flex_value (degrees), recorded_at |
-| **Processing** | TelemetryService.saveCalibration → insert new row into telemetry.calibrations; invalidate calibration cache |
+| **Transaction** | Raw flex sensor value → convertToDegrees() → flex_value (degrees), stage (maximum_position), recorded_at |
+| **Processing** | Convert raw sensor to degrees; TelemetryService.saveCalibration → insert new row into telemetry.calibrations; invalidate calibration cache |
 | **Destination** | Cloud: telemetry.calibrations. Device: cache invalidated. |
 
 #### Step 4: Range Gained
@@ -198,8 +225,8 @@ flowchart TB
     subgraph Calibration ["1. Calibration - Before Lesson"]
         A1[User sets starting position]
         A2[User sets maximum position]
-        T1[Transaction: stage, flex_value, knee_angle_deg]
-        P1[Processing: TelemetryService.saveCalibration]
+        T1[Raw flex - convertToDegrees - stage, flex_value degrees, knee_angle_deg]
+        P1[Processing: Convert raw to degrees; saveCalibration]
         D1[Cloud: telemetry.calibrations]
         D2[Device: cache]
         A1 --> T1
@@ -230,8 +257,8 @@ flowchart TB
     subgraph Reassessment ["3. Reassessment - After Lesson"]
         C1[User extends to max again]
         C2[User taps Set Maximum Position]
-        T3[Transaction: New maximum_position flex_value]
-        P3[Processing: TelemetryService.saveCalibration]
+        T3[Raw flex - convertToDegrees - New max flex_value degrees]
+        P3[Processing: Convert raw to degrees; saveCalibration]
         D3[Cloud: telemetry.calibrations]
         D4[Device: cache invalidated]
         C1 --> C2
@@ -283,17 +310,17 @@ flowchart TB
     end
 
     subgraph proc3 [Processing]
-        P3A[Create secure login account]
+        P3A[Create secure login account - password hashed by Supabase Auth]
         P3B[Create or update user profile]
         P3C[Save patient or PT info]
-        P3D[Securely link patient to PT]
+        P3D[Trim access code; RPC lookup; DB generates unique code on patient create]
     end
 
     subgraph tx3 [Transaction - What is captured]
         T3A[Login info: email, password, name]
         T3B[Patient info: DOB, gender, surgery date, phone]
         T3C[PT info: practice name, license, NPI]
-        T3D[Access code and patient link]
+        T3D[Access code - normalized; patient-PT link]
         T3E[Patient and PT link]
     end
 
@@ -313,6 +340,37 @@ flowchart TB
     A3E --> P3D --> T3E --> D3E
 ```
 
+### Bucket E: PT-Patient Management
+
+```mermaid
+flowchart TB
+    subgraph appE [Application - User Actions]
+        AE1[PT adds patient via RPC]
+        AE2[PT deletes mapping]
+        AE3[PT views patient list or detail]
+    end
+
+    subgraph procE [Processing]
+        PE1[RPC link_patient_to_pt or add patient]
+        PE2[RPC delete mapping]
+        PE3[Fetch from Supabase; cache list and detail]
+    end
+
+    subgraph txE [Transaction - What is captured]
+        TE1[patient_profile_id, pt_profile_id]
+        TE2[Patient list, patient detail, mapping status]
+    end
+
+    subgraph destE [Destination]
+        DE1[(Cloud: pt_patient_map)]
+        DE2[Device: cached list and detail]
+    end
+
+    AE1 --> TE1 --> PE1 --> DE1
+    AE2 --> PE2 --> DE1
+    AE3 --> PE3 --> TE2 --> DE2
+```
+
 ---
 
 ### Bucket 4: Schedule Data
@@ -328,7 +386,7 @@ flowchart TB
     subgraph proc4 [Processing]
         P4A[Replace old schedule with new selected times]
         P4B[Update reminder preference]
-        P4C[Schedule reminder notifications on device]
+        P4C[Parse slot_time HH:mm:ss; compute T-15 and T triggers for 14-day rolling window]
     end
 
     subgraph tx4 [Transaction - What is captured]
@@ -362,7 +420,7 @@ flowchart TB
 
     subgraph procH [Processing]
         PH1[Store progress on device so it is not lost if offline]
-        PH2[Queue progress to upload when internet is available]
+        PH2[Queue for upload; RPC validates status inProgress or completed when syncing]
         PH3[Read progress from cloud and merge with local draft]
     end
 

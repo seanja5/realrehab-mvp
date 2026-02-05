@@ -22,13 +22,14 @@
 
 ```mermaid
 flowchart LR
-    A[User signs up or links to PT] --> B[App saves login and profile]
-    B --> C[(Cloud)]
+    A[User signs up or links to PT] --> B[App writes to cloud database]
+    B --> C[(Cloud - permanent)]
+    B -.-> D[Cache on device for offline launch]
 ```
 
 **What happens**: Sign up, login, patient links to PT via code.  
 **Data**: Login, name, DOB, surgery date, practice info.  
-**Stored**: Cloud, permanent.
+**Stored**: Cloud database (permanent). Device cache (temporary, for offline).
 
 ---
 
@@ -36,13 +37,15 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[PT saves plan or patient does lesson] --> B[App saves on device first]
-    B --> C[When online, uploads to cloud]
+    A[PT saves plan] --> B[(Cloud - permanent)]
+    A2[Patient does lesson] --> C[Device file]
+    C --> D[Upload queue]
+    D -->|when online| B
 ```
 
-**What happens**: PT creates plan; patient does lesson; progress saved.  
+**What happens**: PT creates plan → cloud. Patient does lesson → device file → upload queue → cloud when online.  
 **Data**: Lesson list, reps done, time spent.  
-**Stored**: Device (offline) → Cloud (when online).
+**Stored**: Cloud (plans). Device file + queue (progress) → Cloud (when online).
 
 ---
 
@@ -50,13 +53,14 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Patient moves leg] --> B[Sensors check pace and form]
-    B --> C[Green or red on screen]
+    A[Patient moves leg] --> B[Sensors check every 100ms]
+    B --> C[Display green or red on screen]
+    C --> D[Not stored anywhere]
 ```
 
 **What happens**: Flex + IMU check every 100ms. Green = on pace; red = too fast, too slow, leg drift, or max not reached.  
-**Data**: Sensor values. Not stored today.  
-**Stored**: Screen only.
+**Data**: Sensor values (flex, IMU).  
+**Stored**: Screen only. Nothing persisted today.
 
 ---
 
@@ -81,14 +85,14 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Patient picks days and times] --> B[App saves schedule]
-    B --> C[(Cloud)] 
-    B --> D[Reminders on device]
+    A[Patient picks days and times] --> B[Writes to cloud database]
+    B --> C[(Cloud - permanent)]
+    B --> D[Schedules notifications on device]
 ```
 
 **What happens**: Patient selects days and 30‑min slots; toggles reminders.  
 **Data**: Days, times, reminders on/off.  
-**Stored**: Cloud + device notifications.
+**Stored**: Cloud database (permanent). Device notifications (local).
 
 ---
 
@@ -96,14 +100,15 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Lesson turns red or green] --> B[App counts each error type]
-    B --> C[Save on device]
-    C --> D[Upload to cloud when online]
+    A[Lesson turns red or green] --> B[Count each error type]
+    B --> C[Write to device file]
+    C --> D[Add to upload queue]
+    D -->|when online| E[(Cloud - PT dashboard)]
 ```
 
-**What happens**: Count errors (too fast, too slow, leg drift, max not reached, shake, knee over toe). Save on device; sync when online.  
+**What happens**: Count errors (too fast, too slow, leg drift, max not reached, shake, knee over toe). Write to device file; add to queue; sync to cloud when online.  
 **Data**: Error counts per lesson.  
-**Stored**: Device → Cloud (PT dashboard).
+**Stored**: Device file → Upload queue → Cloud (when online).
 
 ---
 
@@ -111,13 +116,13 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[All lesson metrics] --> B[PT sees trends over time]
-    B --> C[Recovery charts]
+    A[(Cloud - existing data)] --> B[PT queries by patient and date]
+    B --> C[Display trends and recovery charts]
 ```
 
 **What happens**: PT views trends, recovery charts, “patient improved on X this week.”  
 **Data**: Quality, stability, biomechanics across lessons.  
-**Stored**: Read from cloud. No new tables.
+**Stored**: Reads from cloud. No new writes.
 
 ---
 

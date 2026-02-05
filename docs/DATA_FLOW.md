@@ -1,6 +1,6 @@
 # RealRehab Data Flow Documentation
 
-Comprehensive data flow analysis and visual documentation for the RealRehab app. Organizes all data into buckets, identifies the top 3 most impactful modules, and shows Application (user action) → Processing → Transaction (data) → Destination (Supabase vs local storage).
+Comprehensive data flow analysis and visual documentation for the RealRehab app. Organizes all data into buckets, identifies the top 3 most impactful modules, and shows Application (user action) → Transaction (what is captured) → Processing (raw kept or transformed) → Destination (Supabase vs local storage).
 
 ---
 
@@ -111,14 +111,20 @@ From [CacheKey.swift](../RealRehabPractice/Services/Cache/CacheKey.swift): patie
 
 ## 4. Data Flow Diagrams
 
-For each bucket, the diagram uses four subgraphs:
+For each bucket, the diagram uses four subgraphs in order:
 
 - **Application**: What the user or sensor does (e.g., "Patient taps Begin Lesson", "PT saves plan")
-- **Processing**: What the app does with that action (e.g., "Save plan and replace old one", "Store progress on device so it's not lost offline")
-- **Transaction**: What information is captured or sent (e.g., "Plan details: patient, injury type, lessons", "Reps done, reps goal, time spent")
+- **Transaction**: What information is captured first (e.g., "Plan metadata and nodes", "Reps done, reps goal, time spent")
+- **Processing**: What the app does with that data—raw kept or transformed. Processing may happen on **Device** (before data reaches cloud) or in **Cloud** (RPC, trigger, Supabase Auth).
 - **Destination**: Where it goes (cloud database or device storage)
 
+**Two processing patterns:**
+- **Device → Cloud**: Transaction → Processing on device → Destination (cloud or device). Data is transformed before it reaches the database.
+- **Transaction → Cloud → Process**: Transaction → Sent to cloud → Processing runs in cloud (RPC, trigger, Auth). Data reaches the database first; processing happens there.
+
 ### Bucket B: PT Creates Rehab Plan
+
+*Processing: **Device**. Transaction → Device processes → Cloud.*
 
 ```mermaid
 flowchart TB
@@ -129,15 +135,15 @@ flowchart TB
         AB4[PT taps Confirm Journey]
     end
 
-    subgraph procB [Processing]
-        PB1[Archive existing active plan for patient]
-        PB2[Convert LessonNode to PlanNodeDTO; encode JSONB; hardcode category=Knee injury=ACL; trim notes]
-        PB3[Invalidate plan cache]
-    end
-
     subgraph txB [Transaction - What is captured]
         TB1[Plan metadata: category, injury, status, notes]
         TB2[Lesson nodes: order, nodeType, phase, reps, restSec, sets, restBetweenSets, kneeBendAngle, timeHoldingPosition, title, icon, isLocked]
+    end
+
+    subgraph procB [Processing - Device]
+        PB1[Archive existing active plan for patient]
+        PB2[Convert LessonNode to PlanNodeDTO; encode JSONB; hardcode category=Knee injury=ACL; trim notes]
+        PB3[Invalidate plan cache]
     end
 
     subgraph destB [Destination]
@@ -146,14 +152,18 @@ flowchart TB
     end
 
     AB1 --> AB2 --> AB3 --> AB4
-    AB4 --> PB1 --> PB2 --> TB1
-    PB2 --> TB2
-    TB1 --> DB1
-    TB2 --> DB1
+    AB4 --> TB1
+    AB4 --> TB2
+    TB1 --> PB1
+    TB2 --> PB2
+    PB1 --> PB2
+    PB2 --> DB1
     PB3 --> DB2
 ```
 
 ### Bucket D: Device Pairing
+
+*Processing: **Cloud**. Transaction → Sent to RPC → RPC processes in cloud (creates device, assignment) → Cloud.*
 
 ```mermaid
 flowchart TB
@@ -161,13 +171,12 @@ flowchart TB
         AD1[Patient pairs BLE knee brace]
     end
 
-    subgraph procD [Processing]
-        PD1[RPC get_or_create_device_assignment]
-    end
-
     subgraph txD [Transaction - What is captured]
         TD1[bluetooth_identifier]
-        TD2[device_id, patient_profile_id, pt_profile_id]
+    end
+
+    subgraph procD [Processing - Cloud]
+        PD1[RPC get_or_create_device_assignment - creates device and assignment in PostgreSQL]
     end
 
     subgraph destD [Destination]
@@ -175,7 +184,8 @@ flowchart TB
         DD2[(Cloud: telemetry.device_assignments)]
     end
 
-    AD1 --> TD1 --> PD1 --> TD2
+    AD1 --> TD1
+    TD1 -->|sent to RPC| PD1
     PD1 --> DD1
     PD1 --> DD2
 ```
@@ -186,47 +196,55 @@ flowchart TB
 
 #### Step 1: Calibration (Before Lesson)
 
+*Processing: **Device**. Transaction → Device processes (convertToDegrees) → Cloud.*
+
 | | |
 |---|---|
 | **Application** | Patient taps "Set Starting Position" while leg is bent ~90°; then taps "Set Maximum Position" while leg is fully extended. |
-| **Transaction** | Raw flex sensor value (185–300) → convertToDegrees() → flex_value (degrees), stage, knee_angle_deg, recorded_at |
-| **Processing** | Convert raw sensor to degrees; TelemetryService.saveCalibration → insert into telemetry.calibrations; invalidate calibration cache |
+| **Transaction** | Raw flex sensor value (185–300), stage (starting_position \| maximum_position), device_assignment_id, recorded_at |
+| **Processing** | **Device**: Convert raw sensor to degrees via convertToDegrees(); TelemetryService.saveCalibration → insert; invalidate calibration cache |
 | **Destination** | Cloud: telemetry.calibrations. Device: cache (calibrationPoints, used when lesson loads) |
 
 #### Step 2: Realtime Display (During Lesson)
 
+*Processing: **Device**. Transaction → Device processes → Screen only (not persisted).*
+
 | | |
 |---|---|
 | **Application** | Patient moves leg through reps; flex sensor and IMU stream continuously. |
-| **Transaction** | Raw flex sensor value, raw IMU value; calibration rest/max degrees (read from step 1) |
-| **Processing** | Every 100ms: convert flex to degrees using calibration; compare to animation expected position; validate max reached (10°), movement speed (25°), IMU center (±7); show green or red on screen |
+| **Transaction** | Raw flex sensor value, raw IMU value; calibration rest/max degrees (read from step 1); PT-set restSec per lesson |
+| **Processing** | **Device**: Every 100ms: convert raw flex to degrees; compare to animation; validate max (10°), pace (25°), IMU (±7); show green or red on screen |
 | **Destination** | Screen only (not persisted). Future: Bucket G will store error counts. |
 
 #### Step 3: Reassessment (After Lesson)
 
+*Processing: **Device**. Transaction → Device processes (convertToDegrees) → Cloud.*
+
 | | |
 |---|---|
 | **Application** | Patient extends leg to max again; taps "Set Maximum Position." |
-| **Transaction** | Raw flex sensor value → convertToDegrees() → flex_value (degrees), stage (maximum_position), recorded_at |
-| **Processing** | Convert raw sensor to degrees; TelemetryService.saveCalibration → insert new row into telemetry.calibrations; invalidate calibration cache |
+| **Transaction** | Raw flex sensor value, stage (maximum_position), device_assignment_id, recorded_at |
+| **Processing** | **Device**: Convert raw sensor to degrees via convertToDegrees(); TelemetryService.saveCalibration → insert new row; invalidate calibration cache |
 | **Destination** | Cloud: telemetry.calibrations. Device: cache invalidated. |
 
 #### Step 4: Range Gained
 
+*Processing: **Device**. Transaction (fetch from cloud) → Device processes (compute difference) → Device cache / Cloud (if stored).*
+
 | | |
 |---|---|
 | **Application** | Patient views Completion screen; app displays range gained. |
-| **Transaction** | Original max (from step 1 calibration); reassessment max (from step 3) |
-| **Processing** | TelemetryService.getAllMaximumCalibrationsForPatient → take two most recent maximum_position records → compute difference (reassessment max − original max) |
+| **Transaction** | Two most recent maximum_position records from telemetry.calibrations (original max from step 1; reassessment max from step 3) |
+| **Processing** | **Device**: TelemetryService.getAllMaximumCalibrationsForPatient → compute difference (reassessment max − original max); convert raw to degrees if needed |
 | **Destination** | Cloud: rehab.session_metrics.range_of_motion_deg or derived from calibrations. Device: cache for display. |
 
 ```mermaid
 flowchart TB
-    subgraph Calibration ["1. Calibration - Before Lesson"]
+    subgraph Calibration ["1. Calibration - Device processes then Cloud"]
         A1[User sets starting position]
         A2[User sets maximum position]
-        T1[Raw flex - convertToDegrees - stage, flex_value degrees, knee_angle_deg]
-        P1[Processing: Convert raw to degrees; saveCalibration]
+        T1[Transaction: Raw flex 185-300, stage, device_assignment_id, recorded_at]
+        P1[Processing Device: convertToDegrees; saveCalibration; invalidate cache]
         D1[Cloud: telemetry.calibrations]
         D2[Device: cache]
         A1 --> T1
@@ -236,15 +254,15 @@ flowchart TB
         P1 --> D2
     end
 
-    subgraph Realtime ["2. Realtime Lesson - During"]
+    subgraph Realtime ["2. Realtime - Device processes, Screen only"]
         B1[User extends leg up]
         B2[User flexes leg down]
         B3[User keeps or drifts thigh]
         B4[Animation at top - user at max or not]
-        T2[Transaction: Raw flex, IMU, calibration rest/max, PT restSec]
-        P2[Processing: Convert to degrees, compare to animation, check 25 deg, 10 deg max, IMU plus minus 7]
-        R1[Green: on pace, centered, max reached - Display only]
-        R2[Red: Speed up, Slow down, Center thigh, Extend further - Display only]
+        T2[Transaction: Raw flex, raw IMU, calibration rest/max, PT restSec]
+        P2[Processing Device: Convert to degrees; compare; validate 25 deg 10 deg IMU plus minus 7]
+        R1[Green: on pace, centered, max - Display only]
+        R2[Red: Speed up, Slow down, Center thigh, Extend - Display only]
         B1 --> T2
         B2 --> T2
         B3 --> T2
@@ -254,11 +272,11 @@ flowchart TB
         P2 --> R2
     end
 
-    subgraph Reassessment ["3. Reassessment - After Lesson"]
+    subgraph Reassessment ["3. Reassessment - Device processes then Cloud"]
         C1[User extends to max again]
         C2[User taps Set Maximum Position]
-        T3[Raw flex - convertToDegrees - New max flex_value degrees]
-        P3[Processing: Convert raw to degrees; saveCalibration]
+        T3[Transaction: Raw flex, stage maximum_position, device_assignment_id, recorded_at]
+        P3[Processing Device: convertToDegrees; saveCalibration; invalidate cache]
         D3[Cloud: telemetry.calibrations]
         D4[Device: cache invalidated]
         C1 --> C2
@@ -268,9 +286,9 @@ flowchart TB
         P3 --> D4
     end
 
-    subgraph RangeGained ["4. Range Gained"]
-        T4[Transaction: Original max, Reassessment max]
-        P4[Processing: Compute difference]
+    subgraph RangeGained ["4. Range Gained - Device processes"]
+        T4[Transaction: Two most recent max calibrations]
+        P4[Processing Device: Compute difference; convert raw to degrees if needed]
         D5[Cloud: session_metrics or derived]
         D6[Device: cache for display]
         T4 --> P4
@@ -299,6 +317,8 @@ flowchart TB
 
 ### Bucket 3: Identity and Account Data
 
+*Processing: **Mixed**. Signup: T3A → Cloud (Supabase Auth hashes password in cloud) → auth.users. Profiles: T3B/T3C → Device sends raw → Cloud. Link: T3D/T3E → Device trims (device) → RPC in cloud (cloud).*
+
 ```mermaid
 flowchart TB
     subgraph app3 [Application - User Actions]
@@ -309,38 +329,41 @@ flowchart TB
         A3E[PT adds patient]
     end
 
-    subgraph proc3 [Processing]
-        P3A[Create secure login account - password hashed by Supabase Auth]
-        P3B[Create or update user profile]
-        P3C[Save patient or PT info]
-        P3D[Trim access code; RPC lookup; DB generates unique code on patient create]
+    subgraph tx3 [Transaction - What is captured]
+        T3A[email, password, first_name, last_name, phone, role]
+        T3B[profile_id, date_of_birth, gender, surgery_date, phone, allow_notifications, allow_camera, intake_notes]
+        T3C[profile_id, practice_name, license_number, npi_number, contact_email, contact_phone]
+        T3D[access_code, patient_profile_id]
+        T3E[patient_profile_id, pt_profile_id]
     end
 
-    subgraph tx3 [Transaction - What is captured]
-        T3A[Login info: email, password, name]
-        T3B[Patient info: DOB, gender, surgery date, phone]
-        T3C[PT info: practice name, license, NPI]
-        T3D[Access code - normalized; patient-PT link]
-        T3E[Patient and PT link]
+    subgraph proc3 [Processing]
+        P3A[Cloud: Supabase Auth hashes password; create login account]
+        P3B[Device sends; Cloud: raw insert]
+        P3C[Device sends; Cloud: raw insert]
+        P3D[Device: trim access code; Cloud: RPC lookup; Cloud: trigger generates unique code on patient create]
     end
 
     subgraph dest3 [Destination]
-        D3A[(Cloud: login accounts)]
-        D3B[(Cloud: user profiles)]
-        D3C[(Cloud: patient profiles)]
-        D3D[(Cloud: PT profiles)]
-        D3E[(Cloud: patient-PT links)]
+        D3A[(Cloud: auth.users)]
+        D3B[(Cloud: accounts.profiles)]
+        D3C[(Cloud: accounts.patient_profiles)]
+        D3D[(Cloud: accounts.pt_profiles)]
+        D3E[(Cloud: accounts.pt_patient_map)]
     end
 
-    A3A --> P3A --> T3A --> D3A
-    A3A --> P3B --> T3A --> D3B
-    A3B --> P3C --> T3B --> D3C
-    A3C --> P3C --> T3C --> D3D
-    A3D --> P3D --> T3D --> D3E
-    A3E --> P3D --> T3E --> D3E
+    A3A --> T3A
+    T3A -->|sent to Auth| P3A --> D3A
+    T3A --> P3B --> D3B
+    A3B --> T3B --> P3C --> D3C
+    A3C --> T3C --> P3C --> D3D
+    A3D --> T3D --> P3D --> D3E
+    A3E --> T3E --> P3D --> D3E
 ```
 
 ### Bucket E: PT-Patient Management
+
+*Processing: **Cloud** for add/delete (RPCs). **Device** for view (fetch, cache).*
 
 ```mermaid
 flowchart TB
@@ -350,30 +373,33 @@ flowchart TB
         AE3[PT views patient list or detail]
     end
 
-    subgraph procE [Processing]
-        PE1[RPC link_patient_to_pt or add patient]
-        PE2[RPC delete mapping]
-        PE3[Fetch from Supabase; cache list and detail]
-    end
-
     subgraph txE [Transaction - What is captured]
         TE1[patient_profile_id, pt_profile_id]
-        TE2[Patient list, patient detail, mapping status]
+        TE2[pt_profile_id for list; patient_profile_id for detail - query keys]
+    end
+
+    subgraph procE [Processing]
+        PE1[Cloud: RPC link_patient_to_pt or add patient]
+        PE2[Cloud: RPC delete mapping]
+        PE3[Device: Fetch from Supabase; cache list and detail]
     end
 
     subgraph destE [Destination]
-        DE1[(Cloud: pt_patient_map)]
+        DE1[(Cloud: accounts.pt_patient_map)]
         DE2[Device: cached list and detail]
     end
 
-    AE1 --> TE1 --> PE1 --> DE1
+    AE1 --> TE1
+    TE1 -->|sent to RPC| PE1 --> DE1
     AE2 --> PE2 --> DE1
-    AE3 --> PE3 --> TE2 --> DE2
+    AE3 --> TE2 --> PE3 --> DE2
 ```
 
 ---
 
 ### Bucket 4: Schedule Data
+
+*Processing: **Device**. Transaction → Device processes (parse, compute triggers, schedule notifications) → Cloud + Device.*
 
 ```mermaid
 flowchart TB
@@ -383,32 +409,34 @@ flowchart TB
         A4C[Patient toggles Allow Reminders]
     end
 
-    subgraph proc4 [Processing]
-        P4A[Replace old schedule with new selected times]
-        P4B[Update reminder preference]
-        P4C[Parse slot_time HH:mm:ss; compute T-15 and T triggers for 14-day rolling window]
+    subgraph tx4 [Transaction - What is captured]
+        T4A[patient_profile_id, day_of_week 0-6, slot_time HH:mm:ss]
+        T4B[schedule_reminders_enabled boolean]
     end
 
-    subgraph tx4 [Transaction - What is captured]
-        T4A[Selected days and 30-min time slots]
-        T4B[Whether reminders are on or off]
+    subgraph proc4 [Processing - Device]
+        P4A[Replace old slots with new; delete then insert]
+        P4B[Update patient_profiles.schedule_reminders_enabled]
+        P4C[Parse slot_time; compute T-15 and T triggers for 14-day rolling window; schedule iOS notifications]
     end
 
     subgraph dest4 [Destination]
-        D4A[(Cloud: schedule slots)]
-        D4B[(Cloud: reminder preference)]
+        D4A[(Cloud: accounts.patient_schedule_slots)]
+        D4B[(Cloud: accounts.patient_profiles)]
         D4C[Device: cached schedule]
-        D4D[Device: notification schedule]
+        D4D[Device: iOS notification schedule]
     end
 
     A4A --> T4A
-    A4B --> P4A --> T4A --> D4A
-    A4B --> P4C --> T4A --> D4C
-    A4B --> P4C --> T4A --> D4D
-    A4C --> P4B --> T4B --> D4B
+    A4B --> T4A --> P4A --> D4A
+    A4B --> T4A --> P4C --> D4C
+    A4B --> T4A --> P4C --> D4D
+    A4C --> T4B --> P4B --> D4B
 ```
 
 ### Bucket H: Lesson Progress
+
+*Processing: **Device** for draft and queue. **Cloud** when syncing (RPC validates status, upserts).*
 
 ```mermaid
 flowchart TB
@@ -418,32 +446,34 @@ flowchart TB
         AH3[PT or Patient opens Journey Map]
     end
 
-    subgraph procH [Processing]
-        PH1[Store progress on device so it is not lost if offline]
-        PH2[Queue for upload; RPC validates status inProgress or completed when syncing]
-        PH3[Read progress from cloud and merge with local draft]
-    end
-
     subgraph txH [Transaction - What is captured]
         TH1[lesson_id, reps_completed, reps_target, elapsed_seconds, status]
     end
 
+    subgraph procH [Processing]
+        PH1[Device: Store draft for offline resume]
+        PH2[Device: Queue for upload; when online Cloud: RPC validates status inProgress or completed; upsert]
+        PH3[Device: Read from cloud; merge with local draft]
+    end
+
     subgraph destH [Destination]
-        DH1[Device: RealRehabLessonProgress draft file]
-        DH2[Device: RealRehabOutbox upload queue]
+        DH1[Device: RealRehabLessonProgress]
+        DH2[Device: RealRehabOutbox]
         DH3[(Cloud: accounts.patient_lesson_progress)]
         DH4[Device: cached progress for UI]
     end
 
-    AH1 --> PH1 --> TH1 --> DH1
-    AH2 --> PH1 --> TH1 --> DH1
-    AH2 --> PH2 --> TH1 --> DH2
-    DH2 -->|when online| DH3
+    AH1 --> TH1 --> PH1 --> DH1
+    AH2 --> TH1 --> PH1 --> DH1
+    AH2 --> TH1 --> PH2 --> DH2
+    DH2 -->|when online sent to RPC| DH3
     AH3 --> PH3 --> DH3
-    AH3 --> DH4
+    AH3 --> PH3 --> DH4
 ```
 
 ### Bucket G: Sensor-Based Raw Insights (During Lesson) – FUTURE
+
+*Processing: **Device**. Transaction → Device processes (detect, increment, aggregate) → Device storage; when online → Cloud.*
 
 *Will persist all events from Bucket F (Lesson Engine) that currently only display on screen.*
 
@@ -457,48 +487,30 @@ flowchart TB
         AG5[Knee goes over toe]
     end
 
-    subgraph procG [Processing]
-        PG1[Check movement quality every tenth of a second]
-        PG2[Detect leg instability]
-        PG3[Add up error counts when rep ends or lesson pauses]
-        PG4[Queue for upload when internet is available]
+    subgraph txG [Transaction - What is captured]
+        TG1[Raw flex, raw IMU; event type when detected: drift, max not reached, speed error, shake, anterior migration]
     end
 
-    subgraph txG [Transaction - What is captured]
-        TG1[Times leg drifted left or right]
-        TG2[Reps not completed fully, too slow, too fast]
-        TG3[Times leg shook, knee over toe]
-        TG4[Rep duration, time spent in error]
+    subgraph procG [Processing - Device]
+        PG1[Check every 100ms; detect event type; increment count; aggregate on rep end or pause]
+        PG2[Queue for upload when internet is available]
     end
 
     subgraph destG [Destination]
-        DG1[Device: sensor insights file]
-        DG2[Device: upload queue]
-        DG3[(Cloud: quality metrics)]
-        DG4[(Cloud: stability metrics)]
-        DG5[(Cloud: biomechanics metrics)]
+        DG1[Device: RealRehabSensorInsights]
+        DG2[Device: Outbox]
+        DG3[(Cloud: lesson_sensor_insights or quality metrics)]
     end
 
-    AG1 --> PG1
-    AG2 --> PG1
-    AG3 --> PG1
-    AG4 --> PG2
-    AG5 --> PG1
-    PG1 --> PG3
-    PG2 --> PG3
-    PG3 --> TG1
-    PG3 --> TG2
-    PG3 --> TG3
-    PG3 --> TG4
-    TG1 --> DG1
-    TG2 --> DG1
-    TG3 --> DG1
-    TG4 --> DG1
-    PG4 --> DG2
-    DG1 --> DG2
+    AG1 --> TG1
+    AG2 --> TG1
+    AG3 --> TG1
+    AG4 --> TG1
+    AG5 --> TG1
+    TG1 --> PG1
+    PG1 --> DG1
+    PG1 --> PG2 --> DG2
     DG2 -->|when online| DG3
-    DG2 -->|when online| DG4
-    DG2 -->|when online| DG5
 ```
 
 ---
@@ -509,5 +521,5 @@ To recreate these diagrams in your preferred tool (e.g., Figma, Lucidchart, draw
 
 1. **Render Mermaid**: Use [mermaid.live](https://mermaid.live), GitHub, or VS Code (Mermaid extension) to view the diagrams.
 2. **Export**: From Mermaid Live Editor, export as PNG or SVG.
-3. **Manual recreation**: Each subgraph maps to a swimlane or container. Nodes are boxes; arrows show flow. Use plain-language labels: Application (what the user does), Processing (what the app does), Transaction (what is captured), Destination (where it goes).
+3. **Manual recreation**: Each subgraph maps to a swimlane or container. Nodes are boxes; arrows show flow. Order: Application → Transaction (what is captured) → Processing (raw kept or transformed) → Destination (where it goes).
 4. **Color coding**: Consider using distinct colors for Application (blue), Transaction (yellow), and Destination (green) for clarity.

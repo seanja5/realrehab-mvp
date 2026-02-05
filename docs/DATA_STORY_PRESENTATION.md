@@ -8,7 +8,21 @@
 
 ## Part A: Project to Date
 
-### Slide 1: Sign Up, Login, Link to PT
+### Slide 1: Logical Sequence (Project to Date)
+
+**First** → **Second** → **Third**
+
+| Order | Module | What happens |
+|-------|--------|--------------|
+| 1 | Identity | Sign up, login, patient links to PT |
+| 2 | Prescription | PT saves rehab plan for patient |
+| 3 | Device + Calibration | Patient pairs knee brace, calibrates |
+
+*Then: Schedule → Do Lesson → Lesson Engine (during) → View Progress*
+
+---
+
+### Slide 2: Sign Up, Login, Link to PT
 
 **Action**: User signs up (email, password), logs in, or patient enters PT access code.
 
@@ -26,7 +40,7 @@
 
 ---
 
-### Slide 2: PT Saves Rehab Plan
+### Slide 3: PT Saves Rehab Plan
 
 **Action**: PT selects patient, builds journey map (lessons, reps, rest), taps Confirm.
 
@@ -40,7 +54,7 @@
 
 ---
 
-### Slide 3: Patient Pairs Device + Calibrates
+### Slide 4: Patient Pairs Device + Calibrates
 
 **Action**: Patient pairs BLE knee brace; holds starting position, then max extension.
 
@@ -56,7 +70,7 @@
 
 ---
 
-### Slide 4: Patient Sets Schedule
+### Slide 5: Patient Sets Schedule
 
 **Action**: Patient selects days and 30‑min slots; toggles Allow Reminders.
 
@@ -72,7 +86,7 @@
 
 ---
 
-### Slide 5: Patient Does Lesson
+### Slide 6: Patient Does Lesson
 
 **Action**: Patient taps Begin Lesson, performs reps, pauses or completes.
 
@@ -88,7 +102,7 @@
 
 ---
 
-### Slide 6: Lesson Engine (During Lesson – Screen Only)
+### Slide 7: Lesson Engine (During Lesson – Screen Only)
 
 **Action**: Patient moves leg; sensors check pace and form every 100ms.
 
@@ -104,7 +118,7 @@
 
 ---
 
-### Slide 7: Patient or PT Views Progress
+### Slide 8: Patient or PT Views Progress
 
 **Action**: Patient/PT opens journey map; sees reps done per lesson.
 
@@ -121,11 +135,23 @@
 
 ## Part B: Next Three Future Modules
 
-### Slide 8: Future – Sensor Insights (Bucket G)
+### Slide 9: Logical Sequence (Future)
+
+**First** → **Second** → **Third**
+
+| Order | Module | What happens |
+|-------|--------|--------------|
+| 1 | Schedule | Patient picks days and times (already done) |
+| 2 | Sensor Insights | Store error counts from lesson (Bucket G) |
+| 3 | Data Analysis | PT views trends and recovery charts |
+
+---
+
+### Slide 10: Future – Sensor Insights (Bucket G)
 
 **Action**: Lesson turns red or green; app counts each error type.
 
-**Left**: Same as Slide 6 (lesson screen).  
+**Left**: Same as Slide 7 (lesson screen).  
 **Right**: Data stored (see table below).
 
 | Data to collect | Processing | Where stored | Duration |
@@ -134,7 +160,7 @@
 
 ---
 
-### Slide 9: Future – Schedule (Already Done)
+### Slide 11: Future – Schedule (Already Done)
 
 **Action**: Patient picks days and times; toggles reminders.
 
@@ -148,7 +174,7 @@
 
 ---
 
-### Slide 10: Future – Data Analysis
+### Slide 12: Future – Data Analysis
 
 **Action**: PT queries by patient and date; views trends and recovery charts.
 
@@ -164,5 +190,6 @@
 ## Slide Layout Notes
 
 - **Left**: Add screenshot of the app screen for that action.
+- Slides 1–12. Slide 1 = sequence (project). Slide 9 = sequence (future).
 - **Right**: Use the tables above (or a simplified box) showing Supabase table.column and storage location.
 - Mermaid: [mermaid.live](https://mermaid.live) for any diagrams. Export PNG/SVG for slides.

@@ -38,12 +38,12 @@ From [CacheKey.swift](../RealRehabPractice/Services/Cache/CacheKey.swift): patie
 
 ## 2. Data Buckets (Modules by User Flow)
 
-### Bucket A: Identity and Account Data
+### Bucket A: Identity and Account Data (incl. PT-Patient Management)
 
 - **Tables**: profiles, patient_profiles, pt_profiles, pt_patient_map
-- **Data**: email, password, role, first_name, last_name, phone, DOB, gender, surgery_date, access_code, practice_name, license_number, NPI, etc.
-- **Flow**: Sign up → Supabase Auth + profiles; Create account → patient_profiles/pt_profiles; Link PT → pt_patient_map (RPC); Add patient → pt_patient_map (RPC)
-- **Storage**: Supabase only (no local-first for identity)
+- **Data**: email, password, role, first_name, last_name, phone, DOB, gender, surgery_date, access_code, practice_name, license_number, NPI, patient_profile_id, pt_profile_id
+- **Flow**: Sign up → Supabase Auth + profiles; Create account → patient_profiles/pt_profiles; Patient links via access code → pt_patient_map (RPC); PT adds patient → pt_patient_map (RPC); PT deletes mapping → pt_patient_map (RPC); PT views list/detail → Supabase → Cache
+- **Storage**: Supabase; Cache for PT list/detail
 
 ### Bucket B: PT Creates Rehab Plan
 
@@ -65,13 +65,6 @@ From [CacheKey.swift](../RealRehabPractice/Services/Cache/CacheKey.swift): patie
 - **Data**: bluetooth_identifier, device_id, patient_profile_id, pt_profile_id
 - **Flow**: Pair device → RPC get_or_create_device_assignment → telemetry.devices, telemetry.device_assignments
 - **Storage**: Supabase only. *Calibration data (min/max) is in Bucket F (Lesson Engine).*
-
-### Bucket E: PT-Patient Management
-
-- **Tables**: pt_patient_map, patient_profiles (for list/detail)
-- **Data**: Patient list (name, profile info), patient detail, mapping status
-- **Flow**: PT adds patient (RPC), deletes mapping; PT views list/detail → Supabase → Cache
-- **Storage**: Supabase; Cache for list/detail
 
 ### Bucket F: Lesson Engine – Calibration, Realtime Display, Reassessment, Range Gained
 
@@ -315,9 +308,9 @@ flowchart TB
 
 ---
 
-### Bucket 3: Identity and Account Data
+### Bucket 3: Identity and Account Data (incl. PT-Patient Management)
 
-*Processing: **Mixed**. Signup: T3A → Cloud (Supabase Auth hashes password in cloud) → auth.users. Profiles: T3B/T3C → Device sends raw → Cloud. Link: T3D/T3E → Device trims (device) → RPC in cloud (cloud).*
+*Processing: **Mixed**. Signup → Cloud (Auth hashes password). Profiles → Device sends raw → Cloud. Patient link → Device trim + Cloud RPC. PT add/delete → Cloud RPC. PT view → Device fetch + cache.*
 
 ```mermaid
 flowchart TB
@@ -327,6 +320,8 @@ flowchart TB
         A3C[PT creates account]
         A3D[Patient links via access code]
         A3E[PT adds patient]
+        A3F[PT deletes mapping]
+        A3G[PT views patient list or detail]
     end
 
     subgraph tx3 [Transaction - What is captured]
@@ -335,13 +330,18 @@ flowchart TB
         T3C[profile_id, practice_name, license_number, npi_number, contact_email, contact_phone]
         T3D[access_code, patient_profile_id]
         T3E[patient_profile_id, pt_profile_id]
+        T3F[patient_profile_id, pt_profile_id]
+        T3G[pt_profile_id for list; patient_profile_id for detail - query keys]
     end
 
     subgraph proc3 [Processing]
         P3A[Cloud: Supabase Auth hashes password; create login account]
         P3B[Device sends; Cloud: raw insert]
         P3C[Device sends; Cloud: raw insert]
-        P3D[Device: trim access code; Cloud: RPC lookup; Cloud: trigger generates unique code on patient create]
+        P3D[Device: trim access code; Cloud: RPC lookup; trigger generates unique code on patient create]
+        P3E[Cloud: RPC link_patient_to_pt or add_patient_with_mapping]
+        P3F[Cloud: RPC delete_pt_patient_mapping]
+        P3G[Device: Fetch from Supabase; cache list and detail]
     end
 
     subgraph dest3 [Destination]
@@ -350,49 +350,18 @@ flowchart TB
         D3C[(Cloud: accounts.patient_profiles)]
         D3D[(Cloud: accounts.pt_profiles)]
         D3E[(Cloud: accounts.pt_patient_map)]
+        D3F[Device: cached list and detail]
     end
 
     A3A --> T3A
     T3A -->|sent to Auth| P3A --> D3A
     T3A --> P3B --> D3B
-    A3B --> T3B --> P3C --> D3C
-    A3C --> T3C --> P3C --> D3D
+    A3B --> T3B --> P3B --> D3C
+    A3C --> T3C --> P3B --> D3D
     A3D --> T3D --> P3D --> D3E
-    A3E --> T3E --> P3D --> D3E
-```
-
-### Bucket E: PT-Patient Management
-
-*Processing: **Cloud** for add/delete (RPCs). **Device** for view (fetch, cache).*
-
-```mermaid
-flowchart TB
-    subgraph appE [Application - User Actions]
-        AE1[PT adds patient via RPC]
-        AE2[PT deletes mapping]
-        AE3[PT views patient list or detail]
-    end
-
-    subgraph txE [Transaction - What is captured]
-        TE1[patient_profile_id, pt_profile_id]
-        TE2[pt_profile_id for list; patient_profile_id for detail - query keys]
-    end
-
-    subgraph procE [Processing]
-        PE1[Cloud: RPC link_patient_to_pt or add patient]
-        PE2[Cloud: RPC delete mapping]
-        PE3[Device: Fetch from Supabase; cache list and detail]
-    end
-
-    subgraph destE [Destination]
-        DE1[(Cloud: accounts.pt_patient_map)]
-        DE2[Device: cached list and detail]
-    end
-
-    AE1 --> TE1
-    TE1 -->|sent to RPC| PE1 --> DE1
-    AE2 --> PE2 --> DE1
-    AE3 --> TE2 --> PE3 --> DE2
+    A3E --> T3E -->|sent to RPC| P3E --> D3E
+    A3F --> T3F -->|sent to RPC| P3F --> D3E
+    A3G --> T3G --> P3G --> D3F
 ```
 
 ---

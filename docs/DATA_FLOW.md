@@ -157,68 +157,77 @@ flowchart TB
 
 *Full flow: Calibrate (min/max) → Do lesson (green/red) → Reassessment (new max) → Range gained (computed and stored).*
 
+#### Step 1: Calibration (Before Lesson)
+
+| | |
+|---|---|
+| **Application** | Patient taps "Set Starting Position" while leg is bent ~90°; then taps "Set Maximum Position" while leg is fully extended. |
+| **Transaction** | device_assignment_id, stage (starting_position \| maximum_position), flex_value (degrees), knee_angle_deg, recorded_at |
+| **Processing** | TelemetryService.saveCalibration → insert into telemetry.calibrations; invalidate calibration cache |
+| **Destination** | Cloud: telemetry.calibrations. Device: cache (calibrationPoints, used when lesson loads) |
+
+#### Step 2: Realtime Display (During Lesson)
+
+| | |
+|---|---|
+| **Application** | Patient moves leg through reps; flex sensor and IMU stream continuously. |
+| **Transaction** | Raw flex sensor value, raw IMU value; calibration rest/max degrees (read from step 1) |
+| **Processing** | Every 100ms: convert flex to degrees using calibration; compare to animation expected position; validate max reached (10°), movement speed (25°), IMU center (±7); show green or red on screen |
+| **Destination** | Screen only (not persisted). Future: Bucket G will store error counts. |
+
+#### Step 3: Reassessment (After Lesson)
+
+| | |
+|---|---|
+| **Application** | Patient extends leg to max again; taps "Set Maximum Position." |
+| **Transaction** | device_assignment_id, stage (maximum_position), flex_value (degrees), recorded_at |
+| **Processing** | TelemetryService.saveCalibration → insert new row into telemetry.calibrations; invalidate calibration cache |
+| **Destination** | Cloud: telemetry.calibrations. Device: cache invalidated. |
+
+#### Step 4: Range Gained
+
+| | |
+|---|---|
+| **Application** | Patient views Completion screen; app displays range gained. |
+| **Transaction** | Original max (from step 1 calibration); reassessment max (from step 3) |
+| **Processing** | TelemetryService.getAllMaximumCalibrationsForPatient → take two most recent maximum_position records → compute difference (reassessment max − original max) |
+| **Destination** | Cloud: rehab.session_metrics.range_of_motion_deg or derived from calibrations. Device: cache for display. |
+
 ```mermaid
-flowchart TB
-    subgraph flow [Lesson Flow - Module 3]
-        direction TB
-        F1[1. Calibrate]
-        F2[2. Do Lesson]
-        F3[3. Reassessment]
-        F4[4. Range Gained]
+flowchart LR
+    subgraph app [Application]
+        A1[1. Set start + max]
+        A2[2. Move leg / reps]
+        A3[3. Set max again]
+        A4[4. View completion]
     end
 
-    subgraph cal [1. Calibration - Before Lesson]
-        AC1[Patient sets starting position]
-        AC2[Patient sets maximum position]
-        TC1[stage, flex_value, knee_angle_deg]
-        PC1[TelemetryService.saveCalibration]
-        DC1[(Cloud: telemetry.calibrations)]
-        DC2[Device: cache]
+    subgraph tx [Transaction]
+        T1[stage, flex_value]
+        T2[Raw flex, IMU]
+        T3[New max flex_value]
+        T4[Original max, reassessment max]
     end
 
-    subgraph lesson [2. Realtime Display - During Lesson]
-        AL1[Patient moves leg]
-        TL1[Raw flex, IMU; calibration rest/max]
-        PL1[Convert to degrees; compare to animation]
-        RL1[Green or red on screen - not stored]
+    subgraph proc [Processing]
+        P1[saveCalibration]
+        P2[Convert, compare, validate]
+        P3[saveCalibration]
+        P4[Compute difference]
     end
 
-    subgraph reassess [3. Reassessment - After Lesson]
-        AR1[Patient extends to max again]
-        TR1[New maximum_position flex_value]
-        PR1[TelemetryService.saveCalibration]
-        DR1[(Cloud: telemetry.calibrations)]
-        DR2[Device: cache invalidated]
+    subgraph dest [Destination]
+        D1[(telemetry.calibrations)]
+        D2[Screen only]
+        D3[(telemetry.calibrations)]
+        D4[(session_metrics) + cache]
     end
 
-    subgraph range [4. Range Gained]
-        TR2[Original max from calibration]
-        TR3[Reassessment max from step 3]
-        PR2[Compute: reassessment max - original max]
-        DR3[(Cloud: rehab.session_metrics or derived from calibrations)]
-        DR4[Device: cache for display]
-    end
-
-    F1 --> cal
-    F2 --> lesson
-    F3 --> reassess
-    F4 --> range
-    AC1 --> PC1 --> TC1 --> DC1
-    AC2 --> PC1 --> TC1 --> DC1
-    DC1 --> DC2
-    AL1 --> TL1 --> PL1 --> RL1
-    DC1 -.->|read for lesson| TL1
-    AR1 --> TR1 --> PR1 --> DR1
-    DR1 --> DR2
-    DR1 --> TR3
-    DC1 --> TR2
-    TR2 --> PR2
-    TR3 --> PR2
-    PR2 --> DR3
-    PR2 --> DR4
+    A1 --> T1 --> P1 --> D1
+    A2 --> T2 --> P2 --> D2
+    A3 --> T3 --> P3 --> D3
+    A4 --> T4 --> P4 --> D4
 ```
-
-**Calibration and reassessment** both write to `telemetry.calibrations` (device_assignment_id, stage, flex_value, knee_angle_deg, recorded_at). **Range gained** is computed from the two most recent maximum_position records; stored locally (cache) and in cloud (rehab.session_metrics.range_of_motion_deg or derived).
 
 **Realtime green/red** (during lesson):
 

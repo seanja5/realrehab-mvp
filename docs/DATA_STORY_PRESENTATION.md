@@ -53,17 +53,15 @@
 
 ### Slide 4: Lesson Engine – Calibration, Realtime, Reassessment, Range Gained
 
-**Action**: (1) Patient calibrates: sets min and max. (2) Patient does lesson: realtime green/red. (3) After lesson: reassessment (extends to max again). (4) Range gained computed and displayed.
+**Left**: Screenshots of Calibrate, Lesson (green/red), Reassessment, Completion screens.  
+**Right**: For each step, Application → Transaction → Processing → Destination.
 
-**Left**: Screenshots of Calibrate, Lesson (green/red), Reassessment, Completion (range gained) screens.  
-**Right**: Data stored (see table below).
-
-| Transaction | Processing | Where stored |
-|-------------|------------|--------------|
-| Calibration: stage (starting_position, maximum_position), flex_value, knee_angle_deg | TelemetryService.saveCalibration | Cloud: telemetry.calibrations; Device: cache |
-| Raw flex, IMU during lesson | Convert to degrees; compare to animation | Screen only (green/red – not persisted) |
-| Reassessment: new maximum_position flex_value | TelemetryService.saveCalibration | Cloud: telemetry.calibrations; Device: cache invalidated |
-| Range gained: original max + reassessment max | Compute difference | Cloud: rehab.session_metrics or derived from calibrations; Device: cache for display |
+| Step | Application | Transaction | Processing | Destination |
+|------|-------------|-------------|------------|-------------|
+| **1. Calibration** | Patient taps Set Starting Position, then Set Maximum Position | stage, flex_value, knee_angle_deg | TelemetryService.saveCalibration | Cloud: telemetry.calibrations; Device: cache |
+| **2. Realtime** | Patient moves leg through reps | Raw flex, IMU; calibration rest/max | Convert to degrees; compare to animation; validate | Screen only (green/red – not persisted) |
+| **3. Reassessment** | Patient extends to max again; taps Set Maximum Position | stage (maximum_position), flex_value | TelemetryService.saveCalibration | Cloud: telemetry.calibrations |
+| **4. Range Gained** | Patient views Completion screen | Original max, reassessment max | Compute difference | Cloud: rehab.session_metrics or derived; Device: cache |
 
 *Realtime green/red not persisted. Future: Bucket G will store error counts.*
 

@@ -73,11 +73,19 @@ From [CacheKey.swift](../RealRehabPractice/Services/Cache/CacheKey.swift): patie
 - **Flow**: PT adds patient (RPC), deletes mapping; PT views list/detail → Supabase → Cache
 - **Storage**: Supabase; Cache for list/detail
 
-### Bucket F: Sensor-Based Raw Insights (During Lesson) – FUTURE
+### Bucket F: Lesson Engine – Real-Time Display (Green/Red)
+
+- **Tables**: None (display only; not stored)
+- **Data**: Raw flex sensor value, raw IMU value; converted to degrees and position; compared to animation expected position
+- **Flow**: User moves leg → Flex sensor + IMU stream → Convert to degrees (calibration) → Compare to animation (PT-set speed via restSec) → Show green or red on screen
+- **Storage**: Screen only. Validation runs every 100ms. **Not persisted anywhere today** – see Bucket G (Future) for where this will be stored.
+- **Tolerances** (from LessonView/LessonEngine): Flex position = 25° (keep pace); Max extension = 10°; IMU = ±7 (keep thigh centered). PT sets rep speed via restSec per lesson.
+
+### Bucket G: Sensor-Based Raw Insights (During Lesson) – FUTURE
 
 - **Tables**: accounts.lesson_sensor_insights (or lesson_quality_metrics, lesson_stability_metrics, lesson_biomechanics_metrics)
-- **Data**: valgus_left_count, valgus_right_count, max_not_reached_count, speed_too_slow_count, speed_too_fast_count, shake_count, anterior_migration_count; optional: rep_duration, time_in_error_seconds, max_extension_achieved_per_rep, peak_imu_deviation_per_rep
-- **Flow**: Sensor event → LessonView validation increments counter → Local file (RealRehabSensorInsights) + Outbox → RPC when online → Supabase; PT views via dashboard
+- **Data**: All events from Bucket F (speed errors, max not reached, IMU drift, etc.) plus shake, anterior migration – persisted as counts
+- **Flow**: Same as Bucket F validation → increment counters → Local file (RealRehabSensorInsights) + Outbox → RPC when online → Supabase; PT views via dashboard
 - **Storage**: Local-first (RealRehabSensorInsights, Outbox); Supabase when synced
 
 ---
@@ -87,8 +95,10 @@ From [CacheKey.swift](../RealRehabPractice/Services/Cache/CacheKey.swift): patie
 | Rank | Bucket                             | Rationale                                                                                                                                                                                         |
 | ---- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1    | **Rehab Plan and Lesson Progress** | Core product flow. Most complex: local-first lesson draft, outbox sync, RPC upsert, bidirectional PT/patient views. Highest data volume during lessons (reps, elapsed, status every rep + timer). |
-| 2    | **Identity and Account Data**      | Foundation for all flows. Auth, profiles, PT-patient linking. Every user touches this on signup, login, and profile/link actions.                                                                 |
-| 3    | **Schedule Data**                  | Patient engagement driver. Schedule slots + reminders affect NotificationManager and "My Schedule" visualizer. Clear flow: patient sets → Supabase → cache → notifications.                       |
+| 2    | **Lesson Engine – Real-Time Display** | Heart of the lesson experience. Flex + IMU stream, degree conversion, animation sync. Every rep: green/red feedback based on 25° pace, 10° max, ±7 IMU. PT sets speed. Not stored today.           |
+| 3    | **Identity and Account Data**      | Foundation for all flows. Auth, profiles, PT-patient linking. Every user touches this on signup, login, and profile/link actions.                                                                 |
+
+*Schedule Data (Bucket C) supports engagement but is not core data capture; it can be reviewed under Bucket C.*
 
 ---
 
@@ -146,134 +156,211 @@ flowchart TB
     A1F --> D1E
 ```
 
-### Bucket 2: Identity and Account Data
+### Bucket 2: Lesson Engine – Real-Time Display (Green/Red)
+
+*This diagram shows what happens during every lesson, in real time, on screen. Data is processed but **not stored** today.*
 
 ```mermaid
 flowchart TB
-    subgraph app2 [Application - User Actions]
-        A2A[User signs up / creates account]
-        A2B[Patient completes onboarding]
-        A2C[PT creates account]
-        A2D[Patient links via access code]
-        A2E[PT adds patient]
+    subgraph appLE [Application - User Actions]
+        LE1[User extends leg up]
+        LE2[User flexes leg down]
+        LE3[User keeps thigh centered]
+        LE4[User drifts thigh left or right]
+        LE5[Animation reaches top - user at max]
+        LE6[Animation reaches top - user not at max]
     end
 
-    subgraph proc2 [Processing]
-        P2A[Create secure login account]
-        P2B[Create or update user profile]
-        P2C[Save patient or PT info]
-        P2D[Securely link patient to PT]
+    subgraph txLE [Transaction - What is captured]
+        TLE1[Raw flex sensor value]
+        TLE2[Raw IMU value zeroed at lesson start]
+        TLE3[Calibration: rest degrees, max degrees]
+        TLE4[PT-set speed: restSec per lesson]
     end
 
-    subgraph tx2 [Transaction - What is captured]
-        T2A[Login info: email, password, name]
-        T2B[Patient info: DOB, gender, surgery date, phone]
-        T2C[PT info: practice name, license, NPI]
-        T2D[Access code and patient link]
-        T2E[Patient and PT link]
+    subgraph procLE [Processing - Every 100ms]
+        PLE1[Convert flex to degrees using calibration]
+        PLE2[Compare leg position to animation expected position]
+        PLE3[Check if within 25 degrees of expected]
+        PLE4[Check if within 10 degrees of max at top]
+        PLE5[Check if IMU within plus minus 7 of center]
     end
 
-    subgraph dest2 [Destination]
-        D2A[(Cloud: login accounts)]
-        D2B[(Cloud: user profiles)]
-        D2C[(Cloud: patient profiles)]
-        D2D[(Cloud: PT profiles)]
-        D2E[(Cloud: patient-PT links)]
+    subgraph resultLE [Result - Display Only]
+        R1[Green box - on pace, centered, max reached]
+        R2[Red box - Slow down - more than 25 deg ahead, rate 1.5x]
+        R3[Red box - Speed up - more than 25 deg behind, rate 0.5x]
+        R4[Red box - Keep thigh centered - IMU outside plus minus 7]
+        R5[Red box - Extend leg further - not within 10 deg of max]
     end
 
-    A2A --> P2A --> T2A --> D2A
-    A2A --> P2B --> T2A --> D2B
-    A2B --> P2C --> T2B --> D2C
-    A2C --> P2C --> T2C --> D2D
-    A2D --> P2D --> T2D --> D2E
-    A2E --> P2D --> T2E --> D2E
+    LE1 --> TLE1
+    LE2 --> TLE1
+    LE3 --> TLE2
+    LE4 --> TLE2
+    LE5 --> TLE1
+    LE6 --> TLE1
+    TLE1 --> PLE1
+    TLE2 --> PLE5
+    TLE3 --> PLE1
+    TLE4 --> PLE2
+    PLE1 --> PLE2
+    PLE2 --> PLE3
+    PLE3 --> R1
+    PLE3 --> R2
+    PLE3 --> R3
+    PLE4 --> R1
+    PLE4 --> R5
+    PLE5 --> R1
+    PLE5 --> R4
 ```
 
-### Bucket 3: Schedule Data
+**When the box turns red:**
+
+| Scenario | Tolerance | Processing | Message |
+|----------|-----------|------------|---------|
+| On pace | Within 25° of animation | Green | — |
+| Too fast | >25° ahead + rate >1.5× expected | Red | "Slow down your movement!" |
+| Too slow | >25° behind + rate <0.5× expected | Red | "Speed up your Rep!" |
+| Thigh drift | IMU outside ±7 | Red | "Keep your thigh centered" |
+| Max not reached | Not within 10° of max when animation hits top | Red | "Extend your leg further!" |
+
+**PT sets rep speed** via restSec (seconds between reps) in each lesson node on the Journey Map.
+
+---
+
+### Bucket 3: Identity and Account Data
 
 ```mermaid
 flowchart TB
     subgraph app3 [Application - User Actions]
-        A3A[Patient selects days and times]
-        A3B[Patient taps Confirm Schedule]
-        A3C[Patient toggles Allow Reminders]
+        A3A[User signs up / creates account]
+        A3B[Patient completes onboarding]
+        A3C[PT creates account]
+        A3D[Patient links via access code]
+        A3E[PT adds patient]
     end
 
     subgraph proc3 [Processing]
-        P3A[Replace old schedule with new selected times]
-        P3B[Update reminder preference]
-        P3C[Schedule reminder notifications on device]
+        P3A[Create secure login account]
+        P3B[Create or update user profile]
+        P3C[Save patient or PT info]
+        P3D[Securely link patient to PT]
     end
 
     subgraph tx3 [Transaction - What is captured]
-        T3A[Selected days and 30-min time slots]
-        T3B[Whether reminders are on or off]
+        T3A[Login info: email, password, name]
+        T3B[Patient info: DOB, gender, surgery date, phone]
+        T3C[PT info: practice name, license, NPI]
+        T3D[Access code and patient link]
+        T3E[Patient and PT link]
     end
 
     subgraph dest3 [Destination]
-        D3A[(Cloud: schedule slots)]
-        D3B[(Cloud: reminder preference)]
-        D3C[Device: cached schedule]
-        D3D[Device: notification schedule]
+        D3A[(Cloud: login accounts)]
+        D3B[(Cloud: user profiles)]
+        D3C[(Cloud: patient profiles)]
+        D3D[(Cloud: PT profiles)]
+        D3E[(Cloud: patient-PT links)]
     end
 
-    A3A --> T3A
-    A3B --> P3A --> T3A --> D3A
-    A3B --> P3C --> T3A --> D3C
-    A3B --> P3C --> T3A --> D3D
-    A3C --> P3B --> T3B --> D3B
+    A3A --> P3A --> T3A --> D3A
+    A3A --> P3B --> T3A --> D3B
+    A3B --> P3C --> T3B --> D3C
+    A3C --> P3C --> T3C --> D3D
+    A3D --> P3D --> T3D --> D3E
+    A3E --> P3D --> T3E --> D3E
 ```
 
-### Bucket F: Sensor-Based Raw Insights (During Lesson) – FUTURE
+---
+
+### Bucket 4: Schedule Data
 
 ```mermaid
 flowchart TB
-    subgraph appF [Application - Sensor Events]
-        AF1[Leg drifts left or right]
-        AF2[Did not extend leg far enough]
-        AF3[Moving too slow or too fast]
-        AF4[Leg shakes or wobbles]
-        AF5[Knee goes over toe]
+    subgraph app4 [Application - User Actions]
+        A4A[Patient selects days and times]
+        A4B[Patient taps Confirm Schedule]
+        A4C[Patient toggles Allow Reminders]
     end
 
-    subgraph procF [Processing]
-        PF1[Check movement quality every tenth of a second]
-        PF2[Detect leg instability]
-        PF3[Add up error counts when rep ends or lesson pauses]
-        PF4[Queue for upload when internet is available]
+    subgraph proc4 [Processing]
+        P4A[Replace old schedule with new selected times]
+        P4B[Update reminder preference]
+        P4C[Schedule reminder notifications on device]
     end
 
-    subgraph txF [Transaction - What is captured]
-        TF1[Times leg drifted left or right]
-        TF2[Reps not completed fully, too slow, too fast]
-        TF3[Times leg shook, knee over toe]
-        TF4[Rep duration, time spent in error]
+    subgraph tx4 [Transaction - What is captured]
+        T4A[Selected days and 30-min time slots]
+        T4B[Whether reminders are on or off]
     end
 
-    subgraph destF [Destination]
-        DF1[Device: sensor insights file]
-        DF2[Device: upload queue]
-        DF3[(Cloud: PT dashboard)]
+    subgraph dest4 [Destination]
+        D4A[(Cloud: schedule slots)]
+        D4B[(Cloud: reminder preference)]
+        D4C[Device: cached schedule]
+        D4D[Device: notification schedule]
     end
 
-    AF1 --> PF1
-    AF2 --> PF1
-    AF3 --> PF1
-    AF4 --> PF2
-    AF5 --> PF1
-    PF1 --> PF3
-    PF2 --> PF3
-    PF3 --> TF1
-    PF3 --> TF2
-    PF3 --> TF3
-    PF3 --> TF4
-    TF1 --> DF1
-    TF2 --> DF1
-    TF3 --> DF1
-    TF4 --> DF1
-    PF4 --> DF2
-    DF1 --> DF2
-    DF2 -->|when online| DF3
+    A4A --> T4A
+    A4B --> P4A --> T4A --> D4A
+    A4B --> P4C --> T4A --> D4C
+    A4B --> P4C --> T4A --> D4D
+    A4C --> P4B --> T4B --> D4B
+```
+
+### Bucket G: Sensor-Based Raw Insights (During Lesson) – FUTURE
+
+*Will persist all events from Bucket F (Lesson Engine) that currently only display on screen.*
+
+```mermaid
+flowchart TB
+    subgraph appG [Application - Sensor Events]
+        AG1[Leg drifts left or right]
+        AG2[Did not extend leg far enough]
+        AG3[Moving too slow or too fast]
+        AG4[Leg shakes or wobbles]
+        AG5[Knee goes over toe]
+    end
+
+    subgraph procG [Processing]
+        PG1[Check movement quality every tenth of a second]
+        PG2[Detect leg instability]
+        PG3[Add up error counts when rep ends or lesson pauses]
+        PG4[Queue for upload when internet is available]
+    end
+
+    subgraph txG [Transaction - What is captured]
+        TG1[Times leg drifted left or right]
+        TG2[Reps not completed fully, too slow, too fast]
+        TG3[Times leg shook, knee over toe]
+        TG4[Rep duration, time spent in error]
+    end
+
+    subgraph destG [Destination]
+        DG1[Device: sensor insights file]
+        DG2[Device: upload queue]
+        DG3[(Cloud: PT dashboard)]
+    end
+
+    AG1 --> PG1
+    AG2 --> PG1
+    AG3 --> PG1
+    AG4 --> PG2
+    AG5 --> PG1
+    PG1 --> PG3
+    PG2 --> PG3
+    PG3 --> TG1
+    PG3 --> TG2
+    PG3 --> TG3
+    PG3 --> TG4
+    TG1 --> DG1
+    TG2 --> DG1
+    TG3 --> DG1
+    TG4 --> DG1
+    PG4 --> DG2
+    DG1 --> DG2
+    DG2 -->|when online| DG3
 ```
 
 ---

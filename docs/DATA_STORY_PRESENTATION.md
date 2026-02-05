@@ -118,12 +118,40 @@ flowchart LR
 - OutboxSyncManager enqueues payload when sync triggered (start, every rep, every 10s, pause, complete)
 - When online: LessonProgressSync.upsert RPC writes to patient_lesson_progress
 - Validation logic: validateMaxReached, validateMovementSpeed, validateIMU (threshold 7) - used only for real-time feedback, not stored
-- **Sensor error counts (max not reached, speed, IMU) are computed but not persisted today** – see Future Bucket F
+- **Sensor error counts (max not reached, speed, IMU) are computed but not persisted today** – see Future Bucket G
 
 **Storage**:
 - Local: RealRehabLessonProgress/{lessonId}.json - disk, until lesson completed or cleared
 - Local: RealRehabOutbox/outbox.json - disk, until sync succeeds
 - Supabase: accounts.patient_lesson_progress - permanent, processed (aggregate per lesson). Cache: lessonProgress - TTL 10 min, disk
+
+---
+
+### Slide 9b: Lesson Engine – Real-Time Display (Green/Red)
+
+*What happens on screen during every lesson. Processed every 100ms. **Not stored** – display only. See Future Bucket G for where this will be persisted.*
+
+**Application** (user actions): User extends leg up, flexes leg down, keeps thigh centered or drifts left/right, reaches or does not reach max when animation hits top.
+
+**Transaction** (what is captured): Raw flex sensor value, raw IMU value (zeroed at lesson start), calibration (rest degrees, max degrees), PT-set speed (restSec per lesson).
+
+**Processing** (every 100ms): Convert flex to degrees; compare leg position to animation expected position; check tolerances.
+
+**When the box stays green**: Within 25° of animation pace, within ±7 IMU (centered), within 10° of max when animation reaches top.
+
+**When the box turns red**:
+
+| Scenario | Tolerance | Message |
+|----------|-----------|---------|
+| On pace | Within 25° of animation | Green |
+| Too fast | >25° ahead + rate >1.5× expected | "Slow down your movement!" |
+| Too slow | >25° behind + rate <0.5× expected | "Speed up your Rep!" |
+| Thigh drift | IMU outside ±7 | "Keep your thigh centered" |
+| Max not reached | Not within 10° of max at top | "Extend your leg further!" |
+
+**PT sets rep speed** via restSec (seconds between reps) in each lesson node on the Journey Map.
+
+**Destination**: Screen only. No storage today.
 
 ---
 
@@ -148,6 +176,7 @@ flowchart LR
 | telemetry.* | devices, device_assignments, calibrations | Permanent | Raw |
 | Local disk | Lesson draft, Outbox | Until sync/complete | Raw |
 | Cache | API responses | TTL 5 min–7 days | Processed (decoded) |
+| Screen only | Lesson Engine green/red feedback (flex, IMU, speed, max) | Not stored | Processed in real time |
 
 ---
 
@@ -155,7 +184,7 @@ flowchart LR
 
 ### Slide 12: Future Overview
 
-Three new modules to capture **exercise quality and movement biomechanics** for PT analysis and patient feedback. Data currently used only for real-time feedback (red box, rep invalidation) will be **persisted and aggregated**.
+Three new modules to capture **exercise quality and movement biomechanics** for PT analysis and patient feedback. The Lesson Engine (Slide 9b) currently processes green/red feedback on screen only – **none of it is stored**. Future modules will **persist and aggregate** all of it: speed errors, max not reached, IMU drift, shake, anterior migration.
 
 ---
 
@@ -214,11 +243,11 @@ Three new modules to capture **exercise quality and movement biomechanics** for 
 
 ---
 
-### Slide 16: Future Bucket F - Sensor-Based Raw Insights
+### Slide 16: Future Bucket G - Sensor-Based Raw Insights
 
-**Purpose**: Capture all sensor-derived events during a lesson for PT analysis. Local-first so data is saved even when offline; syncs to Supabase when online.
+**Purpose**: Store everything the Lesson Engine (Slide 9b) currently displays but does not save. All green/red events become persisted counts for PT analysis. Local-first so data is saved even when offline; syncs to Supabase when online.
 
-**Sensor events to capture**:
+**Sensor events to capture** (from Lesson Engine + new):
 - valgus_left_count, valgus_right_count (IMU lateral drift)
 - max_not_reached_count (flex - did not extend leg far enough)
 - speed_too_slow_count, speed_too_fast_count (flex + time)
@@ -302,6 +331,6 @@ flowchart TB
 
 ## Slide Conversion Notes
 
-- Each `### Slide N:` section maps to one slide (Slides 1–18).
+- Each `### Slide N:` section maps to one slide (Slides 1–19, including 9b).
 - Copy into Google Slides, PowerPoint, or Keynote.
 - Mermaid diagrams can be rendered at [mermaid.live](https://mermaid.live) and exported as PNG/SVG for slides.

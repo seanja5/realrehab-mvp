@@ -39,9 +39,7 @@ From [CacheKey.swift](../RealRehabPractice/Services/Cache/CacheKey.swift): patie
 
 ## 2. End-to-End Data Flow (User Journey Order)
 
-One unified flow in the order of the user journey. Each module shows: **Application** (user action) → **Transaction** (what is captured) → **Processing** (where and how) → **Pull** (from Supabase or cache, if any) → **Storage** (where data is written, if any).
-
-Modules are separated by user-flow sequence; no arrow connects Module 1 to Module 2—they are sequential user steps, not continuous data flow.
+One unified flow in the order of the user journey. **Flow direction**: left to right, driven by user actions. **Structure**: User actions (App) appear in the center; data pulled from storage or cache appears above the action that triggers it; data written (Tx → Proc → Storage) appears below. **Labels**: App (User Action), Tx (Data Transaction), Proc (Processing – Cloud or Device), Storage. Modules are sequential user steps; no arrow connects Module 1 to Module 2.
 
 ### Data Flow Cost Minimization
 
@@ -51,114 +49,160 @@ To reduce Supabase reads and writes: **cache-first** for reads (plan, profile, l
 
 ### Single Unified Flowchart
 
+Each module flows **left to right**, driven by user actions in the center. **Pulls** appear above the action that triggers them; **writes** (Tx → Proc → Storage) appear below. Labels: App (User Action), Tx (Data Transaction), Proc (Processing – Cloud or Device), Storage.
+
 ```mermaid
-flowchart TB
+flowchart LR
     subgraph M1 [Module 1: PT Creates Account, Links Patient, Creates Rehab Plan]
-        M1A1[App: PT signs up with email, password, license, NPI]
-        M1T1[Tx: email, password, first_name, last_name, role, license_number, npi_number]
-        M1P1[Proc: Cloud - Auth hashes password; profiles upsert; pt_profiles upsert]
-        M1S1[(Storage: auth.users, accounts.profiles, accounts.pt_profiles)]
-        M1A2[App: PT taps Add Patient, enters firstName, lastName, DOB, gender]
-        M1T2[Tx: firstName, lastName, dob, gender, pt_profile_id]
-        M1P2[Proc: Cloud - RPC add_patient_with_mapping]
-        M1S2[(Storage: accounts.patient_profiles, accounts.pt_patient_map)]
-        M1A3[App: PT selects patient, CategorySelect Knee, InjurySelect ACL, PTJourneyMapView]
-        M1Pull1[Pull: Supabase content.plan_templates via fetchDefaultPlan - cache first]
-        M1P3[Proc: Device - PlanNodeDTO to LessonNode, layoutNodesZigZag]
-        M1A4[App: PT edits nodes, taps Confirm Journey]
-        M1T3[Tx: plan metadata, nodes JSONB]
-        M1P4[Proc: Device - archive existing plan, LessonNode to PlanNodeDTO]
-        M1S3[(Storage: accounts.rehab_plans)]
-        M1A1 --> M1T1 --> M1P1 --> M1S1
-        M1S1 --> M1A2
-        M1A2 --> M1T2 --> M1P2 --> M1S2
-        M1S2 --> M1A3
-        M1A3 --> M1Pull1 --> M1P3
-        M1P3 --> M1A4
-        M1A4 --> M1T3 --> M1P4 --> M1S3
+        direction LR
+        subgraph M1Step1 [PT Creates Account]
+            direction TB
+            M1A1[App: PT taps Create Account, enters email, password, license, NPI, submits]
+            M1T1[Tx: email, password, first_name, last_name, role, license_number, npi_number]
+            M1P1[Proc: Cloud - Auth hashes password; profiles upsert; pt_profiles upsert]
+            M1St1[(Storage: auth.users, accounts.profiles, accounts.pt_profiles)]
+            M1A1 --> M1T1 --> M1P1 --> M1St1
+        end
+        subgraph M1Step2 [PT Adds Patient]
+            direction TB
+            M1A2[App: PT taps Add Patient, enters firstName, lastName, DOB, gender, submits]
+            M1T2[Tx: firstName, lastName, dob, gender, pt_profile_id]
+            M1P2[Proc: Cloud - RPC add_patient_with_mapping]
+            M1St2[(Storage: accounts.patient_profiles, accounts.pt_patient_map)]
+            M1A2 --> M1T2 --> M1P2 --> M1St2
+        end
+        subgraph M1Step3 [PT Loads Default Plan]
+            direction TB
+            M1Pull1[Pull: Supabase content.plan_templates via fetchDefaultPlan - cache first]
+            M1A3[App: PT selects patient, CategorySelect Knee, InjurySelect ACL, taps Create Rehab Plan]
+            M1P3[Proc: Device - PlanNodeDTO to LessonNode, layoutNodesZigZag]
+            M1Pull1 --> M1A3 --> M1P3
+        end
+        subgraph M1Step4 [PT Edits and Saves Plan]
+            direction TB
+            M1A4[App: PT views default ACL plan, edits nodes, taps Confirm Journey]
+            M1T3[Tx: plan metadata, nodes JSONB]
+            M1P4[Proc: Device - archive existing plan, LessonNode to PlanNodeDTO]
+            M1St4[(Storage: accounts.rehab_plans)]
+            M1A4 --> M1T3 --> M1P4 --> M1St4
+        end
+        M1Step1 --> M1Step2 --> M1Step3 --> M1Step4
     end
 
     subgraph M2 [Module 2: Patient Creates Account - Route A With Access Code]
-        M2A1[App: Patient signs up with DOB, gender, access code 8 digits]
-        M2T1[Tx: email, password, first_name, last_name, dob, gender, access_code]
-        M2P1[Proc: Cloud - Auth; Device - trim code; Cloud - profiles upsert]
-        M2Pull1[Pull: RPC findPatientByAccessCode - lookup placeholder]
-        M2P2[Proc: ensurePatientProfile updates placeholder, links pt_patient_map]
-        M2S1[(Storage: auth.users, profiles, patient_profiles, pt_patient_map)]
-        M2A1 --> M2T1 --> M2P1 --> M2Pull1 --> M2P2 --> M2S1
+        direction LR
+        subgraph M2Step1 [Patient Signs Up With Code]
+            direction TB
+            M2Pull1[Pull: RPC findPatientByAccessCode - lookup placeholder]
+            M2A1[App: Patient signs up with DOB, gender, 8-digit access code, submits]
+            M2T1[Tx: email, password, first_name, last_name, dob, gender, access_code]
+            M2P1[Proc: Cloud - Auth; Device - trim code; Cloud - ensurePatientProfile]
+            M2St1[(Storage: auth.users, profiles, patient_profiles, pt_patient_map)]
+            M2Pull1 --> M2A1 --> M2T1 --> M2P1 --> M2St1
+        end
     end
 
-    subgraph M2B [Module 2: Patient Creates Account - Route B Without Access Code]
-        M2BA1[App: Patient signs up without access code]
-        M2BS1[(Storage: auth.users, profiles, patient_profiles)]
-        M2BA2[App: Patient later goes to Settings, taps Connect, enters access code]
-        M2BT1[Tx: access_code, patient_profile_id]
-        M2BP1[Proc: Device - trim; Cloud - RPC link_patient_via_access_code]
-        M2BPull[Pull: RPC lookup PT by access code]
-        M2BS2[(Storage: accounts.pt_patient_map)]
-        M2BA1 --> M2BS1
-        M2BS1 --> M2BA2
-        M2BA2 --> M2BT1 --> M2BP1 --> M2BPull --> M2BS2
+    subgraph M2B [Module 2: Route B - Patient Signs Up, Links PT Later]
+        direction LR
+        subgraph M2BStep1 [Patient Signs Up]
+            direction TB
+            M2BA1[App: Patient signs up without access code, submits]
+            M2BT1[Tx: email, password, first_name, last_name, dob, gender]
+            M2BP1[Proc: Cloud - Auth; Cloud - profiles, patient_profiles upsert]
+            M2BSt1[(Storage: auth.users, profiles, patient_profiles)]
+            M2BA1 --> M2BT1 --> M2BP1 --> M2BSt1
+        end
+        subgraph M2BStep2 [Patient Links PT in Settings]
+            direction TB
+            M2BPull[Pull: RPC lookup PT by access code]
+            M2BA2[App: Patient goes to Settings, taps Connect, enters access code]
+            M2BT2[Tx: access_code, patient_profile_id]
+            M2BP2[Proc: Device - trim; Cloud - RPC link_patient_via_access_code]
+            M2BSt2[(Storage: accounts.pt_patient_map)]
+            M2BPull --> M2BA2 --> M2BT2 --> M2BP2 --> M2BSt2
+        end
+        M2BStep1 --> M2BStep2
     end
 
     subgraph M3 [Module 3: Patient Views Rehab Plan]
-        M3A1[App: Patient opens Dashboard or Journey tab]
-        M3Pull1[Pull: myProfile from cache or Supabase accounts.profiles]
-        M3Pull2[Pull: myPatientProfileId from cache or Supabase]
-        M3Pull3[Pull: getPTProfileId from cache or Supabase pt_patient_map]
-        M3Pull4[Pull: currentPlan from cache or Supabase accounts.rehab_plans]
-        M3Pull5[Pull: getLessonProgress from cache or Supabase patient_lesson_progress]
-        M3P1[Proc: Device - merge local draft with remote, PlanNodeDTO to JourneyNode]
-        M3D1[Display: journey map with progress indicators]
-        M3A1 --> M3Pull1 --> M3Pull2 --> M3Pull3 --> M3Pull4 --> M3Pull5 --> M3P1 --> M3D1
+        direction LR
+        subgraph M3Step1 [View Journey Map]
+            direction TB
+            M3Pull1[Pull: myProfile, myPatientProfileId, getPTProfileId from cache or Supabase]
+            M3Pull2[Pull: currentPlan, getLessonProgress from cache or Supabase]
+            M3A1[App: Patient opens Dashboard or Journey tab]
+            M3P1[Proc: Device - merge local draft with remote, display journey map]
+            M3Pull1 --> M3Pull2 --> M3A1 --> M3P1
+        end
     end
 
     subgraph M4 [Module 4: Device Pairing]
-        M4A1[App: Patient pairs BLE knee brace via Add button]
-        M4T1[Tx: bluetooth_identifier serial]
-        M4P1[Proc: Cloud - RPC get_or_create_device_assignment]
-        M4S1[(Storage: telemetry.devices, telemetry.device_assignments)]
-        M4A1 --> M4T1 --> M4P1 --> M4S1
+        direction LR
+        subgraph M4Step1 [Pair Device]
+            direction TB
+            M4A1[App: Patient taps Add, Pair Device, selects BLE knee brace]
+            M4T1[Tx: bluetooth_identifier serial]
+            M4P1[Proc: Cloud - RPC get_or_create_device_assignment]
+            M4St1[(Storage: telemetry.devices, telemetry.device_assignments)]
+            M4A1 --> M4T1 --> M4P1 --> M4St1
+        end
     end
 
     subgraph M5 [Module 5: Calibration]
-        M5A1[App: Patient taps Set Starting Position, then Set Maximum Position]
-        M5T1[Tx: raw flex 185-300, stage, device_assignment_id, recorded_at]
-        M5P1[Proc: Device - convertToDegrees; TelemetryService.saveCalibration]
-        M5S1[(Storage: telemetry.calibrations)]
-        M5C1[Cache: calibrationPoints for lesson load]
-        M5A1 --> M5T1 --> M5P1 --> M5S1 --> M5C1
+        direction LR
+        subgraph M5Step1 [Set Start and Max Position]
+            direction TB
+            M5A1[App: Patient taps Set Starting Position, then Set Maximum Position]
+            M5T1[Tx: raw flex value, stage, device_assignment_id, recorded_at]
+            M5P1[Proc: Device - convert to degrees; save calibration]
+            M5St1[(Storage: telemetry.calibrations)]
+            M5A1 --> M5T1 --> M5P1 --> M5St1
+        end
     end
 
     subgraph M6 [Module 6: Knee Extension Exercise]
-        M6A1[App: Patient taps lesson node, Directions, Begin Lesson]
-        M6Pull1[Pull: calibration from cache or Supabase]
-        M6Pull2[Pull: plan nodes from currentPlan cache or Supabase]
-        M6A2[App: Patient moves leg; BLE flex and IMU stream]
-        M6T1[Tx: reps_completed, reps_target, elapsed_seconds, status]
-        M6P1[Proc: Device - convert to degrees, validate, green or red on screen]
-        M6S1[Storage: LocalLessonProgressStore draft]
-        M6S2[Storage: Outbox then RPC upsert to patient_lesson_progress when online]
-        M6A1 --> M6Pull1 --> M6Pull2
-        M6Pull2 --> M6A2
-        M6A2 --> M6T1 --> M6P1 --> M6S1 --> M6S2
+        direction LR
+        subgraph M6Step1 [Start Lesson]
+            direction TB
+            M6Pull1[Pull: calibration from cache or Supabase]
+            M6Pull2[Pull: plan nodes from currentPlan cache or Supabase]
+            M6A1[App: Patient taps lesson node, Directions, Begin Lesson]
+            M6P1[Proc: Device - load calibration and plan for lesson]
+            M6Pull1 --> M6Pull2 --> M6A1 --> M6P1
+        end
+        subgraph M6Step2 [During Lesson]
+            direction TB
+            M6A2[App: Patient moves leg through reps; completes or pauses]
+            M6T1[Tx: reps_completed, reps_target, elapsed_seconds, status]
+            M6P2[Proc: Device - save draft; validate; green or red on screen]
+            M6St2[Storage: LocalLessonProgressStore draft; Outbox; patient_lesson_progress when online]
+            M6A2 --> M6T1 --> M6P2 --> M6St2
+        end
+        M6Step1 --> M6Step2
     end
 
     subgraph M7 [Module 7: Reassessment After Lesson]
-        M7A1[App: Patient extends to max again, taps Set Maximum Position]
-        M7T1[Tx: raw flex, stage maximum_position, device_assignment_id]
-        M7P1[Proc: Device - convertToDegrees; TelemetryService.saveCalibration]
-        M7S1[(Storage: telemetry.calibrations new row)]
-        M7A1 --> M7T1 --> M7P1 --> M7S1
+        direction LR
+        subgraph M7Step1 [Set New Maximum]
+            direction TB
+            M7A1[App: Patient extends to max again, taps Set Maximum Position]
+            M7T1[Tx: raw flex, stage maximum_position, device_assignment_id]
+            M7P1[Proc: Device - convert to degrees; save calibration]
+            M7St1[(Storage: telemetry.calibrations)]
+            M7A1 --> M7T1 --> M7P1 --> M7St1
+        end
     end
 
     subgraph M8 [Module 8: Range Gained Completion]
-        M8A1[App: Patient views Completion screen]
-        M8Pull1[Pull: getAllMaximumCalibrationsForPatient from Supabase telemetry.calibrations]
-        M8P1[Proc: Device - compute reassessment max minus original max]
-        M8D1[Display: range gained on screen]
-        M8S1[Storage: rehab.session_metrics or derived; Device cache]
-        M8A1 --> M8Pull1 --> M8P1 --> M8D1 --> M8S1
+        direction LR
+        subgraph M8Step1 [View Completion]
+            direction TB
+            M8Pull1[Pull: max calibrations from Supabase telemetry.calibrations]
+            M8A1[App: Patient views Completion screen]
+            M8P1[Proc: Device - compute reassessment max minus original max]
+            M8D1[Display: range gained on screen]
+            M8Pull1 --> M8A1 --> M8P1 --> M8D1
+        end
     end
 ```
 
@@ -205,5 +249,5 @@ To recreate these diagrams in your preferred tool (e.g., Figma, Lucidchart, draw
 
 1. **Render Mermaid**: Use [mermaid.live](https://mermaid.live), GitHub, or VS Code (Mermaid extension) to view the diagrams.
 2. **Export**: From Mermaid Live Editor, export as PNG or SVG.
-3. **Manual recreation**: Each subgraph maps to a swimlane or container. Nodes are boxes; arrows show flow. Order: Application → Transaction (what is captured) → Processing (raw kept or transformed) → Pull (from Supabase or cache, if any) → Storage (where it goes).
-4. **Color coding**: Consider using distinct colors for Application (blue), Transaction (yellow), Pull (orange), Processing (gray), and Storage (green) for clarity.
+3. **Manual recreation**: Flow moves left to right. Within each step: Pull (if any) above the user action; Tx, Proc, Storage below. User actions in the center row. Order: Pull → App → Tx → Proc → Storage (top to bottom within each column).
+4. **Color coding**: Consider using distinct colors for App (blue), Tx (yellow), Pull (orange), Proc (gray), and Storage (green) for clarity.

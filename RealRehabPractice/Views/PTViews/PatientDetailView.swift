@@ -5,6 +5,7 @@ struct PatientDetailView: View {
     let patientProfileId: UUID
     @EnvironmentObject var router: Router
     @EnvironmentObject var session: SessionContext
+    @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @StateObject private var vm = PTPatientsViewModel()
     @State private var notes: String = ""
     @State private var currentPlan: RehabService.PlanRow? = nil
@@ -14,6 +15,7 @@ struct PatientDetailView: View {
     @State private var errorMessage: String? = nil
     @State private var notesSaveTask: Task<Void, Never>? = nil
     @State private var isKeyboardVisible = false
+    @State private var showOfflineBanner = false
     
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -25,7 +27,9 @@ struct PatientDetailView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
-                VStack(alignment: .leading, spacing: RRSpace.section) {
+                VStack(alignment: .leading, spacing: 0) {
+                    OfflineStaleBanner(showBanner: !networkMonitor.isOnline && showOfflineBanner)
+                    VStack(alignment: .leading, spacing: RRSpace.section) {
                     Text(patientName)
                         .font(.rrHeadline)
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -242,7 +246,10 @@ struct PatientDetailView: View {
         }
         .task {
             vm.setPTProfileId(session.ptProfileId)
-            await loadPatientData(patientProfileId: patientProfileId)
+            await loadPatientData(patientProfileId: patientProfileId, forceRefresh: false)
+        }
+        .refreshable {
+            await loadPatientData(patientProfileId: patientProfileId, forceRefresh: true)
         }
         .onChange(of: notes) { oldValue, newValue in
             // Auto-save notes after user stops typing (debounce)
@@ -314,7 +321,7 @@ struct PatientDetailView: View {
         return "DOB: --/--/--   •   Gender: --" // Placeholder
     }
     
-    private func loadPatientData(patientProfileId: UUID) async {
+    private func loadPatientData(patientProfileId: UUID, forceRefresh: Bool = false) async {
         guard let ptProfileId = session.ptProfileId else {
             errorMessage = "PT profile not available"
             print("❌ PatientDetailView.loadPatientData: ptProfileId is nil")
@@ -322,20 +329,18 @@ struct PatientDetailView: View {
         }
         
         isLoading = true
+        showOfflineBanner = false
         do {
-            // Load specific patient by patient_profile_id
-            let loadedPatient = try await PTService.getPatient(patientProfileId: patientProfileId)
+            let (loadedPatient, patientStale) = try await PTService.getPatientForDisplay(patientProfileId: patientProfileId)
             self.patient = loadedPatient
-            let plan = try await RehabService.currentPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
+            let (plan, planStale) = try await RehabService.currentPlanForDisplay(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
             self.currentPlan = plan
-            // Load notes from plan
             self.notes = plan?.notes ?? ""
+            self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (patientStale || planStale || forceRefresh)
         } catch {
-            // Ignore cancellation errors when navigating quickly
             if error is CancellationError || Task.isCancelled {
                 return
             }
-            // Don't show error when we have cached data to display (e.g. offline after app close)
             if patient == nil && currentPlan == nil {
                 print("❌ PatientDetailView.loadPatientData error: \(error)")
                 errorMessage = error.localizedDescription

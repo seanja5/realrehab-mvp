@@ -11,6 +11,8 @@ final class PTPatientsViewModel: ObservableObject {
     @Published var gender = "Male"
     @Published var isLoading = false
     @Published var errorMessage: String?
+    /// True when we should show the offline/stale banner (offline and either data is stale or user tried to refresh).
+    @Published var showOfflineBanner = false
     
     private let genderOptions = ["Male", "Female", "Non-binary", "Prefer not to say"]
     private var ptProfileId: UUID?
@@ -19,7 +21,7 @@ final class PTPatientsViewModel: ObservableObject {
         self.ptProfileId = id
     }
     
-    func load() async {
+    func load(forceRefresh: Bool = false) async {
         guard let ptProfileId = ptProfileId else {
             errorMessage = "PT profile not available"
             print("❌ PTPatientsViewModel.load: ptProfileId is nil")
@@ -28,15 +30,16 @@ final class PTPatientsViewModel: ObservableObject {
         
         isLoading = true
         errorMessage = nil
+        showOfflineBanner = false
         do {
-            self.patients = try await PTService.listMyPatients(ptProfileId: ptProfileId)
+            let (list, isStale) = try await PTService.listMyPatientsForDisplay(ptProfileId: ptProfileId)
+            self.patients = list
+            self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (isStale || forceRefresh)
             print("✅ PTPatientsViewModel.load: loaded \(self.patients.count) patients for pt_profile_id=\(ptProfileId.uuidString)")
         } catch {
-            // Ignore cancellation errors when navigating quickly
             if error is CancellationError || Task.isCancelled {
                 return
             }
-            // Don't show error when we have cached data to display (e.g. offline after app close)
             if patients.isEmpty {
                 errorMessage = error.localizedDescription
                 print("❌ PTPatientsViewModel.load error: \(error)")

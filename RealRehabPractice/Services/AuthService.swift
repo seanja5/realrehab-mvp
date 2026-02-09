@@ -100,6 +100,25 @@ enum AuthService {
     return result
   }
 
+  /// Load profile for display; when offline returns stale cache if available and reports isStale for banner.
+  @MainActor
+  static func myProfileForDisplay() async throws -> (value: Profile?, isStale: Bool) {
+    let uid = try currentUserId()
+    let cacheKey = CacheKey.authProfile(userId: uid)
+    let allowStale = !NetworkMonitor.shared.isOnline
+    if let result = await CacheService.shared.getCachedResult(cacheKey, as: Profile?.self, useDisk: true, allowStaleWhenOffline: allowStale) {
+      if !NetworkMonitor.shared.isOnline {
+        return (result.value, result.isStale)
+      }
+      return (result.value, false)
+    }
+    if !NetworkMonitor.shared.isOnline {
+      throw NSError(domain: "AuthService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Offline and no cached profile"])
+    }
+    let value = try await myProfile()
+    return (value, false)
+  }
+
   // MARK: - Fetch profile ID and role
   static func myProfileIdAndRole() async throws -> (UUID, String) {
     let uid = try currentUserId()

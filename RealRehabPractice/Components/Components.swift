@@ -40,6 +40,24 @@ struct PrimaryButton: View {
     }
 }
 
+// MARK: - Offline / stale data banner
+/// Shown when the user is offline and viewing cached (possibly stale) data. Only show when `showBanner` is true (offline and either stale or refresh was attempted).
+struct OfflineStaleBanner: View {
+    var showBanner: Bool
+    var body: some View {
+        if showBanner {
+            Text("Offline — you're viewing the latest available information.")
+                .font(.rrCaption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .background(Color(.systemGray5))
+        }
+    }
+}
+
 // MARK: - Secondary (Outline) Button
 struct SecondaryButton: View {
     let title: String

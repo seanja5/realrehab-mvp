@@ -3,24 +3,31 @@ import SwiftUI
 struct PTSettingsView: View {
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var session: SessionContext
+    @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var notifySessionComplete = true
     @State private var notifyMissedDay = false
     @State private var ptProfile: PTService.PTProfileRow? = nil
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
+    /// True when we should show the offline/stale banner (offline and either data is stale or user tried to refresh).
+    @State private var showOfflineBanner = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
-                VStack(spacing: 24) {
-                    accountSection
-                    notificationsSection
-                    practiceSection
-                    dangerZoneSection
+                VStack(spacing: 0) {
+                    OfflineStaleBanner(showBanner: !networkMonitor.isOnline && showOfflineBanner)
+                    VStack(spacing: 24) {
+                        accountSection
+                        notificationsSection
+                        practiceSection
+                        dangerZoneSection
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 120)
                 }
-                .padding(.horizontal, 20)
                 .padding(.top, RRSpace.pageTop)
-                .padding(.bottom, 120)
             }
             .rrPageBackground()
             .navigationTitle("Settings")
@@ -37,7 +44,10 @@ struct PTSettingsView: View {
         }
         .navigationBarBackButtonHidden(true)
         .task {
-            await loadProfile()
+            await loadProfile(forceRefresh: false)
+        }
+        .refreshable {
+            await loadProfile(forceRefresh: true)
         }
         .alert("Error", isPresented: .constant(errorMessage != nil)) {
             Button("OK") {
@@ -222,26 +232,26 @@ struct PTSettingsView: View {
         }
     }
     
-    private func loadProfile() async {
+    private func loadProfile(forceRefresh: Bool = false) async {
         guard session.ptProfileId != nil else {
             errorMessage = "PT profile not available"
             return
         }
         
-        // Only show loading if we don't have data yet
         if ptProfile == nil {
             isLoading = true
         }
+        showOfflineBanner = false
         
         do {
-            let profile = try await PTService.myPTProfile()
+            let (profile, isStale) = try await PTService.myPTProfileForDisplay()
             self.ptProfile = profile
+            // Show banner when offline and (data is stale or user explicitly tried to refresh)
+            self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (isStale || forceRefresh)
         } catch {
-            // Ignore cancellation errors when navigating quickly
             if error is CancellationError || Task.isCancelled {
                 return
             }
-            // Don't show error when we have cached data to display (e.g. offline after tab switch)
             if ptProfile == nil {
                 print("❌ PTSettingsView.loadProfile error: \(error)")
                 errorMessage = error.localizedDescription

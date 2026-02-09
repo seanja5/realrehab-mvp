@@ -39,47 +39,63 @@ public final class JourneyMapViewModel: ObservableObject {
     @Published public var lessonProgress: [UUID: LessonProgressInfo] = [:]
     @Published public var isLoading: Bool = false
     @Published public var errorMessage: String?
+    /// True when we should show the offline/stale banner (offline and either data is stale or user tried to refresh).
+    @Published public var showOfflineBanner: Bool = false
     
     public init() {}
     
     @MainActor
     public func load(forceRefresh: Bool = false) async {
-        // Only show loading if we don't have data yet
         if nodes.isEmpty {
             isLoading = true
         }
         errorMessage = nil
+        showOfflineBanner = false
         
         do {
-            // Get current user's profile
-            guard let profile = try await AuthService.myProfile() else {
+            let (profileOpt, profileStale) = try await AuthService.myProfileForDisplay()
+            guard let profile = profileOpt else {
                 throw NSError(domain: "JourneyMapViewModel", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profile not found"])
             }
             
-            // Get patient profile ID
-            let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
+            let patientProfileId: UUID
+            var idsStale = profileStale
+            if let cached = await PatientService.myPatientProfileIdForDisplay(profileId: profile.id) {
+                patientProfileId = cached.0
+                if NetworkMonitor.shared.isOnline { idsStale = false }
+                else { idsStale = idsStale || cached.1 }
+            } else {
+                patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
+            }
             print("🔍 JourneyMapViewModel: patient_profile_id=\(patientProfileId.uuidString)")
             
             if forceRefresh {
                 await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
             }
             
-            // Get PT profile ID from patient profile ID (using cached service)
-            guard let ptProfileId = try await PatientService.getPTProfileId(patientProfileId: patientProfileId) else {
+            let ptProfileId: UUID?
+            if let cached = await PatientService.getPTProfileIdForDisplay(patientProfileId: patientProfileId) {
+                ptProfileId = cached.0
+                if !NetworkMonitor.shared.isOnline { idsStale = idsStale || cached.1 }
+            } else {
+                ptProfileId = try await PatientService.getPTProfileId(patientProfileId: patientProfileId)
+            }
+            guard let ptProfileId = ptProfileId else {
                 print("⚠️ JourneyMapViewModel: no pt_patient_map found for patient")
                 isLoading = false
                 return
             }
             print("🔍 JourneyMapViewModel: pt_profile_id=\(ptProfileId.uuidString)")
             
-            // Fetch the active rehab plan
-            guard let plan = try await RehabService.currentPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId) else {
+            let (plan, planStale) = try await RehabService.currentPlanForDisplay(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
+            guard let plan = plan else {
                 print("ℹ️ JourneyMapViewModel: no active plan found")
                 isLoading = false
                 return
             }
             
-            // Convert PlanNodeDTO to JourneyNode (constant-segment layout; nominal width 390)
+            var anyStale = idsStale || planStale
+            
             if let planNodes = plan.nodes, !planNodes.isEmpty {
                 let phases = planNodes.map { max(1, min(4, $0.phase ?? 1)) }
                 let yOffsets = ACLJourneyModels.layoutYOffsets(phases: phases, width: 390)
@@ -92,9 +108,9 @@ public final class JourneyMapViewModel: ObservableObject {
                 }
                 print("✅ JourneyMapViewModel: loaded \(nodes.count) nodes from plan")
                 
-                // Load lesson progress (merge local drafts + Supabase)
                 var progress: [UUID: LessonProgressInfo] = [:]
-                let remoteProgress = (try? await RehabService.getLessonProgress(patientProfileId: patientProfileId)) ?? [:]
+                let (remoteProgress, progressStale) = (try? await RehabService.getLessonProgressForDisplay(patientProfileId: patientProfileId)) ?? ([:], false)
+                anyStale = anyStale || (NetworkMonitor.shared.isOnline ? false : progressStale)
                 for node in nodes where node.nodeType == .lesson {
                     let lessonId = node.id
                     if let local = LocalLessonProgressStore.shared.loadDraft(lessonId: lessonId) {
@@ -117,19 +133,17 @@ public final class JourneyMapViewModel: ObservableObject {
             } else {
                 print("ℹ️ JourneyMapViewModel: plan has no nodes")
             }
+            showOfflineBanner = !NetworkMonitor.shared.isOnline && (anyStale || forceRefresh)
         } catch {
-            // Ignore cancellation errors when navigating quickly
             if error is CancellationError || Task.isCancelled {
                 isLoading = false
                 return
             }
-            // Don't show error when we have cached data to display (e.g. offline after tab switch)
             if nodes.isEmpty {
                 errorMessage = error.localizedDescription
                 print("❌ JourneyMapViewModel.load error: \(error)")
             }
         }
-        
         isLoading = false
     }
 }

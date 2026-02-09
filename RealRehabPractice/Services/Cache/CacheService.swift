@@ -42,16 +42,20 @@ final class CacheService {
     
     /// Get value from memory cache
     func get<T: Codable>(_ key: String, as type: T.Type) -> T? {
-        guard let entry = memoryCache[key] as? CacheEntry<T> else {
-            return nil
-        }
-        
+        getWithStaleness(key, as: type, allowStaleWhenOffline: false)?.0
+    }
+    
+    /// Get value from memory cache; optionally return expired value without removing (for offline stale use).
+    private func getWithStaleness<T: Codable>(_ key: String, as type: T.Type, allowStaleWhenOffline: Bool) -> (T, Bool)? {
+        guard let entry = memoryCache[key] as? CacheEntry<T> else { return nil }
         if entry.isExpired {
+            if allowStaleWhenOffline {
+                return (entry.value, true)
+            }
             memoryCache.removeValue(forKey: key)
             return nil
         }
-        
-        return entry.value
+        return (entry.value, false)
     }
     
     /// Set value in memory cache
@@ -67,25 +71,28 @@ final class CacheService {
     
     // MARK: - Disk Cache Operations
     
-    /// Get value from disk cache (also loads into memory)
+    /// Get value from disk cache (also loads into memory). Expired entries are removed and not returned.
     func getFromDisk<T: Codable>(_ key: String, as type: T.Type) -> T? {
+        getFromDiskWithStaleness(key, as: type, allowStaleWhenOffline: false)?.0
+    }
+    
+    /// Get value from disk cache; optionally return expired value without removing (for offline stale use).
+    private func getFromDiskWithStaleness<T: Codable>(_ key: String, as type: T.Type, allowStaleWhenOffline: Bool) -> (T, Bool)? {
         let fileURL = cacheDirectory.appendingPathComponent("\(key).json")
-        
         guard FileManager.default.fileExists(atPath: fileURL.path),
               let data = try? Data(contentsOf: fileURL),
               let entry = try? JSONDecoder().decode(CacheEntry<T>.self, from: data) else {
             return nil
         }
-        
         if entry.isExpired {
+            if allowStaleWhenOffline {
+                return (entry.value, true)
+            }
             try? FileManager.default.removeItem(at: fileURL)
             return nil
         }
-        
-        // Load into memory cache for faster access
         memoryCache[key] = entry
-        
-        return entry.value
+        return (entry.value, false)
     }
     
     /// Set value in disk cache (also updates memory)
@@ -111,19 +118,33 @@ final class CacheService {
     
     // MARK: - Combined Operations
     
-    /// Get value from cache (memory first, then disk)
-    func getCached<T: Codable>(_ key: String, as type: T.Type, useDisk: Bool = false) async -> T? {
+    /// Result of a cache read that may be stale (e.g. when offline past TTL).
+    struct CacheResult<T> {
+        let value: T
+        let isStale: Bool
+    }
+    
+    /// Get value from cache (memory first, then disk).
+    /// When `allowStaleWhenOffline` is true, expired entries are still returned (and not removed) so UI can show last-known data; `isStale` will be true.
+    func getCachedResult<T: Codable>(_ key: String, as type: T.Type, useDisk: Bool = false, allowStaleWhenOffline: Bool = false) async -> CacheResult<T>? {
         await Task.yield()
         // Try memory first
-        if let value = get(key, as: type) {
-            return value
+        if let (value, isStale) = getWithStaleness(key, as: type, allowStaleWhenOffline: allowStaleWhenOffline) {
+            return CacheResult(value: value, isStale: isStale)
         }
-        
-        // Try disk if enabled
         if useDisk {
-            return getFromDisk(key, as: type)
+            if let (value, isStale) = getFromDiskWithStaleness(key, as: type, allowStaleWhenOffline: allowStaleWhenOffline) {
+                return CacheResult(value: value, isStale: isStale)
+            }
         }
-        
+        return nil
+    }
+    
+    /// Get value from cache (memory first, then disk). Expired entries are not returned.
+    func getCached<T: Codable>(_ key: String, as type: T.Type, useDisk: Bool = false) async -> T? {
+        await Task.yield()
+        if let value = get(key, as: type) { return value }
+        if useDisk { return getFromDisk(key, as: type) }
         return nil
     }
     

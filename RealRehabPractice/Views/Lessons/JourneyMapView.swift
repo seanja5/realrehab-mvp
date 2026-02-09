@@ -2,6 +2,7 @@ import SwiftUI
 
 struct JourneyMapView: View {
     @EnvironmentObject var router: Router
+    @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @StateObject private var vm = JourneyMapViewModel()
     
     @State private var showCallout = false
@@ -67,6 +68,8 @@ struct JourneyMapView: View {
                 }
             } else {
                 ScrollView {
+                    VStack(spacing: 0) {
+                        OfflineStaleBanner(showBanner: !networkMonitor.isOnline && vm.showOfflineBanner)
                     ZStack(alignment: .top) {
                         VStack(spacing: 0) {
                             Color.clear.frame(height: 1)
@@ -158,6 +161,7 @@ struct JourneyMapView: View {
                     }
                 }
                 .coordinateSpace(name: JourneyMapPhaseHeader.coordinateSpaceName)
+                    }
             }
             
             PatientTabBar(
@@ -320,17 +324,13 @@ struct JourneyMapView: View {
                             )
                             .padding(.top, 140)
                         }
+                    }
                 }
         }
         .task {
-            await vm.load()
+            await vm.load(forceRefresh: false)
         }
         .refreshable {
-            guard NetworkMonitor.shared.isOnline else {
-                offlineRefreshMessage = "You're offline. You're viewing the latest saved plan and progress."
-                return
-            }
-            offlineRefreshMessage = nil
             await vm.load(forceRefresh: true)
         }
         .alert("Offline", isPresented: .constant(offlineRefreshMessage != nil)) {

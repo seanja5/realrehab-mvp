@@ -164,6 +164,28 @@ enum PTService {
         return pt
     }
     
+    /// Load PT profile for display; when offline returns stale cache if available and reports isStale for banner.
+    @MainActor
+    static func myPTProfileForDisplay() async throws -> (PTProfileRow, isStale: Bool) {
+        guard let profile = try await AuthService.myProfileForDisplay() else {
+            throw NSError(domain: "PTService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Unable to load profile"])
+        }
+        let cacheKey = CacheKey.ptProfile(profileId: profile.value.id)
+        let allowStale = !NetworkMonitor.shared.isOnline
+        if let result = await CacheService.shared.getCachedResult(cacheKey, as: PTProfileRow.self, useDisk: true, allowStaleWhenOffline: allowStale) {
+            if !NetworkMonitor.shared.isOnline {
+                return (result.value, result.isStale)
+            }
+            // Online: use fresh cache hit
+            return (result.value, false)
+        }
+        if !NetworkMonitor.shared.isOnline {
+            throw NSError(domain: "PTService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Offline and no cached profile"])
+        }
+        let pt = try await myPTProfile()
+        return (pt, false)
+    }
+    
     // MARK: - Patient Management
     
     static func addPatient(
@@ -356,6 +378,24 @@ enum PTService {
         return result
     }
     
+    /// Load patient list for display; when offline returns stale cache if available and reports isStale for banner.
+    @MainActor
+    static func listMyPatientsForDisplay(ptProfileId: UUID) async throws -> ([SimplePatient], isStale: Bool) {
+        let cacheKey = CacheKey.patientList(ptProfileId: ptProfileId)
+        let allowStale = !NetworkMonitor.shared.isOnline
+        if let result = await CacheService.shared.getCachedResult(cacheKey, as: [SimplePatient].self, useDisk: true, allowStaleWhenOffline: allowStale) {
+            if !NetworkMonitor.shared.isOnline {
+                return (result.value, result.isStale)
+            }
+            return (result.value, false)
+        }
+        if !NetworkMonitor.shared.isOnline {
+            throw NSError(domain: "PTService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Offline and no cached patient list"])
+        }
+        let list = try await listMyPatients(ptProfileId: ptProfileId)
+        return (list, false)
+    }
+    
     @MainActor
     static func getPatient(patientProfileId: UUID) async throws -> SimplePatient {
         let cacheKey = CacheKey.patientDetail(patientProfileId: patientProfileId)
@@ -444,6 +484,24 @@ enum PTService {
         print("✅ PTService.getPatient: cached result")
         
         return result
+    }
+    
+    /// Load patient detail for display; when offline returns stale cache if available and reports isStale for banner.
+    @MainActor
+    static func getPatientForDisplay(patientProfileId: UUID) async throws -> (SimplePatient, isStale: Bool) {
+        let cacheKey = CacheKey.patientDetail(patientProfileId: patientProfileId)
+        let allowStale = !NetworkMonitor.shared.isOnline
+        if let result = await CacheService.shared.getCachedResult(cacheKey, as: SimplePatient.self, useDisk: true, allowStaleWhenOffline: allowStale) {
+            if !NetworkMonitor.shared.isOnline {
+                return (result.value, result.isStale)
+            }
+            return (result.value, false)
+        }
+        if !NetworkMonitor.shared.isOnline {
+            throw NSError(domain: "PTService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Offline and no cached patient detail"])
+        }
+        let patient = try await getPatient(patientProfileId: patientProfileId)
+        return (patient, false)
     }
     
     @MainActor

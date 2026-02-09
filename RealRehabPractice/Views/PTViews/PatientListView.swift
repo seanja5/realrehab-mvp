@@ -3,6 +3,7 @@ import SwiftUI
 struct PatientListView: View {
     @EnvironmentObject var router: Router
     @EnvironmentObject var session: SessionContext
+    @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @StateObject private var vm = PTPatientsViewModel()
     
     private func formatPatientName(first: String, last: String) -> String {
@@ -38,7 +39,9 @@ struct PatientListView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 0) {
+                    OfflineStaleBanner(showBanner: !networkMonitor.isOnline && vm.showOfflineBanner)
+                    VStack(spacing: 24) {
                     if vm.patients.isEmpty {
                         VStack(spacing: 20) {
                             Spacer()
@@ -83,6 +86,7 @@ struct PatientListView: View {
                     }
                 }
                 .padding(.bottom, 120)
+                }
             }
             
             PTTabBar(selected: .dashboard) { tab in
@@ -106,7 +110,10 @@ struct PatientListView: View {
         .navigationBarBackButtonHidden(true)
         .task {
             vm.setPTProfileId(session.ptProfileId)
-            await vm.load()
+            await vm.load(forceRefresh: false)
+        }
+        .refreshable {
+            await vm.load(forceRefresh: true)
         }
         .onChange(of: session.ptProfileId) { oldValue, newValue in
             vm.setPTProfileId(newValue)

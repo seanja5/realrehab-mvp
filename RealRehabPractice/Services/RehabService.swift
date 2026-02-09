@@ -226,6 +226,25 @@ enum RehabService {
 
     return result
   }
+
+  /// Load lesson progress for display; when offline returns stale cache if available and reports isStale for banner.
+  @MainActor
+  static func getLessonProgressForDisplay(patientProfileId: UUID) async throws -> ([UUID: PatientLessonProgressRow], isStale: Bool) {
+    let cacheKey = CacheKey.lessonProgress(patientProfileId: patientProfileId)
+    let allowStale = !NetworkMonitor.shared.isOnline
+    if let result = await CacheService.shared.getCachedResult(cacheKey, as: [PatientLessonProgressRow].self, useDisk: true, allowStaleWhenOffline: allowStale) {
+      let dict = Dictionary(uniqueKeysWithValues: result.value.map { ($0.lesson_id, $0) })
+      if !NetworkMonitor.shared.isOnline {
+        return (dict, result.isStale)
+      }
+      return (dict, false)
+    }
+    if !NetworkMonitor.shared.isOnline {
+      throw NSError(domain: "RehabService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Offline and no cached lesson progress"])
+    }
+    let dict = try await getLessonProgress(patientProfileId: patientProfileId)
+    return (dict, false)
+  }
   
   // MARK: - Rehab Plans (MVP)
   
@@ -279,6 +298,24 @@ enum RehabService {
       print("❌ RehabService.currentPlan error: \(error)")
       throw error
     }
+  }
+
+  /// Load current plan for display; when offline returns stale cache if available and reports isStale for banner.
+  @MainActor
+  static func currentPlanForDisplay(ptProfileId: UUID, patientProfileId: UUID) async throws -> (PlanRow?, isStale: Bool) {
+    let cacheKey = CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
+    let allowStale = !NetworkMonitor.shared.isOnline
+    if let result = await CacheService.shared.getCachedResult(cacheKey, as: PlanRow?.self, useDisk: true, allowStaleWhenOffline: allowStale) {
+      if !NetworkMonitor.shared.isOnline {
+        return (result.value, result.isStale)
+      }
+      return (result.value, false)
+    }
+    if !NetworkMonitor.shared.isOnline {
+      throw NSError(domain: "RehabService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Offline and no cached plan"])
+    }
+    let plan = try await currentPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
+    return (plan, false)
   }
   
   static func saveACLPlan(ptProfileId: UUID, patientProfileId: UUID, nodes: [LessonNode], notes: String? = nil) async throws {
@@ -401,6 +438,24 @@ enum RehabService {
       print("❌ RehabService.fetchPlan error: \(error)")
       throw error
     }
+  }
+
+  /// Load plan by ID for display; when offline returns stale cache if available and reports isStale for banner.
+  @MainActor
+  static func fetchPlanForDisplay(planId: UUID) async throws -> (PlanRow?, isStale: Bool) {
+    let cacheKey = CacheKey.plan(planId: planId)
+    let allowStale = !NetworkMonitor.shared.isOnline
+    if let result = await CacheService.shared.getCachedResult(cacheKey, as: PlanRow?.self, useDisk: true, allowStaleWhenOffline: allowStale) {
+      if !NetworkMonitor.shared.isOnline {
+        return (result.value, result.isStale)
+      }
+      return (result.value, false)
+    }
+    if !NetworkMonitor.shared.isOnline {
+      throw NSError(domain: "RehabService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Offline and no cached plan"])
+    }
+    let plan = try await fetchPlan(planId: planId)
+    return (plan, false)
   }
 
   // MARK: - Fetch default plan template (for new plans)

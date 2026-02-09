@@ -86,6 +86,26 @@ enum PatientService {
     
     return r.id
   }
+
+  /// For display when offline: returns cached patient profile ID and staleness.
+  @MainActor
+  static func myPatientProfileIdForDisplay(profileId: UUID) async -> (UUID, isStale: Bool)? {
+    let cacheKey = CacheKey.patientProfileId(profileId: profileId)
+    let allowStale = !NetworkMonitor.shared.isOnline
+    guard let result = await CacheService.shared.getCachedResult(cacheKey, as: UUID.self, useDisk: true, allowStaleWhenOffline: allowStale) else { return nil }
+    if !NetworkMonitor.shared.isOnline { return (result.value, result.isStale) }
+    return (result.value, false)
+  }
+
+  /// For display when offline: returns cached PT profile ID and staleness.
+  @MainActor
+  static func getPTProfileIdForDisplay(patientProfileId: UUID) async -> (UUID?, isStale: Bool)? {
+    let cacheKey = CacheKey.ptProfileIdFromPatient(patientProfileId: patientProfileId)
+    let allowStale = !NetworkMonitor.shared.isOnline
+    guard let result = await CacheService.shared.getCachedResult(cacheKey, as: UUID?.self, useDisk: true, allowStaleWhenOffline: allowStale) else { return nil }
+    if !NetworkMonitor.shared.isOnline { return (result.value, result.isStale) }
+    return (result.value, false)
+  }
   
   // Check if patient has a PT (with caching - disk persistence for tab switching)
   static func hasPT(patientProfileId: UUID) async throws -> Bool {
@@ -151,6 +171,28 @@ enum PatientService {
     print("✅ PatientService.myPatientProfile: cached result")
     
     return row
+  }
+
+  /// Load patient profile for display; when offline returns stale cache if available and reports isStale for banner.
+  @MainActor
+  static func myPatientProfileForDisplay() async throws -> (PatientProfileRow, isStale: Bool) {
+    let authResult = try await AuthService.myProfileForDisplay()
+    guard let profile = authResult.value else {
+      throw NSError(domain: "PatientService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profile not found"])
+    }
+    let cacheKey = CacheKey.patientProfile(userId: profile.id)
+    let allowStale = !NetworkMonitor.shared.isOnline
+    if let result = await CacheService.shared.getCachedResult(cacheKey, as: PatientProfileRow.self, useDisk: true, allowStaleWhenOffline: allowStale) {
+      if !NetworkMonitor.shared.isOnline {
+        return (result.value, result.isStale)
+      }
+      return (result.value, false)
+    }
+    if !NetworkMonitor.shared.isOnline {
+      throw NSError(domain: "PatientService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Offline and no cached patient profile"])
+    }
+    let row = try await myPatientProfile()
+    return (row, false)
   }
 
   // Get schedule_reminders_enabled for a patient (with caching)

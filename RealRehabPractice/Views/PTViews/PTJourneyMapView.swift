@@ -44,6 +44,8 @@ struct PTJourneyMapView: View {
     @State private var lastLayoutWidth: CGFloat = 0
     @State private var lessonProgress: [UUID: LessonProgressInfo] = [:]
     @State private var offlineRefreshMessage: String? = nil
+    @State private var showOfflineBanner = false
+    @ObservedObject private var networkMonitor = NetworkMonitor.shared
     
     private var exerciseTypes: [String] { ACLJourneyModels.allExerciseNamesForPicker }
     private var activePhase: Int { activePhaseId }
@@ -117,12 +119,14 @@ struct PTJourneyMapView: View {
     }
     
     // MARK: - Load Plan (edit existing)
-    private func loadPlan() async {
+    private func loadPlan(forceRefresh: Bool = false) async {
         guard let planId = planId else { return }
         isLoading = true
         errorMessage = nil
+        showOfflineBanner = false
         do {
-            guard let plan = try await RehabService.fetchPlan(planId: planId) else {
+            let (planOpt, planStale) = try await RehabService.fetchPlanForDisplay(planId: planId)
+            guard let plan = planOpt else {
                 errorMessage = "Plan not found"
                 isLoading = false
                 return
@@ -131,7 +135,7 @@ struct PTJourneyMapView: View {
                 nodes = RehabService.lessonNodes(from: savedNodes)
                 ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
                 print("✅ PTJourneyMapView: loaded \(nodes.count) nodes from plan")
-                let remoteProgress = (try? await RehabService.getLessonProgress(patientProfileId: patientProfileId)) ?? [:]
+                let (remoteProgress, progressStale) = (try? await RehabService.getLessonProgressForDisplay(patientProfileId: patientProfileId)) ?? ([:], false)
                 var progress: [UUID: LessonProgressInfo] = [:]
                 for node in nodes where node.nodeType == .lesson {
                     if let remote = remoteProgress[node.id] {
@@ -143,10 +147,10 @@ struct PTJourneyMapView: View {
                         )
                     }
                 }
-                // Only overwrite when we got data; avoid clearing bars when refresh fetch fails
                 if !progress.isEmpty || lessonProgress.isEmpty {
                     lessonProgress = progress
                 }
+                showOfflineBanner = !NetworkMonitor.shared.isOnline && (planStale || progressStale || forceRefresh)
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -178,6 +182,8 @@ struct PTJourneyMapView: View {
     
     private var content: some View {
         ScrollView {
+            VStack(spacing: 0) {
+                OfflineStaleBanner(showBanner: !networkMonitor.isOnline && showOfflineBanner)
             ZStack(alignment: .top) {
                 Color.clear
                     .frame(height: 0)
@@ -435,24 +441,20 @@ struct PTJourneyMapView: View {
                         showingPhaseGoals = false
                     }
             }
+            }
         }
         .task {
             if planId != nil {
-                await loadPlan()
+                await loadPlan(forceRefresh: false)
             } else {
                 await loadDefaultPlan()
             }
             ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
         }
         .refreshable {
-            guard NetworkMonitor.shared.isOnline else {
-                offlineRefreshMessage = "You're offline. You're viewing the latest saved plan and progress."
-                return
-            }
-            offlineRefreshMessage = nil
             await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
             if planId != nil {
-                await loadPlan()
+                await loadPlan(forceRefresh: true)
             } else {
                 await CacheService.shared.invalidate(CacheKey.defaultPlanTemplate(category: "Knee", injury: "ACL"))
                 await loadDefaultPlan()

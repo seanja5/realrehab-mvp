@@ -4,6 +4,7 @@ import PostgREST
 
 struct PatientSettingsView: View {
     @EnvironmentObject private var router: Router
+    @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var allowReminders = false
     @State private var allowCamera = false
     @State private var patientProfile: PatientService.PatientProfileRow? = nil
@@ -14,22 +15,27 @@ struct PatientSettingsView: View {
     @State private var accessCode: String = ""
     @State private var isPairing: Bool = false
     @State private var hasLoadedInitial = false  // Skip onChange when loading (prevents offline error)
+    @State private var showOfflineBanner = false
     @FocusState private var isAccessCodeFocused: Bool
 
     var body: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
-                VStack(spacing: 24) {
-                    accountSection
-                    notificationsSection
+                VStack(spacing: 0) {
+                    OfflineStaleBanner(showBanner: !networkMonitor.isOnline && showOfflineBanner)
+                    VStack(spacing: 24) {
+                        accountSection
+                        notificationsSection
                     if !hasPT {
                         connectPTSection
                     }
                     dangerZoneSection
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, RRSpace.pageTop)
+                .padding(.top, 16)
                 .padding(.bottom, 120)
+                }
+                .padding(.top, RRSpace.pageTop)
             }
             .scrollDismissesKeyboard(.interactively)
             .rrPageBackground()
@@ -51,7 +57,11 @@ struct PatientSettingsView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .navigationBarBackButtonHidden(true)
         .task {
-            await loadProfile()
+            await loadProfile(forceRefresh: false)
+            await checkIfHasPT()
+        }
+        .refreshable {
+            await loadProfile(forceRefresh: true)
             await checkIfHasPT()
         }
         .alert("Error", isPresented: .constant(errorMessage != nil)) {
@@ -250,30 +260,26 @@ struct PatientSettingsView: View {
         router.go(.pairDevice)
     }
     
-    private func loadProfile() async {
-        // Only show loading if we don't have data yet
+    private func loadProfile(forceRefresh: Bool = false) async {
         if patientProfile == nil && (email?.isEmpty ?? true) {
             isLoading = true
         }
         errorMessage = nil
+        showOfflineBanner = false
         do {
-            let profile = try await PatientService.myPatientProfile()
+            let (profile, isStale) = try await PatientService.myPatientProfileForDisplay()
             self.patientProfile = profile
             
-            // Fetch email from profiles table
             if let profileId = profile.profile_id {
-                self.email = try await PatientService.getEmail(profileId: profileId)
+                self.email = try? await PatientService.getEmail(profileId: profileId)
             }
-            
-            // Load schedule reminders preference (synced with RehabOverviewView)
             let remindersEnabled = (try? await PatientService.getScheduleRemindersEnabled(patientProfileId: profile.id)) ?? false
             await MainActor.run { allowReminders = remindersEnabled }
+            self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (isStale || forceRefresh)
         } catch {
-            // Ignore cancellation errors when navigating quickly
             if error is CancellationError || Task.isCancelled {
                 return
             }
-            // Don't show error when we have cached data to display (e.g. offline after tab switch)
             if patientProfile == nil {
                 print("❌ PatientSettingsView.loadProfile error: \(error)")
                 errorMessage = error.localizedDescription

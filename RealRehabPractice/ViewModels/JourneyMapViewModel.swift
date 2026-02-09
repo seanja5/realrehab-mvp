@@ -43,7 +43,7 @@ public final class JourneyMapViewModel: ObservableObject {
     public init() {}
     
     @MainActor
-    public func load() async {
+    public func load(forceRefresh: Bool = false) async {
         // Only show loading if we don't have data yet
         if nodes.isEmpty {
             isLoading = true
@@ -59,6 +59,10 @@ public final class JourneyMapViewModel: ObservableObject {
             // Get patient profile ID
             let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
             print("🔍 JourneyMapViewModel: patient_profile_id=\(patientProfileId.uuidString)")
+            
+            if forceRefresh {
+                await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
+            }
             
             // Get PT profile ID from patient profile ID (using cached service)
             guard let ptProfileId = try await PatientService.getPTProfileId(patientProfileId: patientProfileId) else {

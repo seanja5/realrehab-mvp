@@ -43,6 +43,7 @@ struct PTJourneyMapView: View {
     @State private var pressedIndex: Int? = nil // Index of bubble that is "pressed"/enlarged by tap
     @State private var lastLayoutWidth: CGFloat = 0
     @State private var lessonProgress: [UUID: LessonProgressInfo] = [:]
+    @State private var offlineRefreshMessage: String? = nil
     
     private var exerciseTypes: [String] { ACLJourneyModels.allExerciseNamesForPicker }
     private var activePhase: Int { activePhaseId }
@@ -82,6 +83,13 @@ struct PTJourneyMapView: View {
             }
         } message: {
             Text(errorMessage ?? "")
+        }
+        .alert("Offline", isPresented: .constant(offlineRefreshMessage != nil)) {
+            Button("OK") {
+                offlineRefreshMessage = nil
+            }
+        } message: {
+            Text(offlineRefreshMessage ?? "")
         }
     }
     
@@ -135,7 +143,10 @@ struct PTJourneyMapView: View {
                         )
                     }
                 }
-                lessonProgress = progress
+                // Only overwrite when we got data; avoid clearing bars when refresh fetch fails
+                if !progress.isEmpty || lessonProgress.isEmpty {
+                    lessonProgress = progress
+                }
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -434,6 +445,11 @@ struct PTJourneyMapView: View {
             ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
         }
         .refreshable {
+            guard NetworkMonitor.shared.isOnline else {
+                offlineRefreshMessage = "You're offline. You're viewing the latest saved plan and progress."
+                return
+            }
+            offlineRefreshMessage = nil
             await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
             if planId != nil {
                 await loadPlan()

@@ -12,6 +12,7 @@ struct JourneyMapView: View {
     @State private var activePhaseId: Int = 1
     @State private var headerBottomGlobal: CGFloat = 0
     @State private var lastKnownPhasePositions: [Int: CGFloat] = [:]
+    @State private var offlineRefreshMessage: String? = nil
     private var activePhase: Int { activePhaseId }
     
     // Computed property for dynamic height (phase clearance built into node yOffsets)
@@ -323,6 +324,21 @@ struct JourneyMapView: View {
         }
         .task {
             await vm.load()
+        }
+        .refreshable {
+            guard NetworkMonitor.shared.isOnline else {
+                offlineRefreshMessage = "You're offline. You're viewing the latest saved plan and progress."
+                return
+            }
+            offlineRefreshMessage = nil
+            await vm.load(forceRefresh: true)
+        }
+        .alert("Offline", isPresented: .constant(offlineRefreshMessage != nil)) {
+            Button("OK") {
+                offlineRefreshMessage = nil
+            }
+        } message: {
+            Text(offlineRefreshMessage ?? "")
         }
         .bluetoothPopupOverlay()
     }

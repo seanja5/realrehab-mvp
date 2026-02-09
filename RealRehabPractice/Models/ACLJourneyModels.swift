@@ -122,7 +122,7 @@ public enum ACLPhase: Int, CaseIterable {
 // MARK: - Lesson Node Model (shared between PT and Patient)
 // Note: Display icons come from lessonIconSystemName(for: title), not from a stored icon field.
 struct LessonNode: Identifiable {
-    let id = UUID()
+    let id: UUID
     var title: String
     var isLocked: Bool
     var reps: Int
@@ -143,6 +143,26 @@ struct LessonNode: Identifiable {
     var enableKneeBendAngle: Bool = false
     var enableTimeHoldingPosition: Bool = false
     
+    /// Use when building from a saved plan (DTO) so node id matches plan and patient_lesson_progress.lesson_id.
+    init(
+        id: UUID,
+        title: String,
+        isLocked: Bool = false,
+        reps: Int = 12,
+        restSec: Int = 3,
+        nodeType: JourneyNodeType = .lesson,
+        phase: Int = 1
+    ) {
+        self.id = id
+        self.title = title
+        self.isLocked = isLocked
+        self.reps = reps
+        self.restSec = restSec
+        self.nodeType = nodeType
+        self.phase = phase
+    }
+
+    /// Use when creating new nodes (e.g. PT adding a lesson); generates a new id.
     init(
         title: String,
         isLocked: Bool = false,
@@ -151,6 +171,7 @@ struct LessonNode: Identifiable {
         nodeType: JourneyNodeType = .lesson,
         phase: Int = 1
     ) {
+        self.id = UUID()
         self.title = title
         self.isLocked = isLocked
         self.reps = reps

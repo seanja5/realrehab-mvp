@@ -91,42 +91,42 @@ flowchart LR
 
     subgraph M2 [Module 2: Patient Creates Account - Route A With Access Code]
         direction LR
-        subgraph M2Step1 [Patient Signs Up With Code]
+        subgraph M2S1 [Patient Signs Up With Code]
             direction TB
             M2Pull1[Pull: RPC findPatientByAccessCode - lookup placeholder]
             M2A1[App: Patient signs up with DOB, gender, 8-digit access code, submits]
             M2T1[Tx: email, password, first_name, last_name, dob, gender, access_code]
             M2P1[Proc: Cloud - Auth; Device - trim code; Cloud - ensurePatientProfile]
-            M2St1[(Storage: auth.users, profiles, patient_profiles, pt_patient_map)]
-            M2Pull1 --> M2A1 --> M2T1 --> M2P1 --> M2St1
+            M2S1A[(Storage: auth.users, profiles, patient_profiles, pt_patient_map)]
+            M2Pull1 --> M2A1 --> M2T1 --> M2P1 --> M2S1A
         end
     end
 
     subgraph M2B [Module 2: Route B - Patient Signs Up, Links PT Later]
         direction LR
-        subgraph M2BStep1 [Patient Signs Up]
+        subgraph M2BS1 [Patient Signs Up]
             direction TB
             M2BA1[App: Patient signs up without access code, submits]
             M2BT1[Tx: email, password, first_name, last_name, dob, gender]
             M2BP1[Proc: Cloud - Auth; Cloud - profiles, patient_profiles upsert]
-            M2BSt1[(Storage: auth.users, profiles, patient_profiles)]
-            M2BA1 --> M2BT1 --> M2BP1 --> M2BSt1
+            M2BS1A[(Storage: auth.users, profiles, patient_profiles)]
+            M2BA1 --> M2BT1 --> M2BP1 --> M2BS1A
         end
-        subgraph M2BStep2 [Patient Links PT in Settings]
+        subgraph M2BS2 [Patient Links PT in Settings]
             direction TB
             M2BPull[Pull: RPC lookup PT by access code]
             M2BA2[App: Patient goes to Settings, taps Connect, enters access code]
             M2BT2[Tx: access_code, patient_profile_id]
             M2BP2[Proc: Device - trim; Cloud - RPC link_patient_via_access_code]
-            M2BSt2[(Storage: accounts.pt_patient_map)]
-            M2BPull --> M2BA2 --> M2BT2 --> M2BP2 --> M2BSt2
+            M2BS2A[(Storage: accounts.pt_patient_map)]
+            M2BPull --> M2BA2 --> M2BT2 --> M2BP2 --> M2BS2A
         end
-        M2BStep1 --> M2BStep2
+        M2BS1 --> M2BS2
     end
 
     subgraph M3 [Module 3: Patient Views Rehab Plan]
         direction LR
-        subgraph M3Step1 [View Journey Map]
+        subgraph M3S1 [View Journey Map]
             direction TB
             M3Pull1[Pull: myProfile, myPatientProfileId, getPTProfileId from cache or Supabase]
             M3Pull2[Pull: currentPlan, getLessonProgress from cache or Supabase]
@@ -138,31 +138,31 @@ flowchart LR
 
     subgraph M4 [Module 4: Device Pairing]
         direction LR
-        subgraph M4Step1 [Pair Device]
+        subgraph M4S1 [Pair Device]
             direction TB
             M4A1[App: Patient taps Add, Pair Device, selects BLE knee brace]
             M4T1[Tx: bluetooth_identifier serial]
             M4P1[Proc: Cloud - RPC get_or_create_device_assignment]
-            M4St1[(Storage: telemetry.devices, telemetry.device_assignments)]
-            M4A1 --> M4T1 --> M4P1 --> M4St1
+            M4S1A[(Storage: telemetry.devices, telemetry.device_assignments)]
+            M4A1 --> M4T1 --> M4P1 --> M4S1A
         end
     end
 
     subgraph M5 [Module 5: Calibration]
         direction LR
-        subgraph M5Step1 [Set Start and Max Position]
+        subgraph M5S1 [Set Start and Max Position]
             direction TB
             M5A1[App: Patient taps Set Starting Position, then Set Maximum Position]
             M5T1[Tx: raw flex value, stage, device_assignment_id, recorded_at]
             M5P1[Proc: Device - convert to degrees; save calibration]
-            M5St1[(Storage: telemetry.calibrations)]
-            M5A1 --> M5T1 --> M5P1 --> M5St1
+            M5S1A[(Storage: telemetry.calibrations)]
+            M5A1 --> M5T1 --> M5P1 --> M5S1A
         end
     end
 
     subgraph M6 [Module 6: Knee Extension Exercise]
         direction LR
-        subgraph M6Step1 [Start Lesson]
+        subgraph M6S1 [Start Lesson]
             direction TB
             M6Pull1[Pull: calibration from cache or Supabase]
             M6Pull2[Pull: plan nodes from currentPlan cache or Supabase]
@@ -170,38 +170,38 @@ flowchart LR
             M6P1[Proc: Device - load calibration and plan for lesson]
             M6Pull1 --> M6Pull2 --> M6A1 --> M6P1
         end
-        subgraph M6Step2 [During Lesson]
+        subgraph M6S2 [During Lesson]
             direction TB
             M6A2[App: Patient moves leg through reps; completes or pauses]
             M6T1[Tx: reps_completed, reps_target, elapsed_seconds, status]
             M6P2[Proc: Device - save draft; validate; green or red on screen]
-            M6St2[Storage: LocalLessonProgressStore draft; Outbox; patient_lesson_progress when online]
-            M6A2 --> M6T1 --> M6P2 --> M6St2
+            M6S2A[Storage: LocalLessonProgressStore draft; Outbox; patient_lesson_progress when online]
+            M6A2 --> M6T1 --> M6P2 --> M6S2A
         end
-        M6Step1 --> M6Step2
+        M6S1 --> M6S2
     end
 
     subgraph M7 [Module 7: Reassessment After Lesson]
         direction LR
-        subgraph M7Step1 [Set New Maximum]
+        subgraph M7S1 [Set New Maximum]
             direction TB
             M7A1[App: Patient extends to max again, taps Set Maximum Position]
             M7T1[Tx: raw flex, stage maximum_position, device_assignment_id]
             M7P1[Proc: Device - convert to degrees; save calibration]
-            M7St1[(Storage: telemetry.calibrations)]
-            M7A1 --> M7T1 --> M7P1 --> M7St1
+            M7S1A[(Storage: telemetry.calibrations)]
+            M7A1 --> M7T1 --> M7P1 --> M7S1A
         end
     end
 
     subgraph M8 [Module 8: Range Gained Completion]
         direction LR
-        subgraph M8Step1 [View Completion]
+        subgraph M8S1 [View Completion]
             direction TB
             M8Pull1[Pull: max calibrations from Supabase telemetry.calibrations]
             M8A1[App: Patient views Completion screen]
             M8P1[Proc: Device - compute reassessment max minus original max]
-            M8D1[Display: range gained on screen]
-            M8Pull1 --> M8A1 --> M8P1 --> M8D1
+            M8S1A[Display: range gained on screen]
+            M8Pull1 --> M8A1 --> M8P1 --> M8S1A
         end
     end
 ```

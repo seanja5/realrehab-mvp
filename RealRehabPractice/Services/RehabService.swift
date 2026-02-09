@@ -61,12 +61,13 @@ enum RehabService {
   }
 
   /// Maps PlanNodeDTO array to LessonNode array (shared by loadPlan and loadDefaultPlan).
-  /// Display icons come from lessonIconSystemName(for: title), not from stored icon.
+  /// Preserves each node's id from the DTO so PT journey map progress matches patient_lesson_progress.lesson_id.
   static func lessonNodes(from dtos: [PlanNodeDTO]) -> [LessonNode] {
     dtos.map { dto in
+      let nodeId = UUID(uuidString: dto.id) ?? UUID()
       let nodeType: JourneyNodeType = (dto.nodeType == "benchmark") ? .benchmark : .lesson
       let phase = max(1, min(4, dto.phase ?? 1))
-      var node = LessonNode(title: dto.title, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
+      var node = LessonNode(id: nodeId, title: dto.title, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
       if node.nodeType == .lesson && node.title.lowercased().contains("wall sit") {
         node.enableReps = false
         node.enableRestBetweenReps = false

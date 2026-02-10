@@ -167,10 +167,11 @@ enum PTService {
     /// Load PT profile for display; when offline returns stale cache if available and reports isStale for banner.
     @MainActor
     static func myPTProfileForDisplay() async throws -> (PTProfileRow, isStale: Bool) {
-        guard let profile = try await AuthService.myProfileForDisplay() else {
+        let profileResult = try await AuthService.myProfileForDisplay()
+        guard let profile = profileResult.value else {
             throw NSError(domain: "PTService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Unable to load profile"])
         }
-        let cacheKey = CacheKey.ptProfile(profileId: profile.value.id)
+        let cacheKey = CacheKey.ptProfile(profileId: profile.id)
         let allowStale = !NetworkMonitor.shared.isOnline
         if let result = await CacheService.shared.getCachedResult(cacheKey, as: PTProfileRow.self, useDisk: true, allowStaleWhenOffline: allowStale) {
             if !NetworkMonitor.shared.isOnline {

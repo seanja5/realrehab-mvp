@@ -56,18 +56,8 @@ struct JourneyMapView: View {
         return false
     }
     
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            if vm.nodes.isEmpty {
-                VStack {
-                    Spacer()
-                    Text("You have not been assigned a rehab plan yet")
-                        .font(.rrTitle)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-            } else {
-                ScrollView {
+    private var journeyScrollContent: some View {
+        ScrollView {
                     VStack(spacing: 0) {
                         OfflineStaleBanner(showBanner: !networkMonitor.isOnline && vm.showOfflineBanner)
                     ZStack(alignment: .top) {
@@ -162,6 +152,20 @@ struct JourneyMapView: View {
                 }
                 .coordinateSpace(name: JourneyMapPhaseHeader.coordinateSpaceName)
                     }
+    }
+    
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            if vm.nodes.isEmpty {
+                VStack {
+                    Spacer()
+                    Text("You have not been assigned a rehab plan yet")
+                        .font(.rrTitle)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+            } else {
+                journeyScrollContent
             }
             
             PatientTabBar(
@@ -325,7 +329,6 @@ struct JourneyMapView: View {
                             .padding(.top, 140)
                         }
                     }
-                }
         }
         .task {
             await vm.load(forceRefresh: false)

@@ -218,6 +218,7 @@ struct PatientDetailView: View {
                 }
                 .padding(.bottom, isKeyboardVisible ? 16 : 80)
             }
+            }
             
             // Tab bar - only show when keyboard is hidden
             if !isKeyboardVisible {

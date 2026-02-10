@@ -45,6 +45,7 @@ struct PTJourneyMapView: View {
     @State private var lessonProgress: [UUID: LessonProgressInfo] = [:]
     @State private var offlineRefreshMessage: String? = nil
     @State private var showOfflineBanner = false
+    @State private var showCannotLoadMessage = false
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     
     private var exerciseTypes: [String] { ACLJourneyModels.allExerciseNamesForPicker }
@@ -77,6 +78,44 @@ struct PTJourneyMapView: View {
                 .background(Color.white)
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)
+        }
+        .safeAreaInset(edge: .top) {
+            VStack(spacing: 0) {
+                headerCard
+                    .reportHeaderBottom()
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.white)
+                            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                
+                HStack {
+                    Spacer()
+                    Button {
+                        showingAddPopover = true
+                        addPhaseSelection = activePhaseId
+                        addSelection = 0
+                        customLessonName = ""
+                        enableReps = true
+                        enableRestBetweenReps = true
+                        enableSets = false
+                        enableRestBetweenSets = false
+                        enableKneeBendAngle = false
+                        enableTimeHoldingPosition = false
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 56, height: 56)
+                            .background(Circle().fill(Color.brandDarkBlue))
+                            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+                    }
+                    .padding(.trailing, 24)
+                    .padding(.top, 12)
+                }
+            }
         }
         .rrPageBackground()
         .alert("Error", isPresented: .constant(errorMessage != nil)) {
@@ -184,6 +223,17 @@ struct PTJourneyMapView: View {
         ScrollView {
             VStack(spacing: 0) {
                 OfflineStaleBanner(showBanner: !networkMonitor.isOnline && showOfflineBanner)
+                if nodes.isEmpty {
+                    // No phase separators or map until loaded; show message only after ~3s
+                    Spacer(minLength: 40)
+                    if showCannotLoadMessage {
+                        Text("Cannot load this plan")
+                            .font(.rrBody)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, minHeight: 200)
+                    }
+                    Spacer(minLength: 40)
+                } else {
             ZStack(alignment: .top) {
                 Color.clear
                     .frame(height: 0)
@@ -327,6 +377,8 @@ struct PTJourneyMapView: View {
                 }
             }
             .frame(height: 40 + maxHeight + 60)
+                }
+            }
             .onPreferenceChange(ContentWidthPreferenceKey.self) { w in
                 guard w > 0, abs(w - lastLayoutWidth) > 0.5 else { return }
                 lastLayoutWidth = w
@@ -354,47 +406,6 @@ struct PTJourneyMapView: View {
             }
         }
         .scrollDisabled(isDragging) // Disable scrolling while dragging
-        .safeAreaInset(edge: .top) {
-            // Sticky header card (matches JourneyMapView exactly)
-            VStack(spacing: 0) {
-                headerCard
-                    .reportHeaderBottom()
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
-                    )
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                
-                // Floating "+" button positioned below header
-                HStack {
-                    Spacer()
-                    Button {
-                        showingAddPopover = true
-                        addPhaseSelection = activePhaseId  // Default to current phase
-                        // Reset add form
-                        addSelection = 0
-                        customLessonName = ""
-                        enableReps = true
-                        enableRestBetweenReps = true
-                        enableSets = false
-                        enableRestBetweenSets = false
-                        enableKneeBendAngle = false
-                        enableTimeHoldingPosition = false
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: 56, height: 56)
-                            .background(Circle().fill(Color.brandDarkBlue))
-                            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
-                    }
-                    .padding(.trailing, 24)
-                    .padding(.top, 12)
-                }
-            }
-        }
         .rrPageBackground()
         .navigationTitle("Journey Map")
         .navigationBarTitleDisplayMode(.inline)
@@ -441,15 +452,20 @@ struct PTJourneyMapView: View {
                         showingPhaseGoals = false
                     }
             }
-            }
         }
         .task {
+            showCannotLoadMessage = false
+            Task {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                await MainActor.run { if nodes.isEmpty { showCannotLoadMessage = true } }
+            }
             if planId != nil {
                 await loadPlan(forceRefresh: false)
             } else {
                 await loadDefaultPlan()
             }
             ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
+            if !nodes.isEmpty { showCannotLoadMessage = false }
         }
         .refreshable {
             await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
@@ -460,6 +476,7 @@ struct PTJourneyMapView: View {
                 await loadDefaultPlan()
             }
             ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
+            if !nodes.isEmpty { showCannotLoadMessage = false }
         }
         .onAppear {
             ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)

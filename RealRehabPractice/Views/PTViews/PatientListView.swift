@@ -105,7 +105,7 @@ struct PatientListView: View {
             }
         }
         .rrPageBackground()
-        .navigationTitle("Patients")
+        .navigationTitle("My Patients")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .task {

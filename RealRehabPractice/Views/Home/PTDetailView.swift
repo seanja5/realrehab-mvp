@@ -15,7 +15,7 @@ struct PTDetailView: View {
                         .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                         .overlay(
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(vm.name.isEmpty ? "Your Physical Therapist" : vm.name)
+                                Text(vm.name.isEmpty ? "My Physical Therapist" : vm.name)
                                     .font(.rrTitle)
                                     .foregroundStyle(.primary)
                                 
@@ -125,7 +125,7 @@ struct PTDetailView: View {
             .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .rrPageBackground()
-        .navigationTitle("Your Physical Therapist")
+        .navigationTitle("My Physical Therapist")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {

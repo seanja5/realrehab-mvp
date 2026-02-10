@@ -300,7 +300,7 @@ struct PatientDetailView: View {
         if let patient = patient {
             return "\(patient.first_name) \(patient.last_name)"
         }
-        return "Your Patient" // Placeholder
+        return "My Patient" // Placeholder
     }
     
     private var patientInfo: String {

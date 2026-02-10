@@ -85,7 +85,7 @@ public final class PatientPTViewModel: ObservableObject {
       if let postgrestError = error as? PostgrestError {
         print("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
       }
-      // Set empty values on error so UI shows "Your Physical Therapist" with no info
+      // Set empty values on error so UI shows "My Physical Therapist" with no info
       self.apply(ptEmail: nil, first: nil, last: nil, phone: nil)
       self.hasRehabPlan = false
     }

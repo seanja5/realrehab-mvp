@@ -47,6 +47,11 @@ struct PTJourneyMapView: View {
     @State private var showOfflineBanner = false
     @State private var showCannotLoadMessage = false
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
+    @FocusState private var isCustomLessonFieldFocused: Bool
+    @State private var keyboardHeight: CGFloat = 0
+    
+    /// Pop-up center Y as fraction of (visible) height. 0.5 = vertically centered.
+    private static let popupCenterYRatio: CGFloat = 0.5
     
     private var exerciseTypes: [String] { ACLJourneyModels.allExerciseNamesForPicker }
     private var activePhase: Int { activePhaseId }
@@ -94,6 +99,7 @@ struct PTJourneyMapView: View {
                 HStack {
                     Spacer()
                     Button {
+                        guard !showingPhaseGoals, !showingEditor else { return }
                         showingAddPopover = true
                         addPhaseSelection = activePhaseId
                         addSelection = 0
@@ -118,6 +124,23 @@ struct PTJourneyMapView: View {
             }
         }
         .rrPageBackground()
+        .onPreferenceChange(StickyHeaderBottomPreferenceKey.self) { value in
+            headerBottomGlobal = value
+        }
+        .overlay {
+            ZStack {
+                if showingPhaseGoals {
+                    phaseGoalsOverlay
+                }
+                if showingEditor {
+                    editorPopover
+                }
+                if showingAddPopover {
+                    addLessonPopover
+                }
+            }
+            .zIndex(1000)
+        }
         .alert("Error", isPresented: .constant(errorMessage != nil)) {
             Button("OK") {
                 errorMessage = nil
@@ -314,7 +337,7 @@ struct PTJourneyMapView: View {
                                 TapGesture()
                                     .onEnded {
                                         // Ignore taps during active drag or when another overlay is showing
-                                        guard !isDragging, draggingIndex == nil, !showingEditor, !showingPhaseGoals else { return }
+                                        guard !isDragging, draggingIndex == nil, !showingEditor, !showingPhaseGoals, !showingAddPopover else { return }
                                         
                                         pressedIndex = index
                                         withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
@@ -329,7 +352,7 @@ struct PTJourneyMapView: View {
                                 LongPressGesture(minimumDuration: 0.3)
                                     .onEnded { _ in
                                         // Start drag mode
-                                        if draggingIndex == nil && !showingEditor && !showingPhaseGoals {
+                                        if draggingIndex == nil && !showingEditor && !showingPhaseGoals && !showingAddPopover {
                                             draggingIndex = index
                                             isDragging = true
                                             pressedIndex = nil
@@ -352,7 +375,7 @@ struct PTJourneyMapView: View {
                                             }
                                     )
                             )
-                            .allowsHitTesting(!showingEditor && !showingPhaseGoals)
+                            .allowsHitTesting(!showingEditor && !showingPhaseGoals && !showingAddPopover)
                             .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: dragOffset)
                             .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: draggingIndex)
                             .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: pressedIndex)
@@ -389,7 +412,7 @@ struct PTJourneyMapView: View {
                 for (k, v) in positions { lastKnownPhasePositions[k] = v }
                 if !positions.isEmpty {
                     activePhaseId = JourneyMapPhaseHeader.activePhase(
-                        thresholdY: headerBottomGlobal,
+                        thresholdY: 0,
                         phasePositions: positions
                     )
                 }
@@ -400,7 +423,7 @@ struct PTJourneyMapView: View {
             headerBottomGlobal = value
             if !lastKnownPhasePositions.isEmpty {
                 activePhaseId = JourneyMapPhaseHeader.activePhase(
-                    thresholdY: value,
+                    thresholdY: 0,
                     phasePositions: lastKnownPhasePositions
                 )
             }
@@ -415,43 +438,12 @@ struct PTJourneyMapView: View {
                 BackButton()
             }
         }
-        .overlay {
-            if showingPhaseGoals {
-                Color.black.opacity(0.3)
-                    .ignoresSafeArea()
-                    .onTapGesture { showingPhaseGoals = false }
-                    .overlay(alignment: .topTrailing) {
-                        VStack {
-                            Spacer().frame(height: 100)
-                            HStack {
-                                Spacer()
-                                PhaseGoalsPopover(
-                                    phase: activePhase,
-                                    onDismiss: { showingPhaseGoals = false }
-                                )
-                                .padding(.trailing, 16)
-                            }
-                            Spacer()
-                        }
-                    }
-            }
-            if showingEditor {
-                editorPopover
-            }
-            
-            if showingAddPopover {
-                addLessonPopover
-            }
-            
-            // Dismiss popover when tapping outside
-            if showingPhaseGoals {
-                Color.clear
-                    .contentShape(Rectangle())
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        showingPhaseGoals = false
-                    }
-            }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+            guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+            keyboardHeight = frame.height
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardHeight = 0
         }
         .task {
             showCannotLoadMessage = false
@@ -521,6 +513,7 @@ struct PTJourneyMapView: View {
             Spacer()
             
             Button {
+                guard !showingEditor, !showingAddPopover else { return }
                 showingPhaseGoals.toggle()
             } label: {
                 Image(systemName: "ellipsis.circle.fill")
@@ -531,177 +524,215 @@ struct PTJourneyMapView: View {
         .padding(16)
     }
     
-    // MARK: - Add Lesson Popover
+    /// Approximate height from top of safe area to bottom of title card + "+" button (padding 8 + card ~80 + gap 12 + button 56 + gap 8).
+    private static let titleCardBottomOffset: CGFloat = 8 + 80 + 12 + 56 + 8
+
+    // MARK: - Phase Goals Overlay (positioned directly underneath the title card)
+    private var phaseGoalsOverlay: some View {
+        Color.black.opacity(0.3)
+            .ignoresSafeArea()
+            .onTapGesture { showingPhaseGoals = false }
+            .overlay(alignment: .top) {
+                GeometryReader { geo in
+                    let topY = headerBottomGlobal > 0
+                        ? headerBottomGlobal + 8
+                        : (geo.safeAreaInsets.top + Self.titleCardBottomOffset)
+                    VStack(spacing: 0) {
+                        Spacer().frame(height: topY)
+                        PhaseGoalsPopover(
+                            phase: activePhase,
+                            onDismiss: { showingPhaseGoals = false }
+                        )
+                        .frame(maxWidth: 340)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+    }
+    
+    // MARK: - Add Lesson Popover (upper portion, fixed height; shifts up when keyboard appears)
+    private static let addLessonCardHeight: CGFloat = 520
+    
     private var addLessonPopover: some View {
         Color.black.opacity(0.25)
             .ignoresSafeArea()
+            .ignoresSafeArea(.keyboard)
             .onTapGesture {
                 withAnimation(.spring()) {
                     showingAddPopover = false
                 }
             }
             .overlay {
-                VStack(spacing: 0) {
-                    // Spacer to push content below navbar
-                    Spacer()
-                        .frame(height: 100) // Space for navbar title area
-                    
-                    HStack {
-                        Spacer()
-                        
+                GeometryReader { geo in
+                    let cardY = keyboardHeight > 0
+                        ? (geo.size.height - keyboardHeight) / 2
+                        : (geo.size.height * Self.popupCenterYRatio)
+                    ScrollViewReader { proxy in
                         ScrollView {
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("Add a Lesson")
-                                    .font(.rrTitle)
-                                    .foregroundStyle(.primary)
-                                
-                                // Exercise Type Dropdown
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Exercise Type")
-                                        .font(.rrBody)
-                                    
-                                    Picker("Exercise Type", selection: $addSelection) {
-                                        ForEach(0..<exerciseTypes.count, id: \.self) { index in
-                                            Text(exerciseTypes[index]).tag(index)
-                                        }
-                                    }
-                                    .pickerStyle(.menu)
-                                    .padding(14)
-                                    .background(Color(uiColor: .secondarySystemFill))
-                                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                                }
-                                
-                                // Phase # selection
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Phase #")
-                                        .font(.rrBody)
-                                    
-                                    Picker("Phase #", selection: $addPhaseSelection) {
-                                        Text("Select").tag(0)
-                                        Text("Phase 1").tag(1)
-                                        Text("Phase 2").tag(2)
-                                        Text("Phase 3").tag(3)
-                                        Text("Phase 4").tag(4)
-                                    }
-                                    .pickerStyle(.menu)
-                                    .padding(14)
-                                    .background(Color(uiColor: .secondarySystemFill))
-                                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                                }
-                                
-                                // Custom Lesson Text Field - only show when "Custom" is selected
-                                if addSelection == exerciseTypes.count - 1 { // "Custom" is last item
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text("Custom Lesson")
-                                            .font(.rrBody)
-                                        
-                                        TextField("Enter custom lesson name", text: $customLessonName)
-                                            .font(.rrBody)
-                                            .padding(14)
-                                            .background(Color(uiColor: .secondarySystemFill))
-                                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                                    }
-                                }
-                                
-                                // Types of Parameters
-                                Text("Types of Parameters")
-                                    .font(.rrHeadline)
-                                    .padding(.top, 8)
-                                
-                                VStack(alignment: .leading, spacing: 12) {
-                                    HStack {
-                                        Text("Number of repetitions")
-                                            .font(.rrBody)
-                                        Spacer()
-                                        Toggle("", isOn: $enableReps)
-                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
-                                    }
-                                    
-                                    HStack {
-                                        Text("Time in between repetitions")
-                                            .font(.rrBody)
-                                        Spacer()
-                                        Toggle("", isOn: $enableRestBetweenReps)
-                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
-                                    }
-                                    
-                                    HStack {
-                                        Text("Number of sets")
-                                            .font(.rrBody)
-                                        Spacer()
-                                        Toggle("", isOn: $enableSets)
-                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
-                                    }
-                                    
-                                    HStack {
-                                        Text("Rest in between sets (sec)")
-                                            .font(.rrBody)
-                                        Spacer()
-                                        Toggle("", isOn: $enableRestBetweenSets)
-                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
-                                    }
-                                    
-                                    HStack {
-                                        Text("Knee bend angle (degrees)")
-                                            .font(.rrBody)
-                                        Spacer()
-                                        Toggle("", isOn: $enableKneeBendAngle)
-                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
-                                    }
-                                    
-                                    HStack {
-                                        Text("Time holding position (sec)")
-                                            .font(.rrBody)
-                                        Spacer()
-                                        Toggle("", isOn: $enableTimeHoldingPosition)
-                                            .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
-                                    }
-                                }
-                                
-                                PrimaryButton(title: "Add Lesson") {
-                                    let newTitle = (addSelection == exerciseTypes.count - 1 && !customLessonName.isEmpty) ? customLessonName : exerciseTypes[addSelection]
-                                    let phase = addPhaseSelection >= 1 ? addPhaseSelection : activePhaseId
-                                    addNode(
-                                        with: newTitle,
-                                        phase: phase,
-                                        enableReps: enableReps,
-                                        enableRestBetweenReps: enableRestBetweenReps,
-                                        enableSets: enableSets,
-                                        enableRestBetweenSets: enableRestBetweenSets,
-                                        enableKneeBendAngle: enableKneeBendAngle,
-                                        enableTimeHoldingPosition: enableTimeHoldingPosition
-                                    )
-                                    withAnimation(.spring()) {
-                                        showingAddPopover = false
-                                    }
-                                }
-                                
-                                SecondaryButton(title: "Close") {
-                                    withAnimation(.spring()) {
-                                        showingAddPopover = false
-                                    }
-                                }
-                            }
-                            .padding(20)
+                            addLessonContent(scrollProxy: proxy)
                         }
-                        .frame(maxWidth: 340)
+                        .frame(width: min(340, geo.size.width - 32), height: Self.addLessonCardHeight)
                         .background(
                             RoundedRectangle(cornerRadius: 20)
                                 .fill(Color.white)
                                 .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
                         )
-                        
-                        Spacer()
+                        .position(x: geo.size.width / 2, y: cardY)
                     }
-                    
-                    // Spacer to push content above Confirm Journey button
-                    Spacer()
-                        .frame(height: 120) // Space for Confirm Journey button
                 }
             }
     }
     
-    // MARK: - Editor Popover (centered)
+    private func addLessonContent(scrollProxy: ScrollViewProxy) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Add a Lesson")
+                .font(.rrTitle)
+                .foregroundStyle(.primary)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Exercise Type")
+                    .font(.rrBody)
+                
+                Picker("Exercise Type", selection: $addSelection) {
+                    ForEach(0..<exerciseTypes.count, id: \.self) { index in
+                        Text(exerciseTypes[index]).tag(index)
+                    }
+                }
+                .pickerStyle(.menu)
+                .padding(14)
+                .background(Color(uiColor: .secondarySystemFill))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Phase #")
+                    .font(.rrBody)
+                
+                Picker("Phase #", selection: $addPhaseSelection) {
+                    Text("Select").tag(0)
+                    Text("Phase 1").tag(1)
+                    Text("Phase 2").tag(2)
+                    Text("Phase 3").tag(3)
+                    Text("Phase 4").tag(4)
+                }
+                .pickerStyle(.menu)
+                .padding(14)
+                .background(Color(uiColor: .secondarySystemFill))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            
+            if addSelection == exerciseTypes.count - 1 {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Custom Lesson")
+                        .font(.rrBody)
+                    
+                    TextField("Enter custom lesson name", text: $customLessonName)
+                        .font(.rrBody)
+                        .padding(14)
+                        .background(Color(uiColor: .secondarySystemFill))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .focused($isCustomLessonFieldFocused)
+                        .id("customLessonField")
+                }
+            }
+            
+            Text("Types of Parameters")
+                .font(.rrHeadline)
+                .padding(.top, 8)
+            
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Number of repetitions")
+                        .font(.rrBody)
+                    Spacer()
+                    Toggle("", isOn: $enableReps)
+                        .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                }
+                
+                HStack {
+                    Text("Time in between repetitions")
+                        .font(.rrBody)
+                    Spacer()
+                    Toggle("", isOn: $enableRestBetweenReps)
+                        .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                }
+                
+                HStack {
+                    Text("Number of sets")
+                        .font(.rrBody)
+                    Spacer()
+                    Toggle("", isOn: $enableSets)
+                        .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                }
+                
+                HStack {
+                    Text("Rest in between sets (sec)")
+                        .font(.rrBody)
+                    Spacer()
+                    Toggle("", isOn: $enableRestBetweenSets)
+                        .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                }
+                
+                HStack {
+                    Text("Knee bend angle (degrees)")
+                        .font(.rrBody)
+                    Spacer()
+                    Toggle("", isOn: $enableKneeBendAngle)
+                        .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                }
+                
+                HStack {
+                    Text("Time holding position (sec)")
+                        .font(.rrBody)
+                    Spacer()
+                    Toggle("", isOn: $enableTimeHoldingPosition)
+                        .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
+                }
+            }
+            
+            PrimaryButton(title: "Add Lesson") {
+                let newTitle = (addSelection == exerciseTypes.count - 1 && !customLessonName.isEmpty) ? customLessonName : exerciseTypes[addSelection]
+                let phase = addPhaseSelection >= 1 ? addPhaseSelection : activePhaseId
+                addNode(
+                    with: newTitle,
+                    phase: phase,
+                    enableReps: enableReps,
+                    enableRestBetweenReps: enableRestBetweenReps,
+                    enableSets: enableSets,
+                    enableRestBetweenSets: enableRestBetweenSets,
+                    enableKneeBendAngle: enableKneeBendAngle,
+                    enableTimeHoldingPosition: enableTimeHoldingPosition
+                )
+                withAnimation(.spring()) {
+                    showingAddPopover = false
+                }
+            }
+            
+            SecondaryButton(title: "Close") {
+                withAnimation(.spring()) {
+                    showingAddPopover = false
+                }
+            }
+        }
+        .padding(20)
+        .onChange(of: addSelection) { _, newValue in
+            if newValue == exerciseTypes.count - 1 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    scrollProxy.scrollTo("customLessonField", anchor: .center)
+                }
+            }
+        }
+        .onChange(of: isCustomLessonFieldFocused) { _, focused in
+            if focused {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    scrollProxy.scrollTo("customLessonField", anchor: .center)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Editor Popover (positioned in upper portion of screen)
     private var editorPopover: some View {
         Color.black.opacity(0.25)
             .ignoresSafeArea()
@@ -713,25 +744,29 @@ struct PTJourneyMapView: View {
                 }
             }
             .overlay {
-                let enabledParamCount = enabledParameterCount
-                let needsScrolling = enabledParamCount >= 4
-                
-                Group {
-                    if needsScrolling {
-                        ScrollView {
+                GeometryReader { geo in
+                    let centerY = geo.size.height * Self.popupCenterYRatio
+                    let enabledParamCount = enabledParameterCount
+                    let needsScrolling = enabledParamCount >= 4
+                    
+                    Group {
+                        if needsScrolling {
+                            ScrollView {
+                                editorContent
+                            }
+                            .frame(maxWidth: 340, maxHeight: min(600, geo.size.height - 120))
+                        } else {
                             editorContent
+                                .frame(maxWidth: 340)
                         }
-                        .frame(maxWidth: 340, maxHeight: 600)
-                    } else {
-                        editorContent
-                            .frame(maxWidth: 340)
                     }
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color.white)
+                            .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
+                    )
+                    .position(x: geo.size.width / 2, y: centerY)
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color.white)
-                        .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
-                )
             }
     }
     

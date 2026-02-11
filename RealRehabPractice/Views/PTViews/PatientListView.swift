@@ -112,8 +112,14 @@ struct PatientListView: View {
             vm.setPTProfileId(session.ptProfileId)
             await vm.load(forceRefresh: false)
         }
+        .onAppear {
+            vm.setPTProfileId(session.ptProfileId)
+        }
         .refreshable {
             await vm.load(forceRefresh: true)
+        }
+        .onChange(of: router.path.count) { oldCount, newCount in
+            if newCount < oldCount { Task { await vm.load(forceRefresh: true) } }
         }
         .onChange(of: session.ptProfileId) { oldValue, newValue in
             vm.setPTProfileId(newValue)

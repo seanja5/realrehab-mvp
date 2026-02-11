@@ -278,7 +278,7 @@ struct PatientDetailView: View {
             Button("Delete", role: .destructive) {
                 Task {
                     await vm.delete(patientProfileId: patientProfileId)
-                    router.go(.patientList)
+                    router.reset(to: .patientList)
                 }
             }
         } message: {

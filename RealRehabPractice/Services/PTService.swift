@@ -528,22 +528,19 @@ enum PTService {
                 .execute()
             
             print("✅ PTService.deletePatientMapping: RPC function succeeded")
-            return
         } catch {
             print("⚠️ PTService.deletePatientMapping: RPC failed, trying direct delete: \(error)")
             // Fall back to direct delete if RPC doesn't exist
+            _ = try await client
+                .schema("accounts")
+                .from("pt_patient_map")
+                .delete()
+                .eq("patient_profile_id", value: patientProfileId.uuidString)
+                .eq("pt_profile_id", value: ptProfileId.uuidString)
+                .execute()
         }
         
-        // Fallback to direct delete (original method)
-        _ = try await client
-            .schema("accounts")
-            .from("pt_patient_map")
-            .delete()
-            .eq("patient_profile_id", value: patientProfileId.uuidString)
-            .eq("pt_profile_id", value: ptProfileId.uuidString)
-            .execute()
-        
-        // Invalidate patient list cache and patient detail cache
+        // Always invalidate caches so UI shows current pt_patient_map state (RPC and direct delete both remove the row)
         let listCacheKey = CacheKey.patientList(ptProfileId: ptProfileId)
         let detailCacheKey = CacheKey.patientDetail(patientProfileId: patientProfileId)
         await CacheService.shared.invalidate(listCacheKey)

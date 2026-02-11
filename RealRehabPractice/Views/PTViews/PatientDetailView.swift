@@ -240,10 +240,10 @@ struct PatientDetailView: View {
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-        .swipeToGoBack()
+        .swipeToGoBack(onBack: { router.reset(to: .patientList) })
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                BackButton()
+                BackButton { router.reset(to: .patientList) }
             }
         }
         .task {

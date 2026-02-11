@@ -235,8 +235,11 @@ struct BackButton: View {
 
     var body: some View {
         Button {
-            if let action { action() }
-            dismiss()
+            if let action {
+                action()
+            } else {
+                dismiss()
+            }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "chevron.left")

@@ -30,10 +30,6 @@ struct PairDeviceView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: RRSpace.section) {
-                    Image(systemName: "bluetooth")
-                        .font(.system(size: 72))
-                        .foregroundStyle(Color.brandLightBlue)
-
                     Text(ble.isScanning ? "Searching for devices…" : "Select a device to pair")
                         .font(.rrTitle)
 
@@ -48,11 +44,21 @@ struct PairDeviceView: View {
                                 .font(.rrTitle)
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                            Button("Scan again") {
+                            Button {
                                 ble.stopScan()
                                 ble.startScan(targetNamePrefix: "RealRehab")
+                            } label: {
+                                Text("Search Again")
+                                    .font(.rrCaption)
+                                    .foregroundStyle(Color.brandDarkBlue)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.brandDarkBlue, lineWidth: 2)
+                                    )
                             }
-                            .font(.rrCaption)
+                            .buttonStyle(.plain)
                         }
 
                         Divider()

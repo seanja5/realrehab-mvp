@@ -30,38 +30,47 @@ struct PatientDetailView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     OfflineStaleBanner(showBanner: !networkMonitor.isOnline && showOfflineBanner)
                     VStack(alignment: .leading, spacing: RRSpace.section) {
-                    Text(patientName)
-                        .font(.rrHeadline)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, RRSpace.pageTop)
-                    
-                    Rectangle()
-                        .fill(Color.black.opacity(0.12))
-                        .frame(height: 1)
-                        .padding(.horizontal, 16)
-                    
-                    Text(patientInfo)
-                        .font(.rrBody)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 16)
-                    
+                    // Title card: same style as PTDetailView (name, phone, email)
                     RoundedRectangle(cornerRadius: 16)
                         .fill(.white)
                         .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                         .overlay(
-                            HStack {
-                                Text("Recent Appointments")
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(patientName)
                                     .font(.rrTitle)
                                     .foregroundStyle(.primary)
-                                Spacer()
-                                Text("11/4/25")
+                                Text("Phone: \((patient?.phone ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "--" : (patient?.phone ?? "--"))")
+                                    .font(.rrBody)
+                                    .foregroundStyle(.secondary)
+                                Text("Email: \((patient?.email ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "--" : (patient?.email ?? "--"))")
                                     .font(.rrBody)
                                     .foregroundStyle(.secondary)
                             }
                             .padding(16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         )
                         .frame(minHeight: 110)
                         .padding(.horizontal, 16)
+                        .padding(.top, RRSpace.pageTop)
+                    
+                    // Below card: DOB & Gender left (gray), Last PT Visit & Date of Surgery right (gray)
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("DOB: \(formattedDOB(patient?.date_of_birth))")
+                            Text("Gender: \(patient?.gender?.capitalized ?? "--")")
+                        }
+                        .font(.rrCallout)
+                        .foregroundStyle(.secondary)
+                        Spacer(minLength: 16)
+                        VStack(alignment: .trailing, spacing: 6) {
+                            Text("Last PT Visit: \(formattedDOB(patient?.last_pt_visit))")
+                            Text("Date of Surgery: \(formattedDOB(patient?.surgery_date))")
+                        }
+                        .font(.rrCallout)
+                        .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
                     
                     Rectangle()
                         .fill(Color.black.opacity(0.12))
@@ -238,6 +247,7 @@ struct PatientDetailView: View {
             }
         }
         .rrPageBackground()
+        .navigationTitle("My Patient")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .swipeToGoBack(onBack: { router.reset(to: .patientList) })
@@ -304,23 +314,12 @@ struct PatientDetailView: View {
         return "My Patient" // Placeholder
     }
     
-    private var patientInfo: String {
-        if let patient = patient {
-            let dobString: String
-            if let dateStr = patient.date_of_birth {
-                // Parse as local date to avoid timezone shifts
-                if let date = Date.fromDateOnlyString(dateStr) {
-                    dobString = dateFormatter.string(from: date)
-                } else {
-                    dobString = dateStr
-                }
-            } else {
-                dobString = "—"
-            }
-            let genderStr = patient.gender?.capitalized ?? "—"
-            return "DOB: \(dobString)   •   Gender: \(genderStr)"
+    private func formattedDOB(_ dateString: String?) -> String {
+        guard let dateStr = dateString, !dateStr.isEmpty else { return "--" }
+        if let date = Date.fromDateOnlyString(dateStr) {
+            return dateFormatter.string(from: date)
         }
-        return "DOB: --/--/--   •   Gender: --" // Placeholder
+        return dateStr
     }
     
     private func loadPatientData(patientProfileId: UUID, forceRefresh: Bool = false) async {

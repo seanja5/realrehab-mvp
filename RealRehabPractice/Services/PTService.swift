@@ -29,6 +29,8 @@ enum PTService {
         let phone: String?
         let profile_id: UUID?        // Can be NULL for placeholder patients
         let access_code: String?     // 8-digit access code for linking
+        let surgery_date: String?    // From patient signup
+        let last_pt_visit: String?   // From patient signup
         
         // Identifiable conformance - use patient_profile_id as id
         var id: UUID { patient_profile_id }
@@ -368,7 +370,9 @@ enum PTService {
                 email: emailValue,
                 phone: phoneValue,
                 profile_id: patient.profile_id,
-                access_code: patient.access_code
+                access_code: patient.access_code,
+                surgery_date: nil,   // Only loaded in getPatient (detail)
+                last_pt_visit: nil   // Only loaded in getPatient (detail)
             )
         }
         
@@ -417,13 +421,15 @@ enum PTService {
             let phone: String?
             let profile_id: UUID?
             let access_code: String?
+            let surgery_date: String?
+            let last_pt_visit: String?
         }
         
         // Fetch the specific patient
         let patients: [PatientCardDTO] = try await client
             .schema("accounts")
             .from("patient_profiles")
-            .select("id,first_name,last_name,date_of_birth,gender,phone,profile_id,access_code")
+            .select("id,first_name,last_name,date_of_birth,gender,phone,profile_id,access_code,surgery_date,last_pt_visit")
             .eq("id", value: patientProfileId.uuidString)
             .limit(1)
             .decoded()
@@ -477,7 +483,9 @@ enum PTService {
             email: email,
             phone: phone,
             profile_id: patient.profile_id,
-            access_code: patient.access_code
+            access_code: patient.access_code,
+            surgery_date: patient.surgery_date,
+            last_pt_visit: patient.last_pt_visit
         )
         
         // Cache the result (disk persistence for offline/tab switching)

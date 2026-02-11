@@ -118,6 +118,7 @@ struct CreateAccountView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("Create an Account")
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

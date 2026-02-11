@@ -101,6 +101,7 @@ struct TestPairDeviceView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("Test Pair Device")
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

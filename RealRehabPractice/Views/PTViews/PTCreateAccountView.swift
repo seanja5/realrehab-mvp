@@ -140,6 +140,7 @@ struct PTCreateAccountView: View {
         .navigationTitle("Create an Account")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

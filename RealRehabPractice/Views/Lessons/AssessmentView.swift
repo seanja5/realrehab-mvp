@@ -142,6 +142,7 @@ struct AssessmentView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("Calibration")
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

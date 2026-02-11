@@ -240,6 +240,7 @@ struct PatientDetailView: View {
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

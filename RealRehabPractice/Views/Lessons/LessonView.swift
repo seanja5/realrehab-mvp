@@ -500,6 +500,10 @@ struct LessonView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack(onBack: {
+            if hasStarted { pauseLesson() }
+            router.reset(to: .journeyMap)
+        })
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton {

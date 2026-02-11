@@ -155,6 +155,7 @@ This rehabilitation journey will take you through a series of lessons and benchm
         .navigationTitle("ACL Rehab")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

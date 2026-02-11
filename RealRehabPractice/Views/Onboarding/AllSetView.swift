@@ -31,6 +31,7 @@ struct AllSetView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("Complete")
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

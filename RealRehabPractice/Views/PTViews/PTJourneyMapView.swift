@@ -433,6 +433,7 @@ struct PTJourneyMapView: View {
         .navigationTitle("Journey Map")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

@@ -131,6 +131,7 @@ struct TestCalibrationView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("Test Calibration")
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

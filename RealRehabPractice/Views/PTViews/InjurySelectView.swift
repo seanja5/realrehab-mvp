@@ -47,6 +47,7 @@ struct InjurySelectView: View {
         .navigationTitle("Select Injury")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

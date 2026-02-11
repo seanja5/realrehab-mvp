@@ -44,6 +44,7 @@ struct HomeSubCategoryView: View {
         .navigationTitle("Injuries")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

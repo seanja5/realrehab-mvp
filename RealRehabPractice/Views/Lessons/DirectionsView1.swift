@@ -46,6 +46,7 @@ struct DirectionsView1: View {
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .navigationTitle("Knee Extensions")
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {

@@ -252,6 +252,39 @@ struct BackButton: View {
     }
 }
 
+// MARK: - Swipe from left edge to go back (same as tapping BackButton)
+private struct SwipeBackModifier: ViewModifier {
+    @Environment(\.dismiss) private var dismiss
+    var onBack: (() -> Void)?
+    private let edgeWidth: CGFloat = 28
+    private let triggerThreshold: CGFloat = 60
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .leading) {
+                Color.clear
+                    .frame(width: edgeWidth)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 15)
+                            .onEnded { value in
+                                if value.translation.width >= triggerThreshold {
+                                    if let onBack { onBack() }
+                                    else { dismiss() }
+                                }
+                            }
+                    )
+            }
+    }
+}
+
+extension View {
+    /// Use on any screen that shows the custom BackButton. Enables swipe-from-left-edge to go back the same way.
+    func swipeToGoBack(onBack: (() -> Void)? = nil) -> some View {
+        modifier(SwipeBackModifier(onBack: onBack))
+    }
+}
+
 // MARK: - SearchBar
 struct SearchBar: View {
     @Binding var text: String

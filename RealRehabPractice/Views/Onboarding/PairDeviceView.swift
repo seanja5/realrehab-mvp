@@ -133,6 +133,7 @@ struct PairDeviceView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("Pair Device")
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

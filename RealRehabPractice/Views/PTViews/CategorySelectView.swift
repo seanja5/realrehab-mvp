@@ -48,6 +48,7 @@ struct CategorySelectView: View {
         .navigationTitle("Select Category")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()

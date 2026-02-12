@@ -77,6 +77,9 @@
 		C8B1B2C92ED00001004D934A /* OutboxItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B1B2C82ED00001004D934A /* OutboxItem.swift */; };
 		C8B1B2CB2ED00001004D934B /* OutboxSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B1B2CA2ED00001004D934B /* OutboxSyncManager.swift */; };
 		C8F4A8332ED2F3B600BADF02 /* LessonProgressSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8322ED2F3B600BADF02 /* LessonProgressSync.swift */; };
+		C8E1A0022ED00001004D9348 /* PendingLinkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1A0012ED00001004D9347 /* PendingLinkStore.swift */; };
+		C8E1A0042ED00001004D934A /* InvitedPatientsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1A0032ED00001004D9349 /* InvitedPatientsStore.swift */; };
+		C8E1A0062ED00001004D934C /* ShareSheetHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1A0052ED00001004D934B /* ShareSheetHelper.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -125,6 +128,9 @@
 		C82D70392ED09AC7004D9351 /* JourneyMapViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyMapViewModel.swift; sourceTree = "<group>"; };
 		C82D703B2ED0B4BE004D9347 /* PatientSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientSettingsView.swift; sourceTree = "<group>"; };
 		C82D703F2ED2F3B6004D9347 /* SessionContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionContext.swift; sourceTree = "<group>"; };
+		C8E1A0012ED00001004D9347 /* PendingLinkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingLinkStore.swift; sourceTree = "<group>"; };
+		C8E1A0032ED00001004D9349 /* InvitedPatientsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvitedPatientsStore.swift; sourceTree = "<group>"; };
+		C8E1A0052ED00001004D934B /* ShareSheetHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheetHelper.swift; sourceTree = "<group>"; };
 		C82D70552EC15F90004D9347 /* PatientTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientTabBar.swift; sourceTree = "<group>"; };
 		C82D70562EC15F90004D9347 /* PTTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTabBar.swift; sourceTree = "<group>"; };
 		C82D707D2EC17F97004D9347 /* info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = info.plist; sourceTree = "<group>"; };
@@ -328,6 +334,8 @@
 				C8A1B2C32ED00001004D9347 /* ACLJourneyModels.swift */,
 				C8D677D02EB97B4700829144 /* SchedulingModels.swift */,
 				C82D703F2ED2F3B6004D9347 /* SessionContext.swift */,
+				C8E1A0012ED00001004D9347 /* PendingLinkStore.swift */,
+				C8E1A0032ED00001004D9349 /* InvitedPatientsStore.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -349,6 +357,7 @@
 				C8AEECAE2EB2D7A200720184 /* SensorSample.swift */,
 				C82D70372ED09AC7004D9350 /* GenderMapper.swift */,
 				C82537812F2B12D400465343 /* PhaseHeaderPreferenceKey.swift */,
+				C8E1A0052ED00001004D934B /* ShareSheetHelper.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -612,6 +621,9 @@
 				C8B1B2C92ED00001004D934A /* OutboxItem.swift in Sources */,
 				C8B1B2CB2ED00001004D934B /* OutboxSyncManager.swift in Sources */,
 				C8F4A8332ED2F3B600BADF02 /* LessonProgressSync.swift in Sources */,
+				C8E1A0022ED00001004D9348 /* PendingLinkStore.swift in Sources */,
+				C8E1A0042ED00001004D934A /* InvitedPatientsStore.swift in Sources */,
+				C8E1A0062ED00001004D934C /* ShareSheetHelper.swift in Sources */,
 				C8D677F02EBA932000829144 /* InjurySelectView.swift in Sources */,
 				C82D70572EC15F90004D9347 /* PatientTabBar.swift in Sources */,
 				C82D70582EC15F90004D9347 /* PTTabBar.swift in Sources */,

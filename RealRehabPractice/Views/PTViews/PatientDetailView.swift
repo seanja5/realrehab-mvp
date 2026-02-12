@@ -191,6 +191,14 @@ struct PatientDetailView: View {
                                     .padding(16)
                                 )
                                 .frame(minHeight: 100)
+                            
+                            if patient?.profile_id == nil {
+                                SecondaryButton(title: "Invite Patient") {
+                                    ShareSheetHelper.presentShareSheet(code: accessCode)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.top, 8)
+                            }
                         }
                         .padding(.horizontal, 16)
                         

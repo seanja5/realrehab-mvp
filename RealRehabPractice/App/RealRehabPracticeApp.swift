@@ -14,6 +14,8 @@ struct RealRehabPracticeApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject var router = Router()
     @StateObject private var session = SessionContext()
+    @StateObject private var pendingLinkStore = PendingLinkStore()
+    @StateObject private var invitedStore = InvitedPatientsStore()
     @StateObject private var networkMonitor = NetworkMonitor.shared
 
     init() {
@@ -78,9 +80,21 @@ struct RealRehabPracticeApp: App {
             )
             .environmentObject(router)
             .environmentObject(session)
+            .environmentObject(pendingLinkStore)
+            .environmentObject(invitedStore)
+            .onOpenURL { url in
+                guard let code = parseAccessCode(from: url) else { return }
+                pendingLinkStore.setCode(code)
+                if session.profileId != nil && session.ptProfileId == nil {
+                    router.reset(to: .patientSettings)
+                } else if session.profileId == nil {
+                    router.reset(to: .createAccount)
+                }
+            }
             .task {
                 // Use resolveSessionForLaunch: checks cache first (works offline after app restart)
-                if let bootstrap = await AuthService.resolveSessionForLaunch() {
+                let bootstrap = await AuthService.resolveSessionForLaunch()
+                if let bootstrap = bootstrap {
                     session.profileId = bootstrap.profileId
                     session.ptProfileId = bootstrap.ptProfileId
                     print("✅ Session restored: profile=\(bootstrap.profileId.uuidString), pt_profile=\(bootstrap.ptProfileId?.uuidString ?? "nil"), role=\(bootstrap.role)")
@@ -94,6 +108,14 @@ struct RealRehabPracticeApp: App {
                     }
                 }
                 await OutboxSyncManager.shared.processQueueIfOnline()
+                // Handle deep link after cold start: if code was set by onOpenURL before session existed, navigate now
+                if pendingLinkStore.code != nil {
+                    if bootstrap?.role == "patient" {
+                        router.reset(to: .patientSettings)
+                    } else {
+                        router.reset(to: .createAccount)
+                    }
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .scheduleReminderTapped)) { _ in
                 router.reset(to: .journeyMap)
@@ -113,6 +135,12 @@ struct RealRehabPracticeApp: App {
             }
             .preferredColorScheme(.light)   // <- force Light mode app-wide
         }
+    }
+
+    private func parseAccessCode(from url: URL) -> String? {
+        guard url.scheme == "realrehab", url.host == "link" else { return nil }
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        return components?.queryItems?.first(where: { $0.name == "code" })?.value
     }
 
     private func rescheduleRemindersIfNeeded() async {

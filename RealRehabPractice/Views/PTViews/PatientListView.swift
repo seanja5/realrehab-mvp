@@ -68,9 +68,16 @@ struct PatientListView: View {
                                     gender: patient.gender?.capitalized ?? "—",
                                     email: patient.email,
                                     phone: patient.phone,
+                                    accessCode: patient.access_code,
+                                    patientProfileId: patient.patient_profile_id,
+                                    isLinked: patient.profile_id != nil,
                                     onTap: {
                                         print("📋 Opening patient \(patient.patient_profile_id.uuidString) with pt_profile_id=\(session.ptProfileId?.uuidString ?? "nil")")
                                         router.go(.ptPatientDetail(patientProfileId: patient.patient_profile_id))
+                                    },
+                                    onInvite: {
+                                        guard let code = patient.access_code, !code.isEmpty else { return }
+                                        ShareSheetHelper.presentShareSheet(code: code)
                                     }
                                 )
                             }
@@ -206,39 +213,69 @@ private struct PatientCard: View {
     let gender: String  // Already formatted (capitalized or "—")
     let email: String?
     let phone: String?
+    var accessCode: String?
+    var patientProfileId: UUID?
+    var isLinked: Bool = false
     var onTap: (() -> Void)? = nil
+    var onInvite: (() -> Void)? = nil
+    
+    /// Show Invite only when patient is not yet linked; button stays until patient successfully links.
+    private var showInviteButton: Bool {
+        guard !isLinked else { return false }
+        guard let code = accessCode, !code.isEmpty, let _ = patientProfileId else { return false }
+        return true
+    }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(name)
-                .font(.rrTitle)
-                .foregroundStyle(.primary)
-            
-            Text("DOB: \(dob) • Gender: \(gender)")
-                .font(.rrBody)
-                .foregroundStyle(.secondary)
-            
-            if let email = email, !email.isEmpty {
-                Text("Email: \(email)")
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(name)
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+                
+                Text("DOB: \(dob) • Gender: \(gender)")
                     .font(.rrBody)
                     .foregroundStyle(.secondary)
-            } else {
-                Text("Email: —")
-                    .font(.rrBody)
-                    .foregroundStyle(.secondary)
+                
+                if let email = email, !email.isEmpty {
+                    Text("Email: \(email)")
+                        .font(.rrBody)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Email: —")
+                        .font(.rrBody)
+                        .foregroundStyle(.secondary)
+                }
+                
+                if let phone = phone, !phone.isEmpty {
+                    Text("Phone: \(phone)")
+                        .font(.rrBody)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Phone: —")
+                        .font(.rrBody)
+                        .foregroundStyle(.secondary)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
             
-            if let phone = phone, !phone.isEmpty {
-                Text("Phone: \(phone)")
-                    .font(.rrBody)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Phone: —")
-                    .font(.rrBody)
-                    .foregroundStyle(.secondary)
+            if showInviteButton {
+                Button(action: { onInvite?() }) {
+                    Text("Invite")
+                        .font(.rrCaption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color.brandDarkBlue)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 12)
+                .padding(.trailing, 4)
             }
         }
-        .padding(16)
         .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 16)

@@ -11,6 +11,7 @@ enum AccountType: String, CaseIterable {
 struct CreateAccountView: View {
     @EnvironmentObject var router: Router
     @EnvironmentObject var session: SessionContext
+    @EnvironmentObject var pendingLinkStore: PendingLinkStore
     @StateObject private var auth = AuthViewModel()
 
     // Account type - user must select before creating
@@ -122,6 +123,15 @@ struct CreateAccountView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()
+            }
+        }
+        .onAppear {
+            if let code = pendingLinkStore.code, code.count <= 8 {
+                accessCode = String(code.prefix(8))
+                auth.accessCode = accessCode
+                accountType = .patient
+                accountTypeSelection = AccountType.patient.rawValue
+                pendingLinkStore.clearCode()
             }
         }
         .alert("Sign Up Failed", isPresented: .constant(auth.errorMessage != nil || ptErrorMessage != nil)) {

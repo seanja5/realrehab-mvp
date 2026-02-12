@@ -4,6 +4,7 @@ import PostgREST
 
 struct PatientSettingsView: View {
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var pendingLinkStore: PendingLinkStore
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var allowReminders = false
     @State private var allowCamera = false
@@ -59,6 +60,12 @@ struct PatientSettingsView: View {
         .task {
             await loadProfile(forceRefresh: false)
             await checkIfHasPT()
+        }
+        .onAppear {
+            if let code = pendingLinkStore.code, code.count <= 8 {
+                accessCode = String(code.prefix(8))
+                pendingLinkStore.clearCode()
+            }
         }
         .refreshable {
             await loadProfile(forceRefresh: true)

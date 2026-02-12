@@ -273,7 +273,7 @@ private struct PatientCard: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 12)
-                .padding(.trailing, 4)
+                .padding(.trailing, 12)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)

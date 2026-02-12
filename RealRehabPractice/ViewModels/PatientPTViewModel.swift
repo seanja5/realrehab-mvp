@@ -7,7 +7,7 @@ public final class PatientPTViewModel: ObservableObject {
   @Published public var name: String = ""
   @Published public var email: String = ""
   @Published public var phone: String = ""
-  @Published public var isLoading: Bool = false
+  @Published public var isLoading: Bool = true  // Start true so PTDetailView shows skeleton until load completes
   @Published public var errorMessage: String?
   @Published public var hasRehabPlan: Bool = false
 

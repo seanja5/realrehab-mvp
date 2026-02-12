@@ -44,12 +44,20 @@ struct CompletionView: View {
                     
                     // Range card
                     HStack(spacing: 12) {
+                        if isLoadingRange {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(white: 0.88))
+                                .frame(width: 24, height: 24)
+                                .shimmer()
+                            SkeletonBlock(width: 120, height: 20)
+                        } else {
                         Image(systemName: "chart.pie")
                             .font(.rrBody)
                             .foregroundStyle(.primary)
                         Text(rangeText)
                             .font(.rrTitle)
                             .foregroundStyle(.primary)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)

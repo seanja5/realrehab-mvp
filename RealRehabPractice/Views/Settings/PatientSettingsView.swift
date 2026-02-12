@@ -24,6 +24,9 @@ struct PatientSettingsView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     OfflineStaleBanner(showBanner: !networkMonitor.isOnline && showOfflineBanner)
+                    if patientProfile == nil && errorMessage == nil {
+                        skeletonContent
+                    } else {
                     VStack(spacing: 24) {
                         accountSection
                         notificationsSection
@@ -35,6 +38,7 @@ struct PatientSettingsView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
                 .padding(.bottom, 120)
+                    }
                 }
                 .padding(.top, RRSpace.pageTop)
             }
@@ -83,6 +87,38 @@ struct PatientSettingsView: View {
             errorMessage = nil
         }
         .bluetoothPopupOverlay()
+    }
+
+    private var skeletonContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 16) {
+                SkeletonBlock(width: 80, height: 22)
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(white: 0.88))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 200)
+                    .shimmer()
+            }
+            VStack(alignment: .leading, spacing: 16) {
+                SkeletonBlock(width: 130, height: 22)
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(white: 0.88))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 100)
+                    .shimmer()
+            }
+            VStack(alignment: .leading, spacing: 16) {
+                SkeletonBlock(width: 70, height: 22)
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(white: 0.88))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .shimmer()
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 120)
     }
 
     private var accountSection: some View {

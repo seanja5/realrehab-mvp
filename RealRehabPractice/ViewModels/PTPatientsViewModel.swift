@@ -9,7 +9,7 @@ final class PTPatientsViewModel: ObservableObject {
     @Published var lastName = ""
     @Published var dateOfBirth = Date()
     @Published var gender = "Male"
-    @Published var isLoading = false
+    @Published var isLoading = true  // Start true so PatientListView shows skeleton until first load completes
     @Published var errorMessage: String?
     /// True when we should show the offline/stale banner (offline and either data is stale or user tried to refresh).
     @Published var showOfflineBanner = false
@@ -24,6 +24,7 @@ final class PTPatientsViewModel: ObservableObject {
     func load(forceRefresh: Bool = false) async {
         guard let ptProfileId = ptProfileId else {
             errorMessage = "PT profile not available"
+            isLoading = false
             print("❌ PTPatientsViewModel.load: ptProfileId is nil")
             return
         }
@@ -38,6 +39,7 @@ final class PTPatientsViewModel: ObservableObject {
             print("✅ PTPatientsViewModel.load: loaded \(self.patients.count) patients for pt_profile_id=\(ptProfileId.uuidString)")
         } catch {
             if error is CancellationError || Task.isCancelled {
+                isLoading = false
                 return
             }
             if patients.isEmpty {

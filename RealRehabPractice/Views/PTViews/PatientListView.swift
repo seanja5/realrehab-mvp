@@ -42,7 +42,9 @@ struct PatientListView: View {
                 VStack(spacing: 0) {
                     OfflineStaleBanner(showBanner: !networkMonitor.isOnline && vm.showOfflineBanner)
                     VStack(spacing: 24) {
-                    if vm.patients.isEmpty {
+                    if vm.isLoading && vm.patients.isEmpty {
+                        skeletonContent
+                    } else if vm.patients.isEmpty {
                         VStack(spacing: 20) {
                             Spacer()
                                 .frame(height: 100)
@@ -203,6 +205,29 @@ struct PatientListView: View {
                         .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
                 )
             }
+    }
+
+    private var skeletonContent: some View {
+        VStack(spacing: 24) {
+            ForEach(0..<3, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(white: 0.88))
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 110)
+                    .overlay(
+                        VStack(alignment: .leading, spacing: 8) {
+                            SkeletonBlock(width: 160, height: 18)
+                            SkeletonBlock(width: 200, height: 14)
+                            SkeletonBlock(width: 180, height: 14)
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    )
+                    .shimmer()
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
     }
 }
 

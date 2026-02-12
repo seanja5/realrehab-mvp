@@ -10,6 +10,9 @@ struct PTDetailView: View {
         ZStack(alignment: .bottom) {
             ScrollView {
                 VStack(alignment: .leading, spacing: RRSpace.section) {
+                    if vm.isLoading && vm.name.isEmpty {
+                        skeletonContent
+                    } else {
                     RoundedRectangle(cornerRadius: 16)
                         .fill(.white)
                         .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
@@ -102,6 +105,7 @@ struct PTDetailView: View {
                     .padding(.top, 4)
                     
                     Spacer(minLength: 24)
+                    }
                 }
                 .padding(.bottom, 120)
             }
@@ -141,6 +145,42 @@ struct PTDetailView: View {
             Task { await loadSchedule() }
         }
         .bluetoothPopupOverlay()
+    }
+
+    private var skeletonContent: some View {
+        VStack(alignment: .leading, spacing: RRSpace.section) {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.white)
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                .overlay(
+                    VStack(alignment: .leading, spacing: 8) {
+                        SkeletonBlock(width: 180, height: 22)
+                        SkeletonBlock(width: 200, height: 16)
+                        SkeletonBlock(width: 160, height: 16)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                )
+                .frame(minHeight: 110)
+                .padding(.horizontal, 16)
+                .padding(.top, RRSpace.pageTop)
+            Rectangle()
+                .fill(Color.black.opacity(0.12))
+                .frame(height: 1)
+                .padding(.horizontal, 16)
+            VStack(alignment: .leading, spacing: RRSpace.stack) {
+                SkeletonBlock(width: 160, height: 18)
+                    .padding(.horizontal, 16)
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(white: 0.88))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 240)
+                    .padding(.horizontal, 16)
+                    .shimmer()
+            }
+            .padding(.top, 4)
+            Spacer(minLength: 24)
+        }
     }
 
     private func loadSchedule() async {

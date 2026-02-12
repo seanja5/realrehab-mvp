@@ -675,7 +675,10 @@ struct RecoveryChartWeekView: View {
                     .frame(height: 240)
                     .overlay {
                         if isLoading {
-                            ProgressView()
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(white: 0.88))
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .shimmer()
                         } else if chartData.isEmpty {
                             // Check if there's any past data
                             if allCalibrationPoints.isEmpty {

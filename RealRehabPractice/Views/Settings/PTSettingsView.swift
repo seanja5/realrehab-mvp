@@ -19,6 +19,9 @@ struct PTSettingsView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     OfflineStaleBanner(showBanner: !networkMonitor.isOnline && showOfflineBanner)
+                    if ptProfile == nil && errorMessage == nil {
+                        skeletonContent
+                    } else {
                     VStack(spacing: 24) {
                         accountSection
                         practiceSection
@@ -28,6 +31,7 @@ struct PTSettingsView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
                     .padding(.bottom, 120)
+                    }
                 }
                 .padding(.top, RRSpace.pageTop)
             }
@@ -62,6 +66,60 @@ struct PTSettingsView: View {
             // Clear error message when navigating away to prevent showing cancelled errors
             errorMessage = nil
         }
+    }
+
+    private var skeletonContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Skeleton: Account card
+            VStack(alignment: .leading, spacing: 16) {
+                SkeletonBlock(width: 80, height: 22)
+                VStack(alignment: .leading, spacing: 8) {
+                    SkeletonBlock(width: 200, height: 14)
+                    SkeletonBlock(width: 160, height: 16)
+                    SkeletonBlock(width: 220, height: 14)
+                    SkeletonBlock(width: 180, height: 16)
+                    SkeletonBlock(width: 120, height: 14)
+                    SkeletonBlock(width: 140, height: 16)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(white: 0.94))
+                        .shimmer()
+                )
+            }
+            // Skeleton: Practice card
+            VStack(alignment: .leading, spacing: 16) {
+                SkeletonBlock(width: 100, height: 22)
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(white: 0.88))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 140)
+                    .shimmer()
+            }
+            // Skeleton: Notifications card
+            VStack(alignment: .leading, spacing: 16) {
+                SkeletonBlock(width: 130, height: 22)
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(white: 0.88))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 100)
+                    .shimmer()
+            }
+            // Skeleton: Danger zone card
+            VStack(alignment: .leading, spacing: 16) {
+                SkeletonBlock(width: 70, height: 22)
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(white: 0.88))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .shimmer()
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 120)
     }
 
     private var accountSection: some View {

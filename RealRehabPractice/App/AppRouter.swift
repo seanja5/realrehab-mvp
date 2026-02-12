@@ -17,8 +17,8 @@ enum Route: Hashable {
     case directionsView1(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil)
     case directionsView2(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil)
     case lesson(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil)
-    case assessment
-    case completion
+    case assessment(lessonId: UUID?)
+    case completion(lessonId: UUID?)
     case ptSettings
     case patientList
     case ptPatientDetail(patientProfileId: UUID)

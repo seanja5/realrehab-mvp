@@ -459,7 +459,7 @@ struct LessonView: View {
             ) {
                 engine.stopGuidedSimulation()
                 persistAndCompleteLesson()
-                router.go(.assessment)
+                router.go(.assessment(lessonId: lessonId))
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 24)

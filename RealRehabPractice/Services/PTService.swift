@@ -17,6 +17,13 @@ enum PTService {
         let practice_name: String?
         let practice_address: String?
         let specialization: String?
+        /// When true, PT receives notifications when a patient completes a lesson. Default true if column missing.
+        let notify_session_complete: Bool?
+        /// When true, PT receives missed-day reminders. Default false if column missing.
+        let notify_missed_day: Bool?
+        
+        var notifySessionComplete: Bool { notify_session_complete ?? true }
+        var notifyMissedDay: Bool { notify_missed_day ?? false }
     }
     
     struct SimplePatient: Codable, Identifiable {
@@ -146,7 +153,7 @@ enum PTService {
         let rows: [PTProfileRow] = try await client
             .schema("accounts")
             .from("pt_profiles")
-            .select("id,profile_id,email,first_name,last_name,phone,license_number,npi_number,practice_name,practice_address,specialization")
+            .select("id,profile_id,email,first_name,last_name,phone,license_number,npi_number,practice_name,practice_address,specialization,notify_session_complete,notify_missed_day")
             .eq("profile_id", value: profile.id.uuidString)
             .limit(1)
             .decoded()
@@ -164,6 +171,68 @@ enum PTService {
         print("✅ PTService.myPTProfile: cached result")
         
         return pt
+    }
+    
+    /// Update PT notification preferences. Invalidates PT profile cache.
+    @MainActor
+    static func updateNotificationPreferences(ptProfileId: UUID, notifySessionComplete: Bool, notifyMissedDay: Bool) async throws {
+        print("📤 PTService.updateNotificationPreferences: pt_profile_id=\(ptProfileId), notify_session_complete=\(notifySessionComplete), notify_missed_day=\(notifyMissedDay)")
+        do {
+            _ = try await client
+                .schema("accounts")
+                .from("pt_profiles")
+                .update([
+                    "notify_session_complete": notifySessionComplete,
+                    "notify_missed_day": notifyMissedDay
+                ])
+                .eq("id", value: ptProfileId.uuidString)
+                .select("id")
+                .single()
+                .execute()
+            print("✅ PTService.updateNotificationPreferences: success")
+        } catch {
+            print("❌ PTService.updateNotificationPreferences: \(error)")
+            throw error
+        }
+        if let profile = try? await AuthService.myProfile() {
+            await CacheService.shared.invalidate(CacheKey.ptProfile(profileId: profile.id))
+        }
+    }
+    
+    /// One row from pt_session_complete_events for PT notifications.
+    struct SessionCompleteEvent: Codable {
+        let id: UUID
+        let patient_profile_id: UUID
+        let patient_first_name: String?
+        let patient_last_name: String?
+        let lesson_title: String?
+        let created_at: Date
+    }
+    
+    /// Fetch recent session-complete events for the current PT (for showing notifications). Ordered by created_at desc.
+    @MainActor
+    static func fetchRecentSessionCompleteEvents(limit: Int = 20) async throws -> [SessionCompleteEvent] {
+        guard let profile = try await AuthService.myProfile() else { return [] }
+        let pt = try await myPTProfile()
+        struct Row: Decodable {
+            let id: UUID
+            let patient_profile_id: UUID
+            let patient_first_name: String?
+            let patient_last_name: String?
+            let lesson_title: String?
+            let created_at: Date
+        }
+        let rows: [Row] = try await client
+            .schema("accounts")
+            .from("pt_session_complete_events")
+            .select("id,patient_profile_id,patient_first_name,patient_last_name,lesson_title,created_at")
+            .eq("pt_profile_id", value: pt.id.uuidString)
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .decoded()
+        return rows.map { r in
+            SessionCompleteEvent(id: r.id, patient_profile_id: r.patient_profile_id, patient_first_name: r.patient_first_name, patient_last_name: r.patient_last_name, lesson_title: r.lesson_title, created_at: r.created_at)
+        }
     }
     
     /// Load PT profile for display; when offline returns stale cache if available and reports isStale for banner.

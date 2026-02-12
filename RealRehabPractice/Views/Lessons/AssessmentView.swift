@@ -9,8 +9,13 @@ import SwiftUI
 import CoreBluetooth
 
 struct AssessmentView: View {
+    let lessonId: UUID?
     @EnvironmentObject var router: Router
     @StateObject private var ble = BluetoothManager.shared
+    
+    init(lessonId: UUID? = nil) {
+        self.lessonId = lessonId
+    }
     @State private var maxSet = false
     @State private var maximumPositionValue: Int? = nil
     @State private var isSavingMaximum = false
@@ -130,7 +135,7 @@ struct AssessmentView: View {
                     isDisabled: !maxSet,
                     useLargeFont: true,
                     action: {
-                        router.go(.completion)
+                        router.go(.completion(lessonId: lessonId))
                     }
                 )
             }

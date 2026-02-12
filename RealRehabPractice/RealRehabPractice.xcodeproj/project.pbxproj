@@ -80,6 +80,7 @@
 		C8E1A0022ED00001004D9348 /* PendingLinkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1A0012ED00001004D9347 /* PendingLinkStore.swift */; };
 		C8E1A0042ED00001004D934A /* InvitedPatientsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1A0032ED00001004D9349 /* InvitedPatientsStore.swift */; };
 		C8E1A0062ED00001004D934C /* ShareSheetHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1A0052ED00001004D934B /* ShareSheetHelper.swift */; };
+		C8F4A8222ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8232ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -168,6 +169,7 @@
 		C8D677FF2EBB095E00829144 /* PTDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDetailView.swift; sourceTree = "<group>"; };
 		C8F4A7012ED2C79A00BADF02 /* BluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 		C8F4A8212ED2F3B500BADF02 /* PTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTService.swift; sourceTree = "<group>"; };
+		C8F4A8232ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSessionCompleteNotifier.swift; sourceTree = "<group>"; };
 		C8F4A8252ED2F3B500BADF02 /* PTCreateAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCreateAccountView.swift; sourceTree = "<group>"; };
 		C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C8A1B2C32ED00001004D9347 /* ACLJourneyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ACLJourneyModels.swift; sourceTree = "<group>"; };
@@ -238,6 +240,7 @@
 				C8A2B3D42ED00002004D9347 /* ScheduleService.swift */,
 				C8A3B4E52ED00004004D9347 /* NotificationManager.swift */,
 				C8F4A8212ED2F3B500BADF02 /* PTService.swift */,
+				C8F4A8232ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -635,6 +638,7 @@
 				C8D677BE2EB8285A00829146 /* TestPairDeviceView.swift in Sources */,
 				C8D678002EBB095E00829144 /* PTDetailView.swift in Sources */,
 				C8F4A8202ED2F3B500BADF02 /* PTService.swift in Sources */,
+				C8F4A8222ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift in Sources */,
 				C8F4A8242ED2F3B500BADF02 /* PTCreateAccountView.swift in Sources */,
 			);
 		};

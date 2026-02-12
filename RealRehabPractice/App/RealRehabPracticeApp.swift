@@ -48,8 +48,8 @@ struct RealRehabPracticeApp: App {
                                 case .directionsView1(let reps, let restSec, let lessonId): DirectionsView1(reps: reps, restSec: restSec, lessonId: lessonId)
                                 case .directionsView2(let reps, let restSec, let lessonId): DirectionsView2(reps: reps, restSec: restSec, lessonId: lessonId)
                                 case .lesson(let reps, let restSec, let lessonId): LessonView(reps: reps, restSec: restSec, lessonId: lessonId)
-                                case .assessment: AssessmentView()
-                                case .completion: CompletionView()
+                                case .assessment(let lessonId): AssessmentView(lessonId: lessonId)
+                                case .completion(let lessonId): CompletionView(lessonId: lessonId)
                                 case .ptSettings: PTSettingsView()
                                 case .patientList: PatientListView()
                                 case .ptPatientDetail(let patientProfileId): PatientDetailView(patientProfileId: patientProfileId)
@@ -120,11 +120,17 @@ struct RealRehabPracticeApp: App {
             .onReceive(NotificationCenter.default.publisher(for: .scheduleReminderTapped)) { _ in
                 router.reset(to: .journeyMap)
             }
+            .onReceive(NotificationCenter.default.publisher(for: .ptSessionCompleteTapped)) { notification in
+                if let id = notification.userInfo?["patientProfileId"] as? UUID {
+                    router.reset(to: .ptPatientDetail(patientProfileId: id))
+                }
+            }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     Task {
                         await rescheduleRemindersIfNeeded()
                         await OutboxSyncManager.shared.processQueueIfOnline()
+                        await checkPTSessionCompleteIfNeeded()
                     }
                 }
             }
@@ -143,6 +149,13 @@ struct RealRehabPracticeApp: App {
         return components?.queryItems?.first(where: { $0.name == "code" })?.value
     }
 
+    private func checkPTSessionCompleteIfNeeded() async {
+        do {
+            guard let profile = try await AuthService.myProfile(), profile.role == "pt" else { return }
+            await PTSessionCompleteNotifier.checkAndNotify()
+        } catch { }
+    }
+    
     private func rescheduleRemindersIfNeeded() async {
         do {
             guard let profile = try await AuthService.myProfile(), profile.role == "patient" else { return }

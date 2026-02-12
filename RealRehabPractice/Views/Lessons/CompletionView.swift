@@ -1,9 +1,14 @@
 import SwiftUI
 
 struct CompletionView: View {
+    let lessonId: UUID?
     @EnvironmentObject var router: Router
     @State private var rangeGained: Int? = nil
     @State private var isLoadingRange: Bool = true
+    
+    init(lessonId: UUID? = nil) {
+        self.lessonId = lessonId
+    }
     
     var body: some View {
         ScrollView {
@@ -112,6 +117,7 @@ struct CompletionView: View {
         }
         .task {
             await loadRangeGained()
+            await notifyPTIfNeeded()
         }
     }
     
@@ -156,6 +162,27 @@ struct CompletionView: View {
                 isLoadingRange = false
                 print("❌ CompletionView: Failed to load range gained: \(error)")
             }
+        }
+    }
+    
+    /// Notify the PT that this patient completed the lesson (if PT has the setting enabled). Called once when view appears.
+    private func notifyPTIfNeeded() async {
+        guard let lessonId = lessonId else { return }
+        do {
+            let patientProfile = try await PatientService.myPatientProfile()
+            let patientProfileId = patientProfile.id
+            guard let ptProfileId = try await PatientService.getPTProfileId(patientProfileId: patientProfileId) else { return }
+            let lessonTitle: String
+            if let plan = try await RehabService.currentPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId),
+               let node = plan.nodes?.first(where: { UUID(uuidString: $0.id) == lessonId }) {
+                lessonTitle = node.title.isEmpty ? "Lesson" : node.title
+            } else {
+                lessonTitle = "Lesson"
+            }
+            try await PatientService.notifyPTSessionComplete(patientProfileId: patientProfileId, lessonId: lessonId, lessonTitle: lessonTitle)
+            print("✅ CompletionView: Notified PT of session complete for lesson \(lessonId)")
+        } catch {
+            print("⚠️ CompletionView: Failed to notify PT: \(error)")
         }
     }
 }

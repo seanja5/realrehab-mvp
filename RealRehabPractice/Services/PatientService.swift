@@ -742,5 +742,25 @@ enum PatientService {
       userInfo: [NSLocalizedDescriptionKey: "Failed to create or find patient_profile after all attempts"]
     )
   }
+
+  /// Notify the PT that this patient completed a lesson (if PT has "Patient session completed" enabled).
+  /// Call when the patient reaches the Completion screen after the reevaluation.
+  static func notifyPTSessionComplete(patientProfileId: UUID, lessonId: UUID, lessonTitle: String) async throws {
+    try await Task { @Sendable in
+      struct Params: Encodable {
+        let p_patient_profile_id: String
+        let p_lesson_id: String
+        let p_lesson_title: String
+      }
+      let params = Params(
+        p_patient_profile_id: patientProfileId.uuidString,
+        p_lesson_id: lessonId.uuidString,
+        p_lesson_title: lessonTitle
+      )
+      try await client
+        .rpc("notify_pt_session_complete", params: params)
+        .execute()
+    }.value
+  }
 }
 

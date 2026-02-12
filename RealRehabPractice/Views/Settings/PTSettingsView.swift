@@ -6,6 +6,7 @@ struct PTSettingsView: View {
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var notifySessionComplete = true
     @State private var notifyMissedDay = false
+    @State private var skipNextNotifySave = false
     @State private var ptProfile: PTService.PTProfileRow? = nil
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
@@ -19,8 +20,8 @@ struct PTSettingsView: View {
                     OfflineStaleBanner(showBanner: !networkMonitor.isOnline && showOfflineBanner)
                     VStack(spacing: 24) {
                         accountSection
-                        notificationsSection
                         practiceSection
+                        notificationsSection
                         dangerZoneSection
                     }
                     .padding(.horizontal, 20)
@@ -115,6 +116,7 @@ struct PTSettingsView: View {
                 Text("Patient session completed")
                     .font(.rrBody)
             }
+            .onChange(of: notifySessionComplete) { _, _ in saveNotificationPreferences() }
 
             Divider()
 
@@ -122,6 +124,7 @@ struct PTSettingsView: View {
                 Text("Missed day reminders")
                     .font(.rrBody)
             }
+            .onChange(of: notifyMissedDay) { _, _ in saveNotificationPreferences() }
         }
         .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
     }
@@ -246,6 +249,9 @@ struct PTSettingsView: View {
         do {
             let (profile, isStale) = try await PTService.myPTProfileForDisplay()
             self.ptProfile = profile
+            skipNextNotifySave = true
+            self.notifySessionComplete = profile.notifySessionComplete
+            self.notifyMissedDay = profile.notifyMissedDay
             // Show banner when offline and (data is stale or user explicitly tried to refresh)
             self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (isStale || forceRefresh)
         } catch {
@@ -258,6 +264,25 @@ struct PTSettingsView: View {
             }
         }
         isLoading = false
+    }
+    
+    private func saveNotificationPreferences() {
+        guard !skipNextNotifySave else {
+            skipNextNotifySave = false
+            return
+        }
+        guard let ptId = session.ptProfileId else {
+            print("⚠️ PTSettingsView.saveNotificationPreferences: no ptProfileId")
+            return
+        }
+        Task { @MainActor in
+            do {
+                try await PTService.updateNotificationPreferences(ptProfileId: ptId, notifySessionComplete: notifySessionComplete, notifyMissedDay: notifyMissedDay)
+            } catch {
+                errorMessage = error.localizedDescription
+                print("❌ PTSettingsView.saveNotificationPreferences: \(error)")
+            }
+        }
     }
 }
 

@@ -6,6 +6,9 @@ import UserNotifications
 enum NotificationManager {
     static let scheduleReminderCategory = "SCHEDULE_REMINDER"
     static let scheduleReminderIdentifierPrefix = "schedule_reminder_"
+    
+    static let ptSessionCompleteCategory = "PT_SESSION_COMPLETE"
+    static let ptSessionCompleteIdentifierPrefix = "pt_session_complete_"
 
     /// Request notification permission. Call when user first enables reminders.
     /// - Returns: true if granted, false if denied
@@ -108,6 +111,23 @@ enum NotificationManager {
         center.removePendingNotificationRequests(withIdentifiers: ids)
     }
 
+    /// Show a local notification for PT when a patient completes a lesson. Call from PT app when a new session-complete event is received.
+    static func showSessionCompleteNotification(patientName: String, lessonName: String, patientProfileId: UUID) async {
+        let content = UNMutableNotificationContent()
+        content.title = "Patient completed a lesson"
+        content.body = "\(patientName) just completed \(lessonName). Tap here to view their insights."
+        content.sound = .default
+        content.categoryIdentifier = ptSessionCompleteCategory
+        content.userInfo = [
+            "route": "ptPatientDetail",
+            "patientProfileId": patientProfileId.uuidString
+        ]
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let id = "\(ptSessionCompleteIdentifierPrefix)\(patientProfileId.uuidString)_\(Date().timeIntervalSince1970)"
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+        try? await UNUserNotificationCenter.current().add(request)
+    }
+    
     private static func parseSlotTime(_ s: String) -> (hour: Int, minute: Int)? {
         let parts = s.split(separator: ":")
         guard parts.count >= 2,

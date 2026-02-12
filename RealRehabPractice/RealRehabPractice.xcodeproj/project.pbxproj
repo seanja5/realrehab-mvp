@@ -82,6 +82,7 @@
 		C8E1A0062ED00001004D934C /* ShareSheetHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1A0052ED00001004D934B /* ShareSheetHelper.swift */; };
 		C8F4A8222ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8232ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift */; };
 		C8F4A8242ED2F3B600BADF04 /* NPIVerificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8252ED2F3B600BADF04 /* NPIVerificationService.swift */; };
+		C8D677CA2EB839FD00829145 /* SkeletonShimmer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677C92EB839FD00829145 /* SkeletonShimmer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -104,6 +105,7 @@
 /* Begin PBXFileReference section */
 		C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SupabaseConfig.plist; sourceTree = "<group>"; };
 		C8003FB42EB7FC39008DC812 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		C8D677C92EB839FD00829145 /* SkeletonShimmer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonShimmer.swift; sourceTree = "<group>"; };
 		C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleVisualizerView.swift; sourceTree = "<group>"; };
 		C825376F2F2B12C300465343 /* CacheEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheEntry.swift; sourceTree = "<group>"; };
 		C82537702F2B12C300465343 /* CacheKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheKey.swift; sourceTree = "<group>"; };
@@ -317,6 +319,7 @@
 				C82D70562EC15F90004D9347 /* PTTabBar.swift */,
 				C8D677C82EB839FC00829144 /* Theme.swift */,
 				C8003FB42EB7FC39008DC812 /* Components.swift */,
+				C8D677C92EB839FD00829145 /* SkeletonShimmer.swift */,
 				C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */,
 			);
 			path = Components;
@@ -604,6 +607,7 @@
 				C8AEECC92EB2D7A200720188 /* AssessmentView.swift in Sources */,
 				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
 				C8003FB52EB7FD57008DC812 /* Components.swift in Sources */,
+				C8D677CA2EB839FD00829145 /* SkeletonShimmer.swift in Sources */,
 				C8A2B3D52ED00003004D9348 /* ScheduleVisualizerView.swift in Sources */,
 				C8D677C92EB839FC00829144 /* Theme.swift in Sources */,
 				C82D70272EBEB10C004D9347 /* AuthViewModel.swift in Sources */,

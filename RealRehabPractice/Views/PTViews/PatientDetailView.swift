@@ -29,6 +29,9 @@ struct PatientDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     OfflineStaleBanner(showBanner: !networkMonitor.isOnline && showOfflineBanner)
+                    if isLoading || (patient == nil && errorMessage == nil) {
+                        skeletonContent
+                    } else {
                     VStack(alignment: .leading, spacing: RRSpace.section) {
                     // Title card: same style as PTDetailView (name, phone, email)
                     RoundedRectangle(cornerRadius: 16)
@@ -119,6 +122,7 @@ struct PatientDetailView: View {
                         }
                     }
                     .padding(.horizontal, 16)
+                    .padding(.top, 4)
                     
                     // Progress this week section (only show if plan has nodes)
                     if let plan = currentPlan, let nodes = plan.nodes, !nodes.isEmpty {
@@ -232,9 +236,10 @@ struct PatientDetailView: View {
                     .padding(.horizontal, 16)
                     
                     Spacer(minLength: 24)
+                    }
+                }
                 }
                 .padding(.bottom, isKeyboardVisible ? 16 : 80)
-            }
             }
             
             // Tab bar - only show when keyboard is hidden
@@ -312,6 +317,86 @@ struct PatientDetailView: View {
             withAnimation(.easeInOut(duration: 0.25)) {
                 isKeyboardVisible = false
             }
+        }
+    }
+    
+    private var skeletonContent: some View {
+        VStack(alignment: .leading, spacing: RRSpace.section) {
+            // Skeleton: title card
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.white)
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                .overlay(
+                    VStack(alignment: .leading, spacing: 8) {
+                        SkeletonBlock(height: 22)
+                            .frame(width: 180)
+                        SkeletonBlock(height: 16)
+                            .frame(width: 200)
+                        SkeletonBlock(height: 16)
+                            .frame(width: 160)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                )
+                .frame(minHeight: 110)
+                .padding(.horizontal, 16)
+                .padding(.top, RRSpace.pageTop)
+            
+            // Skeleton: DOB / metadata row
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    SkeletonBlock(width: 100, height: 14)
+                    SkeletonBlock(width: 80, height: 14)
+                }
+                Spacer(minLength: 16)
+                VStack(alignment: .trailing, spacing: 6) {
+                    SkeletonBlock(width: 120, height: 14)
+                    SkeletonBlock(width: 110, height: 14)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            
+            Rectangle()
+                .fill(Color.black.opacity(0.12))
+                .frame(height: 1)
+                .padding(.horizontal, 16)
+            
+            // Skeleton: Current Rehab Plan
+            VStack(alignment: .leading, spacing: RRSpace.stack) {
+                SkeletonBlock(width: 160, height: 18)
+                    .padding(.horizontal, 16)
+                
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(white: 0.88))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 240)
+                    .padding(.horizontal, 16)
+                    .shimmer()
+                
+                SkeletonBlock(width: 120, height: 16)
+                    .padding(.top, 10)
+                    .padding(.horizontal, 16)
+            }
+            
+            Rectangle()
+                .fill(Color.black.opacity(0.12))
+                .frame(height: 1)
+                .padding(.horizontal, 16)
+            
+            // Skeleton: Notes
+            VStack(alignment: .leading, spacing: RRSpace.stack) {
+                SkeletonBlock(width: 60, height: 18)
+                    .padding(.horizontal, 16)
+                
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(white: 0.88))
+                    .frame(minHeight: 180)
+                    .padding(.horizontal, 16)
+                    .shimmer()
+            }
+            
+            Spacer(minLength: 24)
         }
     }
     

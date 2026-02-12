@@ -37,8 +37,12 @@ public struct LessonProgressInfo {
 public final class JourneyMapViewModel: ObservableObject {
     @Published public var nodes: [JourneyNode] = []
     @Published public var lessonProgress: [UUID: LessonProgressInfo] = [:]
-    @Published public var isLoading: Bool = false
+    @Published public var isLoading: Bool = true  // Start true so patient sees spinner + skeleton until load completes
     @Published public var errorMessage: String?
+    /// nil = loading/unknown, true = linked to PT, false = not linked (show skeleton title + center message)
+    @Published public var isLinkedToPT: Bool? = nil
+    /// Plan title when loaded (e.g. "ACL Rehab"); nil until plan is loaded.
+    @Published public var planTitle: String? = nil
     /// True when we should show the offline/stale banner (offline and either data is stale or user tried to refresh).
     @Published public var showOfflineBanner: Bool = false
     
@@ -82,17 +86,21 @@ public final class JourneyMapViewModel: ObservableObject {
             }
             guard let ptProfileId = ptProfileId else {
                 print("⚠️ JourneyMapViewModel: no pt_patient_map found for patient")
+                isLinkedToPT = false
                 isLoading = false
                 return
             }
+            isLinkedToPT = true
             print("🔍 JourneyMapViewModel: pt_profile_id=\(ptProfileId.uuidString)")
             
             let (plan, planStale) = try await RehabService.currentPlanForDisplay(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
             guard let plan = plan else {
                 print("ℹ️ JourneyMapViewModel: no active plan found")
+                planTitle = nil
                 isLoading = false
                 return
             }
+            planTitle = "\(plan.injury) Rehab"
             
             var anyStale = idsStale || planStale
             

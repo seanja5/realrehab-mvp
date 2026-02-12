@@ -5,8 +5,9 @@ struct PTJourneyMapView: View {
     let planId: UUID?  // Optional: nil for new plans, non-nil for editing existing
     @EnvironmentObject var router: Router
     @EnvironmentObject var session: SessionContext
-    @State private var isLoading = false
+    @State private var isLoading = true  // Start true so title card shows skeleton until plan loads
     @State private var errorMessage: String?
+    @State private var planTitle: String? = nil  // Set when plan loads (e.g. "ACL Rehab")
     
     // MARK: - State
     @State private var nodes: [LessonNode] = []
@@ -63,7 +64,7 @@ struct PTJourneyMapView: View {
             if nodes.isEmpty && isLoading {
                 ProgressView("Loading plan...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.white.opacity(0.8))
+                    .background(Color(red: 0.95, green: 0.95, blue: 0.95))
             }
             
             // Confirm Journey button fixed at bottom
@@ -85,6 +86,7 @@ struct PTJourneyMapView: View {
             .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .safeAreaInset(edge: .top) {
+            if !isLoading {
             VStack(spacing: 0) {
                 headerCard
                     .reportHeaderBottom()
@@ -121,6 +123,7 @@ struct PTJourneyMapView: View {
                     .padding(.trailing, 24)
                     .padding(.top, 12)
                 }
+            }
             }
         }
         .rrPageBackground()
@@ -193,6 +196,7 @@ struct PTJourneyMapView: View {
                 isLoading = false
                 return
             }
+            planTitle = "\(plan.injury) Rehab"
             if let savedNodes = plan.nodes {
                 nodes = RehabService.lessonNodes(from: savedNodes)
                 ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
@@ -235,8 +239,10 @@ struct PTJourneyMapView: View {
                 nodes = ACLJourneyModels.defaultACLPlanNodes()
                 print("✅ PTJourneyMapView: using fallback default (\(nodes.count) nodes)")
             }
+            planTitle = "ACL Tear Recovery Map"
         } catch {
             nodes = ACLJourneyModels.defaultACLPlanNodes()
+            planTitle = "ACL Tear Recovery Map"
             print("⚠️ PTJourneyMapView: fetch failed, using fallback (\(nodes.count) nodes): \(error)")
         }
         isLoading = false
@@ -494,7 +500,7 @@ struct PTJourneyMapView: View {
         )
     }
     
-    // MARK: - Header Card (sticky, dynamic phase)
+    // MARK: - Header Card (only shown when plan is loaded)
     private var headerCard: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {

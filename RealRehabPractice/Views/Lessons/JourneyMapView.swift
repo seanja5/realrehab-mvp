@@ -156,7 +156,11 @@ struct JourneyMapView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            if vm.nodes.isEmpty {
+            if vm.isLoading {
+                ProgressView("Loading plan...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(red: 0.95, green: 0.95, blue: 0.95))
+            } else if vm.nodes.isEmpty {
                 VStack {
                     Spacer()
                     Text("You have not been assigned a rehab plan yet")
@@ -197,15 +201,17 @@ struct JourneyMapView: View {
         }
         .rrPageBackground()
         .safeAreaInset(edge: .top) {
-            headerCard
-                .reportHeaderBottom()
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.white)
-                        .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
-                )
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
+            if vm.isLinkedToPT == true && !vm.isLoading && !vm.nodes.isEmpty {
+                headerCard
+                    .reportHeaderBottom()
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.white)
+                            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+            }
         }
         .navigationTitle("Journey Map")
         .navigationBarTitleDisplayMode(.inline)
@@ -346,7 +352,7 @@ struct JourneyMapView: View {
         .bluetoothPopupOverlay()
     }
     
-    // MARK: - Header Card (sticky, dynamic phase)
+    // MARK: - Header Card (only shown when plan is loaded)
     private var headerCard: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top) {

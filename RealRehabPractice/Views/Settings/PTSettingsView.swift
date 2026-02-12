@@ -10,6 +10,7 @@ struct PTSettingsView: View {
     @State private var ptProfile: PTService.PTProfileRow? = nil
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
+    @State private var npiVerification: NPIVerificationService.VerificationResult? = nil
     /// True when we should show the offline/stale banner (offline and either data is stale or user tried to refresh).
     @State private var showOfflineBanner = false
 
@@ -95,16 +96,11 @@ struct PTSettingsView: View {
                         Text("Verification")
                             .font(.rrCaption)
                             .foregroundStyle(.secondary)
-                        Text("Verified")
+                        Text(verificationStatusText)
                             .font(.rrBody)
-                            .foregroundStyle(Color.brandDarkBlue)
+                            .foregroundStyle(verificationStatusColor)
                     }
                     Spacer()
-                    Button("Manage") {
-                        // TODO: manage profile
-                    }
-                    .font(.rrBody)
-                    .foregroundStyle(Color.brandDarkBlue)
                 }
             }
         }
@@ -215,6 +211,23 @@ struct PTSettingsView: View {
         }
         return "\(first) \(last)".trimmingCharacters(in: .whitespaces)
     }
+    
+    private var verificationStatusText: String {
+        switch npiVerification {
+        case .verified: return "Verified"
+        case .notVerified: return "Not Verified"
+        case .error: return "Unable to verify"
+        case .none: return "—"
+        }
+    }
+    
+    private var verificationStatusColor: Color {
+        switch npiVerification {
+        case .verified: return Color.brandDarkBlue
+        case .notVerified: return .secondary
+        case .error, .none: return .secondary
+        }
+    }
 
     @ViewBuilder
     private func settingsCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -254,6 +267,7 @@ struct PTSettingsView: View {
             self.notifyMissedDay = profile.notifyMissedDay
             // Show banner when offline and (data is stale or user explicitly tried to refresh)
             self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (isStale || forceRefresh)
+            await checkNPIVerification()
         } catch {
             if error is CancellationError || Task.isCancelled {
                 return
@@ -264,6 +278,21 @@ struct PTSettingsView: View {
             }
         }
         isLoading = false
+    }
+    
+    private func checkNPIVerification() async {
+        guard let profile = ptProfile,
+              let npi = profile.npi_number,
+              !npi.trimmingCharacters(in: .whitespaces).isEmpty else {
+            npiVerification = .notVerified
+            return
+        }
+        let result = await NPIVerificationService.verify(
+            npi: npi,
+            firstName: profile.first_name,
+            lastName: profile.last_name
+        )
+        npiVerification = result
     }
     
     private func saveNotificationPreferences() {

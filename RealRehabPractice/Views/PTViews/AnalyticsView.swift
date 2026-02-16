@@ -422,13 +422,14 @@ struct ShakeGraphView: View {
                 p.addLine(to: CGPoint(x: paddingLeft + plotW, y: paddingTop + plotH))
             }
             .stroke(Color.gray.opacity(0.6), lineWidth: 1)
-            // Frequency label rotated 90° vertical
+            // Frequency label rotated 90° vertical, single line centered in margin
             Text("Frequency")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(.secondary)
+                .fixedSize()
+                .frame(width: 80, height: 14)
                 .rotationEffect(.degrees(-90))
-                .frame(width: 20, height: 80)
-                .position(x: paddingLeft - 20, y: paddingTop + plotH / 2)
+                .position(x: paddingLeft - 25, y: paddingTop + plotH / 2)
             Text("Time (sec)")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(.secondary)
@@ -470,9 +471,9 @@ struct EventTimelineView: View {
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
-            let h: CGFloat = 100
+            let h: CGFloat = 120
             let paddingH: CGFloat = 8
-            let lineY = h - 24
+            let lineY = h - 36
             let plotW = w - 2 * paddingH
             
             ZStack(alignment: .topLeading) {
@@ -498,7 +499,13 @@ struct EventTimelineView: View {
                     .foregroundStyle(.secondary)
                     .position(x: paddingH + plotW + 24, y: lineY + 14)
                 
-                // Event markers (tap brings to front)
+                // Time (sec) label below x-axis values
+                Text("Time (sec)")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .position(x: paddingH + plotW / 2, y: lineY + 28)
+                
+                // Event markers (tap on tag or dot brings to front)
                 ForEach(Array(events.enumerated()), id: \.offset) { idx, ev in
                     let x = paddingH + CGFloat(ev.timeSec / totalDuration) * plotW
                     VStack(spacing: 2) {
@@ -516,16 +523,17 @@ struct EventTimelineView: View {
                             .fill(Color.red)
                             .frame(width: 12, height: 12)
                     }
-                    .position(x: x, y: lineY - 38)
-                    .zIndex(frontIndex == idx ? 1 : 0)
+                    .padding(12)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         frontIndex = idx
                     }
+                    .zIndex(frontIndex == idx ? 1 : 0)
+                    .position(x: x, y: lineY - 38)
                 }
             }
         }
-        .frame(height: 100)
+        .frame(height: 120)
         .background(Color(uiColor: .tertiarySystemFill))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }

@@ -27,6 +27,7 @@ struct PTSettingsView: View {
                         practiceSection
                         notificationsSection
                         dangerZoneSection
+                        testAnalyticsSection
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
@@ -256,6 +257,23 @@ struct PTSettingsView: View {
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(Color.red, lineWidth: 1)
                     )
+            }
+        }
+    }
+    
+    private var testAnalyticsSection: some View {
+        settingsCard(title: "Testing") {
+            Button {
+                router.go(.ptLessonAnalytics(lessonTitle: "Knee Extension", lessonId: nil, patientProfileId: nil))
+            } label: {
+                Text("Test Analytics")
+                    .font(.rrBody)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 16)
+                    .background(Color.green)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
             }
         }
     }

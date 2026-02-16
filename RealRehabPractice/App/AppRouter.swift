@@ -25,6 +25,7 @@ enum Route: Hashable {
     case ptCategorySelect(patientProfileId: UUID)
     case ptInjurySelect(patientProfileId: UUID)
     case ptJourneyMap(patientProfileId: UUID, planId: UUID?)
+    case ptLessonAnalytics(lessonTitle: String, lessonId: UUID?, patientProfileId: UUID?)
 }
 
 final class Router: ObservableObject {   // class + ObservableObject

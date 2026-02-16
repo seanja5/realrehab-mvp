@@ -63,6 +63,7 @@
 		C8D677F12EBA932000829144 /* PatientListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EC2EBA932000829144 /* PatientListView.swift */; };
 		C8D677F32EBA932000829144 /* CategorySelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EA2EBA932000829144 /* CategorySelectView.swift */; };
 		C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */; };
+		C8A9B3E22ED0010A004D9348 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */; };
 		C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */; };
 		C8D678002EBB095E00829144 /* PTDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FF2EBB095E00829144 /* PTDetailView.swift */; };
 		C8F4A7002ED2C79A00BADF02 /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A7012ED2C79A00BADF02 /* BluetoothManager.swift */; };
@@ -168,6 +169,7 @@
 		C8D677EB2EBA932000829144 /* InjurySelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjurySelectView.swift; sourceTree = "<group>"; };
 		C8D677EC2EBA932000829144 /* PatientListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientListView.swift; sourceTree = "<group>"; };
 		C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJourneyMapView.swift; sourceTree = "<group>"; };
+		C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDetailView.swift; sourceTree = "<group>"; };
 		C8D677FF2EBB095E00829144 /* PTDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDetailView.swift; sourceTree = "<group>"; };
 		C8F4A7012ED2C79A00BADF02 /* BluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
@@ -412,6 +414,7 @@
 		C8D677EF2EBA932000829144 /* PTViews */ = {
 			isa = PBXGroup;
 			children = (
+				C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */,
 				C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */,
 				C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */,
 				C8D677EA2EBA932000829144 /* CategorySelectView.swift */,
@@ -596,6 +599,7 @@
 				C8A1B2C32ED00001004D9348 /* ACLJourneyModels.swift in Sources */,
 				C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */,
 				C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */,
+				C8A9B3E22ED0010A004D9348 /* AnalyticsView.swift in Sources */,
 				C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */,
 				C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */,
 				C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */,

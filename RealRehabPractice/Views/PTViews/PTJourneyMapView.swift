@@ -50,6 +50,8 @@ struct PTJourneyMapView: View {
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @FocusState private var isCustomLessonFieldFocused: Bool
     @State private var keyboardHeight: CGFloat = 0
+    @State private var showingCompletedLessonPopover = false
+    @State private var completedLessonNode: LessonNode? = nil
     
     /// Pop-up center Y as fraction of (visible) height. 0.5 = vertically centered.
     private static let popupCenterYRatio: CGFloat = 0.5
@@ -101,7 +103,7 @@ struct PTJourneyMapView: View {
                 HStack {
                     Spacer()
                     Button {
-                        guard !showingPhaseGoals, !showingEditor else { return }
+                        guard !showingPhaseGoals, !showingEditor, !showingCompletedLessonPopover else { return }
                         showingAddPopover = true
                         addPhaseSelection = activePhaseId
                         addSelection = 0
@@ -140,6 +142,9 @@ struct PTJourneyMapView: View {
                 }
                 if showingAddPopover {
                     addLessonPopover
+                }
+                if showingCompletedLessonPopover, let node = completedLessonNode {
+                    completedLessonPopover(node: node)
                 }
             }
             .zIndex(1000)
@@ -343,7 +348,16 @@ struct PTJourneyMapView: View {
                                 TapGesture()
                                     .onEnded {
                                         // Ignore taps during active drag or when another overlay is showing
-                                        guard !isDragging, draggingIndex == nil, !showingEditor, !showingPhaseGoals, !showingAddPopover else { return }
+                                        guard !isDragging, draggingIndex == nil, !showingEditor, !showingPhaseGoals, !showingAddPopover, !showingCompletedLessonPopover else { return }
+                                        
+                                        // Completed lesson: show analytics pop-up instead of editor
+                                        if node.nodeType == .lesson, lessonProgress[node.id]?.isCompleted == true {
+                                            completedLessonNode = node
+                                            withAnimation(.spring()) {
+                                                showingCompletedLessonPopover = true
+                                            }
+                                            return
+                                        }
                                         
                                         pressedIndex = index
                                         withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
@@ -358,7 +372,7 @@ struct PTJourneyMapView: View {
                                 LongPressGesture(minimumDuration: 0.3)
                                     .onEnded { _ in
                                         // Start drag mode
-                                        if draggingIndex == nil && !showingEditor && !showingPhaseGoals && !showingAddPopover {
+                                        if draggingIndex == nil && !showingEditor && !showingPhaseGoals && !showingAddPopover && !showingCompletedLessonPopover {
                                             draggingIndex = index
                                             isDragging = true
                                             pressedIndex = nil
@@ -381,7 +395,7 @@ struct PTJourneyMapView: View {
                                             }
                                     )
                             )
-                            .allowsHitTesting(!showingEditor && !showingPhaseGoals && !showingAddPopover)
+                            .allowsHitTesting(!showingEditor && !showingPhaseGoals && !showingAddPopover && !showingCompletedLessonPopover)
                             .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: dragOffset)
                             .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: draggingIndex)
                             .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: pressedIndex)
@@ -774,6 +788,49 @@ struct PTJourneyMapView: View {
                     )
                     .position(x: geo.size.width / 2, y: centerY)
                 }
+            }
+    }
+    
+    // MARK: - Completed Lesson Popover (View Analytics / Close)
+    private func completedLessonPopover(node: LessonNode) -> some View {
+        Color.black.opacity(0.3)
+            .ignoresSafeArea()
+            .onTapGesture {
+                withAnimation(.spring()) {
+                    showingCompletedLessonPopover = false
+                    completedLessonNode = nil
+                }
+            }
+            .overlay(alignment: .top) {
+                VStack(spacing: 16) {
+                    Text("\(node.title) Complete")
+                        .font(.rrTitle)
+                        .foregroundStyle(.primary)
+                    
+                    PrimaryButton(title: "View Analytics") {
+                        router.go(.ptLessonAnalytics(lessonTitle: node.title, lessonId: node.id, patientProfileId: patientProfileId))
+                        withAnimation(.spring()) {
+                            showingCompletedLessonPopover = false
+                            completedLessonNode = nil
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    
+                    SecondaryButton(title: "Close") {
+                        withAnimation(.spring()) {
+                            showingCompletedLessonPopover = false
+                            completedLessonNode = nil
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
+                )
+                .padding(.top, 140)
             }
     }
     

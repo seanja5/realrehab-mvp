@@ -56,7 +56,12 @@ struct RealRehabPracticeApp: App {
                                 case .ptCategorySelect(let patientProfileId): CategorySelectView(patientProfileId: patientProfileId)
                                 case .ptInjurySelect(let patientProfileId): InjurySelectView(patientProfileId: patientProfileId)
                                 case .ptJourneyMap(let patientProfileId, let planId): PTJourneyMapView(patientProfileId: patientProfileId, planId: planId)
-                                case .ptLessonAnalytics(let lessonTitle, let lessonId, let patientProfileId): AnalyticsView(lessonTitle: lessonTitle, lessonId: lessonId, patientProfileId: patientProfileId)
+                                case .ptLessonAnalytics(let lessonTitle, let lessonId, let patientProfileId):
+                                    if let lid = lessonId, let pid = patientProfileId {
+                                        LessonAnalyticsView(lessonTitle: lessonTitle, lessonId: lid, patientProfileId: pid)
+                                    } else {
+                                        AnalyticsView(lessonTitle: lessonTitle, lessonId: lessonId, patientProfileId: patientProfileId)
+                                    }
                                 }
                             }
                             .id(route)

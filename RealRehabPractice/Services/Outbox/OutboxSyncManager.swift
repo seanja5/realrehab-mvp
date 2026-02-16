@@ -56,6 +56,19 @@ final class OutboxSyncManager: ObservableObject {
         enqueue(item)
     }
 
+    func enqueueLessonSensorInsights(draft: LessonSensorInsightsDraft) {
+        guard let data = try? JSONEncoder().encode(draft) else { return }
+        let item = OutboxItem(
+            id: UUID(),
+            createdAt: Date(),
+            type: .lessonSensorInsights,
+            payload: data,
+            retryCount: 0,
+            lastAttemptAt: nil
+        )
+        enqueue(item)
+    }
+
     // MARK: - Process
 
     func processQueueIfOnline() async {
@@ -102,7 +115,14 @@ final class OutboxSyncManager: ObservableObject {
         switch item.type {
         case .lessonProgress:
             try await syncLessonProgress(payload: item.payload)
+        case .lessonSensorInsights:
+            try await syncLessonSensorInsights(payload: item.payload)
         }
+    }
+
+    private func syncLessonSensorInsights(payload: Data) async throws {
+        let draft = try JSONDecoder().decode(LessonSensorInsightsDraft.self, from: payload)
+        try await LessonSensorInsightsSync.upsert(draft: draft)
     }
 
     private func syncLessonProgress(payload: Data) async throws {

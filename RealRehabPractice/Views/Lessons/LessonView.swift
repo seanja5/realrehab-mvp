@@ -55,6 +55,9 @@ struct LessonView: View {
     
     // IMU state
     @State private var hasIMUError: Bool = false
+
+    // Sensor insights: track error count for rep_attempt (repCount + errorCount = attempt)
+    @State private var errorCount: Int = 0
     
     // Calibration constants for degree conversion (same as CalibrateDeviceView)
     private let minSensorValue: Int = 185  // 90 degrees (midpoint of 180-190 range)
@@ -445,6 +448,7 @@ struct LessonView: View {
                     if let lessonId = lessonId {
                         LocalLessonProgressStore.shared.saveDraft(lessonId: lessonId, repsCompleted: 0, repsTarget: engine.repTarget, elapsedSeconds: 0, status: "inProgress")
                         enqueueAndSyncLessonProgress(lessonId: lessonId, repsCompleted: 0, repsTarget: engine.repTarget, elapsedSeconds: 0, status: "inProgress")
+                        startSensorInsightsCollection(lessonId: lessonId)
                     }
                 }
             }
@@ -547,6 +551,10 @@ struct LessonView: View {
         }
         .onChange(of: engine.repCount) { _, newCount in
             persistLessonDraft()
+            LessonSensorInsightsCollector.shared.saveDraftIntermediate(
+                repsCompleted: newCount,
+                totalDurationSec: currentElapsedSeconds()
+            )
             // Sync to Supabase on every rep so PT sees progress in real time
             if newCount > 0, let lessonId = lessonId {
                 let status = newCount >= engine.repTarget ? "completed" : "inProgress"
@@ -618,6 +626,7 @@ struct LessonView: View {
         stopSensorValidation()
         engine.pauseAnimation()
         persistLessonDraft(enqueueForSync: true)
+        finishSensorInsightsCollection(completed: false)
     }
 
     private func resumeLesson() {
@@ -641,9 +650,11 @@ struct LessonView: View {
         elapsedBaseSeconds = 0
         elapsedReferenceTime = nil
         elapsedDisplaySeconds = 0
+        errorCount = 0
         if let lessonId = lessonId {
             LocalLessonProgressStore.shared.clearDraft(lessonId: lessonId)
         }
+        LessonSensorInsightsCollector.shared.stop()
     }
 
     private func restoreLessonProgressIfNeeded() {
@@ -682,6 +693,7 @@ struct LessonView: View {
         enqueueAndSyncLessonProgress(lessonId: lessonId, repsCompleted: repsCompleted, repsTarget: repsTarget, elapsedSeconds: elapsed, status: "completed")
         LocalLessonProgressStore.shared.clearDraft(lessonId: lessonId)
         stopElapsedTimer()
+        finishSensorInsightsCollection(completed: true)
     }
 
     /// Enqueue lesson progress for Supabase sync and process immediately when online.
@@ -810,16 +822,22 @@ struct LessonView: View {
     
     private func showIMUError() {
         guard !hasIMUError else { return } // Don't override if already showing
-        
+
+        let repAttempt = engine.repCount + errorCount
+        let timeSec = Double(currentElapsedSeconds())
+        let driftType: LessonSensorEventType = (currentIMUValue ?? 0) > 0 ? .driftLeft : .driftRight
+        recordSensorEvent(type: driftType, repAttempt: repAttempt, timeSec: timeSec)
+        errorCount += 1
+
         hasIMUError = true
         errorMessage = "Keep your thigh centered"
         errorEndTime = Date().addingTimeInterval(4.0) // Set timeout, but clear immediately when back in range
-        
+
         // Store current phase before showing error
         if phaseBeforeError == nil {
             phaseBeforeError = engine.phase
         }
-        
+
         engine.phase = .incorrectHold
         engine.pauseAnimation()
     }
@@ -862,12 +880,16 @@ struct LessonView: View {
             if currentDegrees > expectedDegrees + Int(toleranceRange) {
                 // Ahead of schedule - moving too fast
                 if actualRate > expectedRate * 1.5 {
+                    recordSensorEvent(type: .tooFast, repAttempt: engine.repCount + errorCount, timeSec: Double(currentElapsedSeconds()))
+                    errorCount += 1
                     showError("Slow down your movement!", duration: 4.0)
                     hasSpeedError = true
                 }
             } else if currentDegrees < expectedDegrees - Int(toleranceRange) {
                 // Behind schedule - moving too slow
                 if actualRate < expectedRate * 0.5 {
+                    recordSensorEvent(type: .tooSlow, repAttempt: engine.repCount + errorCount, timeSec: Double(currentElapsedSeconds()))
+                    errorCount += 1
                     showError("Speed up your Rep!", duration: 4.0)
                     hasSpeedError = true
                 }
@@ -881,11 +903,41 @@ struct LessonView: View {
     private func validateMaxReached(currentDegrees: Int, maxDegrees: Int) {
         let tolerance = 10 // 10 degree tolerance (can be 10 degrees below or above)
         if currentDegrees < (maxDegrees - tolerance) || currentDegrees > (maxDegrees + tolerance) {
+            recordSensorEvent(type: .maxNotReached, repAttempt: engine.repCount + errorCount, timeSec: Double(currentElapsedSeconds()))
+            errorCount += 1
             showError("Extend your leg further!", duration: 4.0)
             lastRepWasValid = false
         } else {
             lastRepWasValid = true
         }
+    }
+
+    private func recordSensorEvent(type: LessonSensorEventType, repAttempt: Int, timeSec: Double) {
+        LessonSensorInsightsCollector.shared.recordEvent(type: type, repAttempt: repAttempt, timeSec: timeSec)
+    }
+
+    private func startSensorInsightsCollection(lessonId: UUID) {
+        Task {
+            guard let profile = try? await AuthService.myProfile(),
+                  let patientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id),
+                  let ptProfileId = try? await PatientService.getPTProfileId(patientProfileId: patientProfileId) else { return }
+            await MainActor.run {
+                LessonSensorInsightsCollector.shared.start(
+                    lessonId: lessonId,
+                    patientProfileId: patientProfileId,
+                    ptProfileId: ptProfileId,
+                    repsTarget: engine.repTarget
+                )
+            }
+        }
+    }
+
+    private func finishSensorInsightsCollection(completed: Bool) {
+        LessonSensorInsightsCollector.shared.updateProgress(
+            repsCompleted: engine.repCount,
+            totalDurationSec: currentElapsedSeconds()
+        )
+        LessonSensorInsightsCollector.shared.finishAndSaveDraft(completed: completed)
     }
     
     private func showError(_ message: String, duration: TimeInterval) {

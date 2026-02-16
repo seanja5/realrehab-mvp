@@ -9,6 +9,7 @@ import Foundation
 
 enum OutboxItemType: String, Codable {
     case lessonProgress
+    case lessonSensorInsights
 }
 
 struct OutboxItem: Codable, Identifiable {
@@ -30,3 +31,5 @@ struct LessonProgressPayload: Codable {
     let elapsedSeconds: Int
     let status: String
 }
+
+// lesson_sensor_insights uses LessonSensorInsightsDraft as payload (same shape as table)

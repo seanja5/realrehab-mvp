@@ -84,6 +84,10 @@
 		C8F4A8242ED2F3B600BADF04 /* NPIVerificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8252ED2F3B600BADF04 /* NPIVerificationService.swift */; };
 		C8F4A8332ED2F3B600BADF02 /* LessonProgressSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8322ED2F3B600BADF02 /* LessonProgressSync.swift */; };
 		C8FF08ED2ED68CB6007FE9DC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */; };
+		C8B2D0022ED00001004D9348 /* LessonSensorInsightsCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */; };
+		C8B2D0042ED00001004D9350 /* LessonSensorInsightsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */; };
+		C8B2D0062ED00001004D9352 /* LessonSensorInsightsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0052ED00001004D9351 /* LessonSensorInsightsSync.swift */; };
+		C8B2D0082ED00001004D9354 /* LessonAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -184,6 +188,10 @@
 		C8F4A8252ED2F3B600BADF04 /* NPIVerificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPIVerificationService.swift; sourceTree = "<group>"; };
 		C8F4A8322ED2F3B600BADF02 /* LessonProgressSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonProgressSync.swift; sourceTree = "<group>"; };
 		C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsCollector.swift; sourceTree = "<group>"; };
+		C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsService.swift; sourceTree = "<group>"; };
+		C8B2D0052ED00001004D9351 /* LessonSensorInsightsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsSync.swift; sourceTree = "<group>"; };
+		C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonAnalyticsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -248,6 +256,8 @@
 				C8F4A8212ED2F3B500BADF02 /* PTService.swift */,
 				C8F4A8232ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift */,
 				C8F4A8252ED2F3B600BADF04 /* NPIVerificationService.swift */,
+				C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */,
+				C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -310,6 +320,7 @@
 				C8B1B2C82ED00001004D934A /* OutboxItem.swift */,
 				C8B1B2CA2ED00001004D934B /* OutboxSyncManager.swift */,
 				C8F4A8322ED2F3B600BADF02 /* LessonProgressSync.swift */,
+				C8B2D0052ED00001004D9351 /* LessonSensorInsightsSync.swift */,
 			);
 			path = Outbox;
 			sourceTree = "<group>";
@@ -425,6 +436,7 @@
 			isa = PBXGroup;
 			children = (
 				C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */,
+				C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */,
 				C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */,
 				C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */,
 				C8D677EA2EBA932000829144 /* CategorySelectView.swift */,
@@ -635,6 +647,10 @@
 				C8B1B2C92ED00001004D934A /* OutboxItem.swift in Sources */,
 				C8B1B2CB2ED00001004D934B /* OutboxSyncManager.swift in Sources */,
 				C8F4A8332ED2F3B600BADF02 /* LessonProgressSync.swift in Sources */,
+				C8B2D0062ED00001004D9352 /* LessonSensorInsightsSync.swift in Sources */,
+				C8B2D0022ED00001004D9348 /* LessonSensorInsightsCollector.swift in Sources */,
+				C8B2D0042ED00001004D9350 /* LessonSensorInsightsService.swift in Sources */,
+				C8B2D0082ED00001004D9354 /* LessonAnalyticsView.swift in Sources */,
 				C8E1A0022ED00001004D9348 /* PendingLinkStore.swift in Sources */,
 				C8E1A0042ED00001004D934A /* InvitedPatientsStore.swift in Sources */,
 				C8E1A0062ED00001004D934C /* ShareSheetHelper.swift in Sources */,

@@ -195,7 +195,8 @@ struct AnalyticsView: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(uiColor: .secondarySystemFill))
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
         )
     }
 }
@@ -286,8 +287,9 @@ struct DriftGraphView: View {
             }
         }
         .frame(height: 260)
-        .background(Color(uiColor: .tertiarySystemFill))
+        .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
     }
     
     private func driftAxes(plotW: CGFloat, plotH: CGFloat, paddingLeft: CGFloat, paddingTop: CGFloat, centerY: CGFloat, halfGreenH: CGFloat) -> some View {
@@ -409,8 +411,9 @@ struct ShakeGraphView: View {
             }
         }
         .frame(height: 200)
-        .background(Color(uiColor: .tertiarySystemFill))
+        .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
     }
     
     private func shakeAxes(plotW: CGFloat, plotH: CGFloat, paddingLeft: CGFloat, paddingTop: CGFloat) -> some View {
@@ -534,8 +537,9 @@ struct EventTimelineView: View {
             }
         }
         .frame(height: 120)
-        .background(Color(uiColor: .tertiarySystemFill))
+        .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
     }
     
     private func xTickValues(totalDuration: Double) -> [Double] {

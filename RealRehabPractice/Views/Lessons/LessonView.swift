@@ -653,8 +653,20 @@ struct LessonView: View {
         errorCount = 0
         if let lessonId = lessonId {
             LocalLessonProgressStore.shared.clearDraft(lessonId: lessonId)
+            clearLessonProgressOnServerAndCache(lessonId: lessonId)
         }
         LessonSensorInsightsCollector.shared.stop()
+    }
+
+    /// When patient restarts, delete this lesson's progress on the server and invalidate cache so journey map and PT see it cleared.
+    private func clearLessonProgressOnServerAndCache(lessonId: UUID) {
+        Task {
+            guard let profile = try? await AuthService.myProfile(),
+                  let patientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id) else { return }
+            OutboxSyncManager.shared.enqueueLessonProgressClear(patientProfileId: patientProfileId, lessonId: lessonId)
+            await OutboxSyncManager.shared.processQueueIfOnline()
+            await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
+        }
     }
 
     private func restoreLessonProgressIfNeeded() {

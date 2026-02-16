@@ -24,4 +24,14 @@ enum LessonProgressSync {
             .rpc("upsert_patient_lesson_progress", params: params)
             .executeAsync()
     }
+
+    /// Call accounts.delete_patient_lesson_progress RPC (e.g. when patient restarts lesson). Must be called from nonisolated context.
+    static func delete(lessonId: String) async throws {
+        let client = SupabaseService.shared.client
+        let params = DeleteLessonProgressParams(p_lesson_id: lessonId)
+        _ = try await client
+            .schema("accounts")
+            .rpc("delete_patient_lesson_progress", params: params)
+            .executeAsync()
+    }
 }

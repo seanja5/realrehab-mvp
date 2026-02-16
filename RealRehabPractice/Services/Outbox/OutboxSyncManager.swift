@@ -56,6 +56,21 @@ final class OutboxSyncManager: ObservableObject {
         enqueue(item)
     }
 
+    /// Enqueue a clear (delete) of one lesson's progress so PT and patient see it cleared after restart.
+    func enqueueLessonProgressClear(patientProfileId: UUID, lessonId: UUID) {
+        let payload = LessonProgressClearPayload(patientProfileId: patientProfileId, lessonId: lessonId)
+        guard let data = try? JSONEncoder().encode(payload) else { return }
+        let item = OutboxItem(
+            id: UUID(),
+            createdAt: Date(),
+            type: .lessonProgressClear,
+            payload: data,
+            retryCount: 0,
+            lastAttemptAt: nil
+        )
+        enqueue(item)
+    }
+
     func enqueueLessonSensorInsights(draft: LessonSensorInsightsDraft) {
         guard let data = try? JSONEncoder().encode(draft) else { return }
         let item = OutboxItem(
@@ -115,6 +130,8 @@ final class OutboxSyncManager: ObservableObject {
         switch item.type {
         case .lessonProgress:
             try await syncLessonProgress(payload: item.payload)
+        case .lessonProgressClear:
+            try await syncLessonProgressClear(payload: item.payload)
         case .lessonSensorInsights:
             try await syncLessonSensorInsights(payload: item.payload)
         }
@@ -140,6 +157,12 @@ final class OutboxSyncManager: ObservableObject {
 
         // Invalidate cache so next load reflects the update
         await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
+    }
+
+    private func syncLessonProgressClear(payload: Data) async throws {
+        let p = try JSONDecoder().decode(LessonProgressClearPayload.self, from: payload)
+        try await LessonProgressSync.delete(lessonId: p.lessonId.uuidString)
+        await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: p.patientProfileId))
     }
 
     // MARK: - Persistence

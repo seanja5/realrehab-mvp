@@ -51,3 +51,17 @@ struct UpsertLessonProgressParams: Encodable, Sendable {
         try container.encode(p_status, forKey: .p_status)
     }
 }
+
+// RPC params for accounts.delete_patient_lesson_progress. Manual nonisolated encode to satisfy Sendable.
+struct DeleteLessonProgressParams: Encodable, Sendable {
+    let p_lesson_id: String
+
+    private enum CodingKeys: String, CodingKey {
+        case p_lesson_id
+    }
+
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(p_lesson_id, forKey: .p_lesson_id)
+    }
+}

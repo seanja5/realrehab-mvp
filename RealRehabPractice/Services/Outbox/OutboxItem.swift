@@ -9,6 +9,7 @@ import Foundation
 
 enum OutboxItemType: String, Codable {
     case lessonProgress
+    case lessonProgressClear
     case lessonSensorInsights
 }
 
@@ -30,6 +31,12 @@ struct LessonProgressPayload: Codable {
     let repsTarget: Int
     let elapsedSeconds: Int
     let status: String
+}
+
+/// Payload for clearing (deleting) one lesson's progress on the server when patient restarts.
+struct LessonProgressClearPayload: Codable {
+    let patientProfileId: UUID
+    let lessonId: UUID
 }
 
 // lesson_sensor_insights uses LessonSensorInsightsDraft as payload (same shape as table)

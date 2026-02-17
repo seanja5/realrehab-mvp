@@ -16,11 +16,11 @@ struct StreakIconView: View {
             EmptyView()
         case .active(let count):
             HStack(spacing: 4) {
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 18))
-                    .foregroundStyle(Color.red)
                 Text("\(count)")
                     .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.red)
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 18))
                     .foregroundStyle(Color.red)
             }
         case .gray:

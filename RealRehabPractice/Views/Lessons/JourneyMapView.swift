@@ -354,37 +354,33 @@ struct JourneyMapView: View {
     
     // MARK: - Header Card (only shown when plan is loaded)
     private var headerCard: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("ACL Tear Recovery Map")
-                        .font(.rrHeadline)
-                        .foregroundStyle(.primary)
-                    
-                    Text("Phase \(activePhase)")
-                        .font(.rrTitle)
-                        .foregroundStyle(.primary)
-                    
-                    Text(ACLPhase.phase(from: activePhase).timeline)
-                        .font(.rrCaption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 6) {
-                    Button {
-                        showPhaseGoals.toggle()
-                    } label: {
-                        Image(systemName: "ellipsis.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundStyle(.primary)
-                    }
-                    StreakIconView(state: vm.streakState)
-                }
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("ACL Tear Recovery Map")
+                    .font(.rrHeadline)
+                    .foregroundStyle(.primary)
+                Text("Phase \(activePhase)")
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+                Text(ACLPhase.phase(from: activePhase).timeline)
+                    .font(.rrCaption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button {
+                showPhaseGoals.toggle()
+            } label: {
+                Image(systemName: "ellipsis.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(.primary)
             }
         }
         .padding(16)
+        .overlay(alignment: .bottomTrailing) {
+            StreakIconView(state: vm.streakState)
+                .padding(.trailing, 16)
+                .padding(.bottom, 16)
+        }
     }
     
     private func isValid(_ v: CGFloat) -> Bool {

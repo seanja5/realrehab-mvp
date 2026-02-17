@@ -70,4 +70,24 @@ enum MessagingService {
         }
         return row
     }
+
+    // MARK: - Unread count (stored locally: last time user opened this thread)
+
+    private static func lastReadKey(ptProfileId: UUID, patientProfileId: UUID, isPT: Bool) -> String {
+        let role = isPT ? "pt" : "patient"
+        return "messaging_last_read_\(ptProfileId.uuidString)_\(patientProfileId.uuidString)_\(role)"
+    }
+
+    static func markThreadAsRead(ptProfileId: UUID, patientProfileId: UUID, isPT: Bool) {
+        UserDefaults.standard.set(Date(), forKey: lastReadKey(ptProfileId: ptProfileId, patientProfileId: patientProfileId, isPT: isPT))
+    }
+
+    /// Unread = messages from the other party received since user last opened this thread.
+    @MainActor
+    static func getUnreadCount(ptProfileId: UUID, patientProfileId: UUID, isPT: Bool) async throws -> Int {
+        let messages = try await fetchMessages(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
+        let myRole = isPT ? "pt" : "patient"
+        let lastRead = UserDefaults.standard.object(forKey: lastReadKey(ptProfileId: ptProfileId, patientProfileId: patientProfileId, isPT: isPT)) as? Date ?? .distantPast
+        return messages.filter { $0.sender_role != myRole && $0.created_at > lastRead }.count
+    }
 }

@@ -16,6 +16,7 @@ struct PatientDetailView: View {
     @State private var notesSaveTask: Task<Void, Never>? = nil
     @State private var isKeyboardVisible = false
     @State private var showOfflineBanner = false
+    @State private var unreadMessageCount = 0
     
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -274,7 +275,7 @@ struct PatientDetailView: View {
                         let name = [patient.first_name, patient.last_name].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " ")
                         router.go(.messaging(ptProfileId: ptId, patientProfileId: patientProfileId, otherPartyName: name.isEmpty ? "Patient" : name, isPT: true))
                     } label: {
-                        Image(systemName: "message")
+                        MessageIconWithBadge(unreadCount: unreadMessageCount)
                     }
                 }
             }
@@ -282,6 +283,9 @@ struct PatientDetailView: View {
         .task {
             vm.setPTProfileId(session.ptProfileId)
             await loadPatientData(patientProfileId: patientProfileId, forceRefresh: false)
+            if let ptId = session.ptProfileId {
+                unreadMessageCount = (try? await MessagingService.getUnreadCount(ptProfileId: ptId, patientProfileId: patientProfileId, isPT: true)) ?? 0
+            }
         }
         .refreshable {
             await loadPatientData(patientProfileId: patientProfileId, forceRefresh: true)

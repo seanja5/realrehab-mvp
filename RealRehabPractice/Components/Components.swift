@@ -288,6 +288,30 @@ extension View {
     }
 }
 
+// MARK: - Message Icon with Unread Badge
+struct MessageIconWithBadge: View {
+    let unreadCount: Int
+
+    private let iconSize: CGFloat = 24
+
+    var body: some View {
+        Group {
+            if unreadCount > 0 {
+                ZStack {
+                    Image(systemName: "message.fill")
+                        .foregroundStyle(Color.brandDarkBlue)
+                    Text(unreadCount > 99 ? "99+" : "\(unreadCount)")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+            } else {
+                Image(systemName: "message")
+            }
+        }
+        .frame(width: iconSize, height: iconSize)
+    }
+}
+
 // MARK: - SearchBar
 struct SearchBar: View {
     @Binding var text: String

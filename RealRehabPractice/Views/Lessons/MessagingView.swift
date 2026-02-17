@@ -58,6 +58,9 @@ struct MessagingView: View {
         }
         .task { await loadMessages() }
         .refreshable { await loadMessages() }
+        .onAppear {
+            MessagingService.markThreadAsRead(ptProfileId: ptProfileId, patientProfileId: patientProfileId, isPT: isPT)
+        }
     }
 
     @ViewBuilder

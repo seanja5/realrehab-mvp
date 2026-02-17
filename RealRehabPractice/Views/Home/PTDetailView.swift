@@ -5,6 +5,7 @@ struct PTDetailView: View {
     @EnvironmentObject var router: Router
     @StateObject private var vm = PatientPTViewModel()
     @State private var scheduleSlots: [ScheduleService.ScheduleSlot] = []
+    @State private var unreadMessageCount = 0
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -138,7 +139,7 @@ struct PTDetailView: View {
                     Button {
                         router.go(.messaging(ptProfileId: ptId, patientProfileId: patId, otherPartyName: vm.name, isPT: false))
                     } label: {
-                        Image(systemName: "message")
+                        MessageIconWithBadge(unreadCount: unreadMessageCount)
                     }
                 }
             }
@@ -149,6 +150,9 @@ struct PTDetailView: View {
         .task {
             await vm.load()
             await loadSchedule()
+            if let ptId = vm.ptProfileId, let patId = vm.patientProfileId {
+                unreadMessageCount = (try? await MessagingService.getUnreadCount(ptProfileId: ptId, patientProfileId: patId, isPT: false)) ?? 0
+            }
         }
         .onAppear {
             Task { await loadSchedule() }

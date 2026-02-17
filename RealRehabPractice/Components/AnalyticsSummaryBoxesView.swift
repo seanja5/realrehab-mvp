@@ -43,9 +43,10 @@ struct AnalyticsSummaryBoxesView: View {
             }
             Spacer(minLength: 0)
             pieChart(progress: min(1, max(0, repetitionAccuracyPercent / 100)))
+                .padding(.trailing, 10)
         }
         .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 100, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .background(boxBackground)
     }
 

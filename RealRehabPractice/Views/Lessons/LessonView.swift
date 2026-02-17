@@ -666,6 +666,7 @@ struct LessonView: View {
             OutboxSyncManager.shared.enqueueLessonProgressClear(patientProfileId: patientProfileId, lessonId: lessonId)
             await OutboxSyncManager.shared.processQueueIfOnline()
             await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
+            await CacheService.shared.invalidate(CacheKey.completionDates(patientProfileId: patientProfileId))
         }
     }
 

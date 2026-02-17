@@ -45,7 +45,9 @@ public final class JourneyMapViewModel: ObservableObject {
     @Published public var planTitle: String? = nil
     /// True when we should show the offline/stale banner (offline and either data is stale or user tried to refresh).
     @Published public var showOfflineBanner: Bool = false
-    
+    /// Streak state for fire icon on header (patient side only).
+    @Published public var streakState: StreakState = .hidden
+
     public init() {}
     
     @MainActor
@@ -75,6 +77,7 @@ public final class JourneyMapViewModel: ObservableObject {
             
             if forceRefresh {
                 await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
+                await CacheService.shared.invalidate(CacheKey.completionDates(patientProfileId: patientProfileId))
             }
             
             let ptProfileId: UUID?
@@ -138,8 +141,13 @@ public final class JourneyMapViewModel: ObservableObject {
                     }
                 }
                 lessonProgress = progress
+
+                // Load streak from completion dates (patient side)
+                let completionDates = (try? await RehabService.getCompletionDates(patientProfileId: patientProfileId)) ?? []
+                streakState = StreakService.computeStreakState(completionDates: completionDates, patientProfileId: patientProfileId)
             } else {
                 print("ℹ️ JourneyMapViewModel: plan has no nodes")
+                streakState = .hidden
             }
             showOfflineBanner = !NetworkMonitor.shared.isOnline && (anyStale || forceRefresh)
         } catch {

@@ -372,12 +372,15 @@ struct JourneyMapView: View {
                 
                 Spacer()
                 
-                Button {
-                    showPhaseGoals.toggle()
-                } label: {
-                    Image(systemName: "ellipsis.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(.primary)
+                VStack(alignment: .trailing, spacing: 6) {
+                    Button {
+                        showPhaseGoals.toggle()
+                    } label: {
+                        Image(systemName: "ellipsis.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundStyle(.primary)
+                    }
+                    StreakIconView(state: vm.streakState)
                 }
             }
         }

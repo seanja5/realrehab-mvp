@@ -90,6 +90,11 @@ enum CacheKey {
         "lesson_progress:\(patientProfileId.uuidString)"
     }
 
+    // Completion dates for streak calculation
+    static func completionDates(patientProfileId: UUID) -> String {
+        "completion_dates:\(patientProfileId.uuidString)"
+    }
+
     // Plan by ID (for PT editing)
     static func plan(planId: UUID) -> String {
         "plan:\(planId.uuidString)"

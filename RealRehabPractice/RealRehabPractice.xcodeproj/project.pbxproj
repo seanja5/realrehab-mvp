@@ -88,6 +88,8 @@
 		C8B2D0022ED00001004D9348 /* LessonSensorInsightsCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */; };
 		C8B2D0042ED00001004D9350 /* LessonSensorInsightsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */; };
 		C8B2D0062ED00001004D9352 /* LessonSensorInsightsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0052ED00001004D9351 /* LessonSensorInsightsSync.swift */; };
+		C8A5B6C82ED0007004D9348 /* StreakService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A5B6C72ED0007004D9347 /* StreakService.swift */; };
+		C8A6B7CA2ED0008004D9348 /* StreakIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A6B7C92ED0008004D9347 /* StreakIconView.swift */; };
 		C8B2D0082ED00001004D9354 /* LessonAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */; };
 /* End PBXBuildFile section */
 
@@ -193,6 +195,8 @@
 		C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsCollector.swift; sourceTree = "<group>"; };
 		C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsService.swift; sourceTree = "<group>"; };
 		C8B2D0052ED00001004D9351 /* LessonSensorInsightsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsSync.swift; sourceTree = "<group>"; };
+		C8A5B6C72ED0007004D9347 /* StreakService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakService.swift; sourceTree = "<group>"; };
+		C8A6B7C92ED0008004D9347 /* StreakIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakIconView.swift; sourceTree = "<group>"; };
 		C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonAnalyticsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -250,6 +254,7 @@
 				C8B1B2C62ED00001004D9349 /* LocalLessonProgressStore.swift */,
 				C8B1B2C42ED00001004D9348 /* NetworkMonitor.swift */,
 				C82D700A2EBE91D3004D9347 /* RehabService.swift */,
+				C8A5B6C72ED0007004D9347 /* StreakService.swift */,
 				C82D700B2EBE91D3004D9347 /* SupabaseService.swift */,
 				C82D700C2EBE91D3004D9347 /* TelemetryService.swift */,
 				C82D702B2ED00153004D9347 /* PatientService.swift */,
@@ -341,6 +346,7 @@
 			isa = PBXGroup;
 			children = (
 				C8A4B5C62ED0006004D9347 /* AnalyticsSummaryBoxesView.swift */,
+				C8A6B7C92ED0008004D9347 /* StreakIconView.swift */,
 				C82D70552EC15F90004D9347 /* PatientTabBar.swift */,
 				C82D70562EC15F90004D9347 /* PTTabBar.swift */,
 				C8D677C82EB839FC00829144 /* Theme.swift */,
@@ -626,6 +632,8 @@
 				C8AEECC92EB2D7A200720188 /* AssessmentView.swift in Sources */,
 				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
 				C8A4B5C72ED0006004D9348 /* AnalyticsSummaryBoxesView.swift in Sources */,
+				C8A5B6C82ED0007004D9348 /* StreakService.swift in Sources */,
+				C8A6B7CA2ED0008004D9348 /* StreakIconView.swift in Sources */,
 				C8003FB52EB7FD57008DC812 /* Components.swift in Sources */,
 				C8D677CA2EB839FD00829145 /* SkeletonShimmer.swift in Sources */,
 				C8A2B3D52ED00003004D9348 /* ScheduleVisualizerView.swift in Sources */,

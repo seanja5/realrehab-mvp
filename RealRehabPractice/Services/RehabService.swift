@@ -227,6 +227,35 @@ enum RehabService {
     return result
   }
 
+  /// Fetch unique calendar days when patient completed at least one lesson. Used for streak display.
+  /// RLS: patients can select own.
+  static func getCompletionDates(patientProfileId: UUID) async throws -> [Date] {
+    let cacheKey = CacheKey.completionDates(patientProfileId: patientProfileId)
+    if let cached = await CacheService.shared.getCached(cacheKey, as: [Date].self, useDisk: true) {
+      return cached
+    }
+
+    struct Row: Codable { let updated_at: Date }
+
+    let rows: [Row] = try await supabase
+      .schema("accounts")
+      .from("patient_lesson_progress")
+      .select("updated_at")
+      .eq("patient_profile_id", value: patientProfileId.uuidString)
+      .eq("status", value: "completed")
+      .decoded(as: [Row].self)
+
+    let cal = Calendar.current
+    var daySet: Set<Date> = []
+    for row in rows {
+      daySet.insert(cal.startOfDay(for: row.updated_at))
+    }
+    let result = Array(daySet).sorted(by: >)
+
+    await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.lessonProgress, useDisk: true)
+    return result
+  }
+
   /// Load lesson progress for display; when offline returns stale cache if available and reports isStale for banner.
   @MainActor
   static func getLessonProgressForDisplay(patientProfileId: UUID) async throws -> ([UUID: PatientLessonProgressRow], isStale: Bool) {

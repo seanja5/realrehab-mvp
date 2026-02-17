@@ -157,12 +157,14 @@ final class OutboxSyncManager: ObservableObject {
 
         // Invalidate cache so next load reflects the update
         await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
+        await CacheService.shared.invalidate(CacheKey.completionDates(patientProfileId: patientProfileId))
     }
 
     private func syncLessonProgressClear(payload: Data) async throws {
         let p = try JSONDecoder().decode(LessonProgressClearPayload.self, from: payload)
         try await LessonProgressSync.delete(lessonId: p.lessonId.uuidString)
         await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: p.patientProfileId))
+        await CacheService.shared.invalidate(CacheKey.completionDates(patientProfileId: p.patientProfileId))
     }
 
     // MARK: - Persistence

@@ -133,6 +133,15 @@ struct PTDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if let ptId = vm.ptProfileId, let patId = vm.patientProfileId, !vm.name.isEmpty {
+                    Button {
+                        router.go(.messaging(ptProfileId: ptId, patientProfileId: patId, otherPartyName: vm.name, isPT: false))
+                    } label: {
+                        Image(systemName: "message")
+                    }
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 BluetoothStatusIndicator()
             }

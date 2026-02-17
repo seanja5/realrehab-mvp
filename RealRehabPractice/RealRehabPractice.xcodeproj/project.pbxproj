@@ -91,6 +91,8 @@
 		C8A5B6C82ED0007004D9348 /* StreakService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A5B6C72ED0007004D9347 /* StreakService.swift */; };
 		C8A6B7CA2ED0008004D9348 /* StreakIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A6B7C92ED0008004D9347 /* StreakIconView.swift */; };
 		C8B2D0082ED00001004D9354 /* LessonAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */; };
+		C8C1D1E22ED00009004D9348 /* MessagingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C1D1E12ED00009004D9347 /* MessagingView.swift */; };
+		C8C1D1E42ED0000A004D9348 /* MessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C1D1E32ED0000A004D9347 /* MessagingService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -198,6 +200,8 @@
 		C8A5B6C72ED0007004D9347 /* StreakService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakService.swift; sourceTree = "<group>"; };
 		C8A6B7C92ED0008004D9347 /* StreakIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakIconView.swift; sourceTree = "<group>"; };
 		C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonAnalyticsView.swift; sourceTree = "<group>"; };
+		C8C1D1E12ED00009004D9347 /* MessagingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingView.swift; sourceTree = "<group>"; };
+		C8C1D1E32ED0000A004D9347 /* MessagingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -265,6 +269,7 @@
 				C8F4A8252ED2F3B600BADF04 /* NPIVerificationService.swift */,
 				C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */,
 				C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */,
+				C8C1D1E32ED0000A004D9347 /* MessagingService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -434,6 +439,7 @@
 				C8AEECA82EB2D7A200720184 /* LessonView.swift */,
 				C8AEECA12EB2D7A200720184 /* CompletionView.swift */,
 				C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */,
+				C8C1D1E12ED00009004D9347 /* MessagingView.swift */,
 				C8AEECC42EB2D7A200720186 /* DirectionsView1.swift */,
 				C8AEECC52EB2D7A200720187 /* DirectionsView2.swift */,
 				C8AEECC82EB2D7A200720188 /* AssessmentView.swift */,
@@ -680,6 +686,8 @@
 				C8F4A8222ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift in Sources */,
 				C8F4A8242ED2F3B600BADF04 /* NPIVerificationService.swift in Sources */,
 				C8F4A8242ED2F3B500BADF02 /* PTCreateAccountView.swift in Sources */,
+				C8C1D1E22ED00009004D9348 /* MessagingView.swift in Sources */,
+				C8C1D1E42ED0000A004D9348 /* MessagingService.swift in Sources */,
 			);
 		};
 		C89A84BA2EB138170074B855 /* Sources */ = {

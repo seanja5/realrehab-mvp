@@ -21,9 +21,12 @@ enum PTService {
         let notify_session_complete: Bool?
         /// When true, PT receives missed-day reminders. Default false if column missing.
         let notify_missed_day: Bool?
-        
+        /// When true, PT receives message notifications. Default true if column missing.
+        let notify_messages: Bool?
+
         var notifySessionComplete: Bool { notify_session_complete ?? true }
         var notifyMissedDay: Bool { notify_missed_day ?? false }
+        var notifyMessages: Bool { notify_messages ?? true }
     }
     
     struct SimplePatient: Codable, Identifiable {
@@ -153,7 +156,7 @@ enum PTService {
         let rows: [PTProfileRow] = try await client
             .schema("accounts")
             .from("pt_profiles")
-            .select("id,profile_id,email,first_name,last_name,phone,license_number,npi_number,practice_name,practice_address,specialization,notify_session_complete,notify_missed_day")
+            .select("id,profile_id,email,first_name,last_name,phone,license_number,npi_number,practice_name,practice_address,specialization,notify_session_complete,notify_missed_day,notify_messages")
             .eq("profile_id", value: profile.id.uuidString)
             .limit(1)
             .decoded()
@@ -175,15 +178,16 @@ enum PTService {
     
     /// Update PT notification preferences. Invalidates PT profile cache.
     @MainActor
-    static func updateNotificationPreferences(ptProfileId: UUID, notifySessionComplete: Bool, notifyMissedDay: Bool) async throws {
-        print("📤 PTService.updateNotificationPreferences: pt_profile_id=\(ptProfileId), notify_session_complete=\(notifySessionComplete), notify_missed_day=\(notifyMissedDay)")
+    static func updateNotificationPreferences(ptProfileId: UUID, notifySessionComplete: Bool, notifyMissedDay: Bool, notifyMessages: Bool = true) async throws {
+        print("📤 PTService.updateNotificationPreferences: pt_profile_id=\(ptProfileId), notify_session_complete=\(notifySessionComplete), notify_missed_day=\(notifyMissedDay), notify_messages=\(notifyMessages)")
         do {
             _ = try await client
                 .schema("accounts")
                 .from("pt_profiles")
                 .update([
                     "notify_session_complete": notifySessionComplete,
-                    "notify_missed_day": notifyMissedDay
+                    "notify_missed_day": notifyMissedDay,
+                    "notify_messages": notifyMessages
                 ])
                 .eq("id", value: ptProfileId.uuidString)
                 .select("id")

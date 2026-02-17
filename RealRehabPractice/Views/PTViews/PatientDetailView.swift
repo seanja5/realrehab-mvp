@@ -268,6 +268,16 @@ struct PatientDetailView: View {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton { router.reset(to: .patientList) }
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                if let ptId = session.ptProfileId, let patient = patient {
+                    Button {
+                        let name = [patient.first_name, patient.last_name].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " ")
+                        router.go(.messaging(ptProfileId: ptId, patientProfileId: patientProfileId, otherPartyName: name.isEmpty ? "Patient" : name, isPT: true))
+                    } label: {
+                        Image(systemName: "message")
+                    }
+                }
+            }
         }
         .task {
             vm.setPTProfileId(session.ptProfileId)

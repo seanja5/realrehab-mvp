@@ -80,6 +80,11 @@ enum CacheKey {
         "schedule_reminders_enabled:\(patientProfileId.uuidString)"
     }
 
+    // Message notifications enabled (patient-level preference)
+    static func messageNotificationsEnabled(patientProfileId: UUID) -> String {
+        "message_notifications_enabled:\(patientProfileId.uuidString)"
+    }
+
     // Calibration points for recovery chart (patient or PT view)
     static func calibrationPoints(patientProfileId: UUID) -> String {
         "calibration_points:\(patientProfileId.uuidString)"

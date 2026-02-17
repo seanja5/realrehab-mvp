@@ -6,6 +6,7 @@ struct PTSettingsView: View {
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var notifySessionComplete = true
     @State private var notifyMissedDay = false
+    @State private var notifyMessages = true
     @State private var skipNextNotifySave = false
     @State private var ptProfile: PTService.PTProfileRow? = nil
     @State private var isLoading = false
@@ -180,6 +181,14 @@ struct PTSettingsView: View {
                     .font(.rrBody)
             }
             .onChange(of: notifyMissedDay) { _, _ in saveNotificationPreferences() }
+
+            Divider()
+
+            Toggle(isOn: $notifyMessages) {
+                Text("Messages")
+                    .font(.rrBody)
+            }
+            .onChange(of: notifyMessages) { _, _ in saveNotificationPreferences() }
         }
         .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
     }
@@ -341,6 +350,7 @@ struct PTSettingsView: View {
             skipNextNotifySave = true
             self.notifySessionComplete = profile.notifySessionComplete
             self.notifyMissedDay = profile.notifyMissedDay
+            self.notifyMessages = profile.notifyMessages
             // Show banner when offline and (data is stale or user explicitly tried to refresh)
             self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (isStale || forceRefresh)
             await checkNPIVerification()
@@ -382,7 +392,7 @@ struct PTSettingsView: View {
         }
         Task { @MainActor in
             do {
-                try await PTService.updateNotificationPreferences(ptProfileId: ptId, notifySessionComplete: notifySessionComplete, notifyMissedDay: notifyMissedDay)
+                try await PTService.updateNotificationPreferences(ptProfileId: ptId, notifySessionComplete: notifySessionComplete, notifyMissedDay: notifyMissedDay, notifyMessages: notifyMessages)
             } catch {
                 errorMessage = error.localizedDescription
                 print("❌ PTSettingsView.saveNotificationPreferences: \(error)")

@@ -10,6 +10,9 @@ enum NotificationManager {
     static let ptSessionCompleteCategory = "PT_SESSION_COMPLETE"
     static let ptSessionCompleteIdentifierPrefix = "pt_session_complete_"
 
+    static let messageCategory = "MESSAGE"
+    static let messageIdentifierPrefix = "message_"
+
     /// Request notification permission. Call when user first enables reminders.
     /// - Returns: true if granted, false if denied
     static func requestAuthorizationIfNeeded() async -> Bool {
@@ -127,7 +130,25 @@ enum NotificationManager {
         let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
         try? await UNUserNotificationCenter.current().add(request)
     }
-    
+
+    /// Show a local notification when recipient receives a new message. Call from Realtime handler on recipient's device.
+    static func showMessageNotification(senderName: String, patientProfileId: UUID?) async {
+        let content = UNMutableNotificationContent()
+        content.title = "New Message"
+        content.body = "\(senderName) just sent you a message"
+        content.sound = .default
+        content.categoryIdentifier = messageCategory
+        var userInfo: [String: Any] = ["route": "messaging"]
+        if let pid = patientProfileId {
+            userInfo["patientProfileId"] = pid.uuidString
+        }
+        content.userInfo = userInfo
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let id = "\(messageIdentifierPrefix)\(UUID().uuidString)"
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+        try? await UNUserNotificationCenter.current().add(request)
+    }
+
     private static func parseSlotTime(_ s: String) -> (hour: Int, minute: Int)? {
         let parts = s.split(separator: ":")
         guard parts.count >= 2,

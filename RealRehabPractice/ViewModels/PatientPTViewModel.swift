@@ -10,6 +10,8 @@ public final class PatientPTViewModel: ObservableObject {
   @Published public var isLoading: Bool = true  // Start true so PTDetailView shows skeleton until load completes
   @Published public var errorMessage: String?
   @Published public var hasRehabPlan: Bool = false
+  @Published public var ptProfileId: UUID?
+  @Published public var patientProfileId: UUID?
 
   private var injectedPatientProfileId: UUID?
 
@@ -45,12 +47,15 @@ public final class PatientPTViewModel: ObservableObject {
       guard let ptProfileId = try await PatientService.getPTProfileId(patientProfileId: pid) else {
         print("⚠️ PatientPTViewModel: no pt_patient_map row found for patient_profile_id=\(pid)")
         print("⚠️ This means the patient is not linked to a PT")
+        self.ptProfileId = nil
+        self.patientProfileId = nil
         self.apply(ptEmail: nil, first: nil, last: nil, phone: nil)
         self.hasRehabPlan = false
         isLoading = false
         return
       }
-      
+      self.ptProfileId = ptProfileId
+      self.patientProfileId = pid
       print("✅ PatientPTViewModel: Step 1 - found pt_profile_id=\(ptProfileId)")
       
       // STEP 2: Get PT info using cached service
@@ -85,7 +90,8 @@ public final class PatientPTViewModel: ObservableObject {
       if let postgrestError = error as? PostgrestError {
         print("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
       }
-      // Set empty values on error so UI shows "My Physical Therapist" with no info
+      self.ptProfileId = nil
+      self.patientProfileId = nil
       self.apply(ptEmail: nil, first: nil, last: nil, phone: nil)
       self.hasRehabPlan = false
     }

@@ -62,6 +62,8 @@ struct RealRehabPracticeApp: App {
                                     } else {
                                         AnalyticsView(lessonTitle: lessonTitle, lessonId: lessonId, patientProfileId: patientProfileId)
                                     }
+                                case .messaging(let ptProfileId, let patientProfileId, let otherPartyName, let isPT):
+                                    MessagingView(ptProfileId: ptProfileId, patientProfileId: patientProfileId, otherPartyName: otherPartyName, isPT: isPT)
                                 }
                             }
                             .id(route)

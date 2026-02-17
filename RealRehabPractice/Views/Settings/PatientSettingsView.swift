@@ -8,6 +8,7 @@ struct PatientSettingsView: View {
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var allowReminders = false
     @State private var allowCamera = false
+    @State private var notifyMessages = true
     @State private var patientProfile: PatientService.PatientProfileRow? = nil
     @State private var email: String? = nil
     @State private var isLoading = false
@@ -188,6 +189,17 @@ struct PatientSettingsView: View {
                 Text("Allow camera")
                     .font(.rrBody)
             }
+
+            Divider()
+
+            Toggle(isOn: $notifyMessages) {
+                Text("Messages")
+                    .font(.rrBody)
+            }
+            .onChange(of: notifyMessages) { _, enabled in
+                guard hasLoadedInitial else { return }
+                Task { await saveMessageNotificationsPreference(enabled: enabled) }
+            }
         }
         .toggleStyle(SwitchToggleStyle(tint: .brandDarkBlue))
     }
@@ -318,6 +330,8 @@ struct PatientSettingsView: View {
             }
             let remindersEnabled = (try? await PatientService.getScheduleRemindersEnabled(patientProfileId: profile.id)) ?? false
             await MainActor.run { allowReminders = remindersEnabled }
+            let messagesEnabled = (try? await PatientService.getMessageNotificationsEnabled(patientProfileId: profile.id)) ?? true
+            await MainActor.run { notifyMessages = messagesEnabled }
             self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (isStale || forceRefresh)
         } catch {
             if error is CancellationError || Task.isCancelled {
@@ -371,6 +385,16 @@ struct PatientSettingsView: View {
             }
         } catch {
             // Don't show error when offline - save will sync when back online
+            guard NetworkMonitor.shared.isOnline else { return }
+            await MainActor.run { errorMessage = error.localizedDescription }
+        }
+    }
+
+    private func saveMessageNotificationsPreference(enabled: Bool) async {
+        guard let patientProfileId = patientProfile?.id else { return }
+        do {
+            try await PatientService.setMessageNotificationsEnabled(patientProfileId: patientProfileId, enabled: enabled)
+        } catch {
             guard NetworkMonitor.shared.isOnline else { return }
             await MainActor.run { errorMessage = error.localizedDescription }
         }

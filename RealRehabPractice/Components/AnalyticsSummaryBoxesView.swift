@@ -1,0 +1,97 @@
+//
+//  AnalyticsSummaryBoxesView.swift
+//  RealRehabPractice
+//
+//  Summary section for analytics: Repetition Accuracy (with pie chart), Session Time, Attempts.
+//
+
+import SwiftUI
+
+struct AnalyticsSummaryBoxesView: View {
+    let repetitionAccuracyPercent: Double
+    let sessionTimeSeconds: Int
+    let attemptsCount: Int
+    let assignedReps: Int
+
+    private var sessionTimeFormatted: String {
+        let m = sessionTimeSeconds / 60
+        let s = sessionTimeSeconds % 60
+        return "\(m):\(s < 10 ? "0" : "")\(s)"
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: RRSpace.stack) {
+            // Left: Repetition Accuracy (larger box with pie chart)
+            repetitionAccuracyBox
+            // Right: Session Time + Attempts stacked
+            VStack(spacing: RRSpace.stack) {
+                sessionTimeBox
+                attemptsBox
+            }
+        }
+    }
+
+    private var repetitionAccuracyBox: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(Int(repetitionAccuracyPercent))%")
+                    .font(.rrHeadline)
+                    .foregroundStyle(.primary)
+                Text("repetition accuracy")
+                    .font(.rrCaption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+            pieChart(progress: min(1, max(0, repetitionAccuracyPercent / 100)))
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 100, alignment: .leading)
+        .background(boxBackground)
+    }
+
+    private var sessionTimeBox: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(sessionTimeFormatted)
+                .font(.rrHeadline)
+                .foregroundStyle(.primary)
+            Text("session time")
+                .font(.rrCaption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(boxBackground)
+    }
+
+    private var attemptsBox: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("\(attemptsCount) attempts")
+                .font(.rrHeadline)
+                .foregroundStyle(.primary)
+            Text("out of \(assignedReps) assigned reps")
+                .font(.rrCaption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(boxBackground)
+    }
+
+    private var boxBackground: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Color.white)
+            .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+    }
+
+    private func pieChart(progress: Double) -> some View {
+        ZStack {
+            Circle()
+                .stroke(Color.gray.opacity(0.2), lineWidth: 14)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .frame(width: 56, height: 56)
+    }
+}

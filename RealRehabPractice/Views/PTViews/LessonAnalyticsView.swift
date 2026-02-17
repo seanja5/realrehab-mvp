@@ -62,9 +62,24 @@ struct LessonAnalyticsView: View {
         let tooSlowPercent = percentCorrect(total: insights.reps_attempted, errors: tooSlowEvents.count)
         let maxNotReachedPercent = percentCorrect(total: insights.reps_attempted, errors: maxNotReachedEvents.count)
 
+        let repAccuracy: Double = {
+            guard insights.reps_attempted > 0 else { return 100 }
+            return (Double(insights.reps_completed) / Double(insights.reps_attempted)) * 100
+        }()
+
         return ScrollView {
             VStack(alignment: .leading, spacing: RRSpace.section * 2) {
                 headerView
+
+                // Summary boxes (dynamic from insights)
+                AnalyticsSummaryBoxesView(
+                    repetitionAccuracyPercent: repAccuracy,
+                    sessionTimeSeconds: insights.total_duration_sec,
+                    attemptsCount: insights.reps_attempted,
+                    assignedReps: insights.reps_target
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, RRSpace.section)
 
                 // Section 1: Dynamic Valgus
                 analyticsSection(

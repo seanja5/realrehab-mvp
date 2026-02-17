@@ -28,7 +28,17 @@ struct AnalyticsView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
-                
+
+                // Summary boxes (hardcoded for test)
+                AnalyticsSummaryBoxesView(
+                    repetitionAccuracyPercent: 86,
+                    sessionTimeSeconds: 180,
+                    attemptsCount: 13,
+                    assignedReps: 10
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, RRSpace.section)
+
                 // Section 1: Dynamic Valgus (Leg Drift)
                 analyticsSection(
                     title: "Dynamic Valgus (Leg Drift Graph)",

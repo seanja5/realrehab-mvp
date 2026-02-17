@@ -39,6 +39,7 @@
 		C8A2B3D52ED00003004D9348 /* ScheduleVisualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */; };
 		C8A3B4E62ED00004004D9348 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A3B4E52ED00004004D9347 /* NotificationManager.swift */; };
 		C8A3B4E82ED00005004D9348 /* NotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A3B4E72ED00005004D9347 /* NotificationDelegate.swift */; };
+		C8A4B5C72ED0006004D9348 /* AnalyticsSummaryBoxesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A4B5C62ED0006004D9347 /* AnalyticsSummaryBoxesView.swift */; };
 		C8A9B3E22ED0010A004D9348 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */; };
 		C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */; };
 		C8AEECB32EB2D7A200720184 /* AllSetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */; };
@@ -143,6 +144,7 @@
 		C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleVisualizerView.swift; sourceTree = "<group>"; };
 		C8A3B4E52ED00004004D9347 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		C8A3B4E72ED00005004D9347 /* NotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationDelegate.swift; sourceTree = "<group>"; };
+		C8A4B5C62ED0006004D9347 /* AnalyticsSummaryBoxesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsSummaryBoxesView.swift; sourceTree = "<group>"; };
 		C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllSetView.swift; sourceTree = "<group>"; };
 		C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
@@ -338,6 +340,7 @@
 		C8D677BF2EB831D600829144 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				C8A4B5C62ED0006004D9347 /* AnalyticsSummaryBoxesView.swift */,
 				C82D70552EC15F90004D9347 /* PatientTabBar.swift */,
 				C82D70562EC15F90004D9347 /* PTTabBar.swift */,
 				C8D677C82EB839FC00829144 /* Theme.swift */,
@@ -622,6 +625,7 @@
 				C8AEECC72EB2D7A200720187 /* DirectionsView2.swift in Sources */,
 				C8AEECC92EB2D7A200720188 /* AssessmentView.swift in Sources */,
 				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
+				C8A4B5C72ED0006004D9348 /* AnalyticsSummaryBoxesView.swift in Sources */,
 				C8003FB52EB7FD57008DC812 /* Components.swift in Sources */,
 				C8D677CA2EB839FD00829145 /* SkeletonShimmer.swift in Sources */,
 				C8A2B3D52ED00003004D9348 /* ScheduleVisualizerView.swift in Sources */,

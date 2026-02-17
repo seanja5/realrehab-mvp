@@ -58,6 +58,11 @@ struct MessagingView: View {
         }
         .task { await loadMessages() }
         .refreshable { await loadMessages() }
+        .onChange(of: messages) { _, newMessages in
+            if let last = newMessages.last {
+                scrollProxy?.scrollTo(last.id, anchor: .bottom)
+            }
+        }
         .onAppear {
             MessagingService.markThreadAsRead(ptProfileId: ptProfileId, patientProfileId: patientProfileId, isPT: isPT)
         }
@@ -126,9 +131,6 @@ struct MessagingView: View {
             )
             await MainActor.run {
                 messages = rows
-                if let last = rows.last {
-                    scrollProxy?.scrollTo(last.id, anchor: .bottom)
-                }
             }
         } catch {
             await MainActor.run { messages = [] }

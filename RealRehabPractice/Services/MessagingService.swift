@@ -11,7 +11,7 @@ import Supabase
 enum MessagingService {
     private static var client: SupabaseClient { SupabaseService.shared.client }
 
-    struct MessageRow: Codable, Identifiable {
+    struct MessageRow: Codable, Identifiable, Equatable {
         let id: UUID
         let pt_profile_id: UUID
         let patient_profile_id: UUID

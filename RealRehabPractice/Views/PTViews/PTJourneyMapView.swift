@@ -305,7 +305,7 @@ struct PTJourneyMapView: View {
                         if nodes.count > 1 {
                             Path { path in
                                 let width = geometry.size.width
-                                let startY: CGFloat = 40
+                                let startY = Self.nodeContentOffset
                                 for (index, node) in nodes.enumerated() {
                                     let indexInPhase = index - (nodes[0..<index].lastIndex(where: { $0.phase != node.phase }).map { $0 + 1 } ?? 0)
                                     let nodeX = safeNodeX(indexInPhase: indexInPhase, width: width)
@@ -329,9 +329,9 @@ struct PTJourneyMapView: View {
                         ForEach(Array(nodes.enumerated()), id: \.element.id) { index, node in
                             let indexInPhase = index - (nodes[0..<index].lastIndex(where: { $0.phase != node.phase }).map { $0 + 1 } ?? 0)
                             let nodeX = safeNodeX(indexInPhase: indexInPhase, width: geometry.size.width)
-                            let baseY = node.yOffset + 40
+                            let baseY = node.yOffset + Self.nodeContentOffset
                             let safeX = isValid(nodeX) ? nodeX : (geometry.size.width / 2)
-                            let safeY = isValid(baseY) ? baseY : 40
+                            let safeY = isValid(baseY) ? baseY : Self.nodeContentOffset
                             let displayPosition = isDragging && draggingIndex == index
                                 ? CGPoint(x: safeX + dragOffset.width, y: safeY + dragOffset.height)
                                 : CGPoint(x: safeX, y: safeY)
@@ -419,7 +419,7 @@ struct PTJourneyMapView: View {
                 Spacer().frame(height: 0)
                 }
             }
-            .frame(height: 40 + maxHeight + 60)
+            .frame(height: Self.nodeContentOffset + maxHeight + 60)
                 }
             }
             .onPreferenceChange(ContentWidthPreferenceKey.self) { w in
@@ -500,6 +500,9 @@ struct PTJourneyMapView: View {
         .padding(.bottom, 20) // Extra padding for Confirm Journey button
     }
     
+    /// Top offset for first node; 0 so first bubble aligns with patient journey map (starts higher).
+    private static let nodeContentOffset: CGFloat = 0
+
     private var maxHeight: CGFloat {
         let lastY = nodes.last?.yOffset ?? 0
         return max(ACLJourneyModels.contentHeight(lastNodeYOffset: lastY), 1240)
@@ -509,7 +512,7 @@ struct PTJourneyMapView: View {
     private var phaseBoundaries: (phase2: CGFloat, phase3: CGFloat, phase4: CGFloat) {
         ACLJourneyModels.phaseBoundaryYs(
             nodes: nodes.map { ($0.yOffset, $0.phase) },
-            nodeContentOffset: 40,
+            nodeContentOffset: Self.nodeContentOffset,
             maxHeight: maxHeight
         )
     }
@@ -1071,10 +1074,10 @@ struct PTJourneyMapView: View {
     }
     
     private func handleDragEnd(from index: Int, translation: CGSize, geometry: GeometryProxy) {
-        let finalY = nodes[index].yOffset + 40 + translation.height // Account for padding offset
+        let finalY = nodes[index].yOffset + Self.nodeContentOffset + translation.height
         
         // Find nearest index based on Y position
-        let targetY = finalY - 40 // Remove padding offset to get yOffset
+        let targetY = finalY - Self.nodeContentOffset
         var nearestIndex = index
         
         for (i, node) in nodes.enumerated() {
@@ -1139,7 +1142,7 @@ struct PTJourneyMapView: View {
         let insertIndex: Int
         if phase == activePhaseId {
             let targetContentY = scrollContentMinY + 200
-            let targetYOffset = targetContentY - 40
+            let targetYOffset = targetContentY - Self.nodeContentOffset
             let firstInPhase = nodes.firstIndex(where: { $0.phase == phase }) ?? nodes.count
             let lastInPhase = nodes.lastIndex(where: { $0.phase == phase }) ?? -1
             if firstInPhase > lastInPhase {

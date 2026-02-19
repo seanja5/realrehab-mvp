@@ -181,7 +181,7 @@ final class LessonSensorInsightsCollector {
         draft = d
     }
 
-    /// Finish lesson and write draft to disk. Call when lesson completes or pauses.
+    /// Finish lesson and write draft to disk. Call when lesson completes.
     func finishAndSaveDraft(completed: Bool) {
         stop100msSampling()
         guard var d = draft else { return }
@@ -194,6 +194,28 @@ final class LessonSensorInsightsCollector {
         }
         draft = nil
         lessonStartTime = nil
+    }
+
+    /// Pause collection and persist draft to disk (no sync, no completedAt). Call when lesson is paused.
+    func pauseAndPersistDraft(repsCompleted: Int, totalDurationSec: Int) {
+        updateProgress(repsCompleted: repsCompleted, totalDurationSec: totalDurationSec)
+        writeDraftToDisk()
+        stop100msSampling()
+        draft = nil
+        lessonStartTime = nil
+    }
+
+    /// Resume collection from persisted draft. Call when lesson is resumed after pause. Returns false if no draft on disk.
+    func resumeFromDraft(lessonId: UUID) -> Bool {
+        stop()
+        guard var loaded = loadDraft(lessonId: lessonId) else { return false }
+        loaded.completedAt = nil
+        draft = loaded
+        lessonStartTime = loaded.startedAt
+        let samples = loaded.imuSamples.suffix(maxIMUHistory)
+        imuHistory = samples.map { $0.imuValue }
+        start100msSampling()
+        return true
     }
 
     /// Write draft to RealRehabSensorInsights/{lessonId}.json

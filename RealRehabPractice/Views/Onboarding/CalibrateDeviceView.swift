@@ -5,12 +5,16 @@ struct CalibrateDeviceView: View {
     let reps: Int?
     let restSec: Int?
     let lessonId: UUID?
+    let fromUnpause: Bool
+    let onFinish: (() -> Void)?
     @EnvironmentObject var router: Router
     
-    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil) {
+    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, fromUnpause: Bool = false, onFinish: (() -> Void)? = nil) {
         self.reps = reps
         self.restSec = restSec
         self.lessonId = lessonId
+        self.fromUnpause = fromUnpause
+        self.onFinish = onFinish
     }
     @StateObject private var ble = BluetoothManager.shared
     @State private var startSet = false
@@ -52,10 +56,18 @@ struct CalibrateDeviceView: View {
                 VStack(spacing: RRSpace.section) {
                     Text("Calibrate Device")
                         .font(.rrHeadline)
-                    Text("Set your movement range so tracking is accurate.")
-                        .font(.rrCallout)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                    if fromUnpause {
+                        Text("Since you paused the lesson, we need to recalibrate your brace so it collects accurate information on your movement.")
+                            .font(.rrCallout)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    } else {
+                        Text("Set your movement range so tracking is accurate.")
+                            .font(.rrCallout)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
                     Divider()
                         .padding(.vertical, 4)
 
@@ -170,7 +182,9 @@ struct CalibrateDeviceView: View {
                     isDisabled: !(startSet && maxSet),
                     useLargeFont: true,
                     action: {
-                        if lessonId != nil {
+                        if fromUnpause, let finish = onFinish {
+                            finish()
+                        } else if lessonId != nil {
                             router.go(.directionsView1(reps: reps, restSec: restSec, lessonId: lessonId))
                         } else {
                             router.go(.journeyMap)

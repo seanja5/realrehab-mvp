@@ -21,6 +21,7 @@ struct LessonView: View {
     @State private var hasStarted = false
     @State private var isUserPaused = false  // User tapped pause, back, or app went to background
     @State private var showRestartConfirmation = false
+    @State private var showRecalibrateSheet = false
     
     // Lesson progress (offline resume)
     @State private var elapsedBaseSeconds: Int = 0
@@ -385,7 +386,7 @@ struct LessonView: View {
                 HStack(spacing: 12) {
                     Button {
                         if isUserPaused {
-                            resumeLesson()
+                            resumeLesson()  // Shows recalibration sheet
                         } else {
                             pauseLesson()
                         }
@@ -582,6 +583,15 @@ struct LessonView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showRecalibrateSheet) {
+            NavigationStack {
+                CalibrateDeviceView(fromUnpause: true) {
+                    showRecalibrateSheet = false
+                    resumeAfterRecalibration()
+                }
+            }
+            .environmentObject(router)
+        }
         .bluetoothPopupOverlay()
     }
     
@@ -626,11 +636,25 @@ struct LessonView: View {
         stopSensorValidation()
         engine.pauseAnimation()
         persistLessonDraft(enqueueForSync: true)
-        finishSensorInsightsCollection(completed: false)
+        LessonSensorInsightsCollector.shared.pauseAndPersistDraft(
+            repsCompleted: engine.repCount,
+            totalDurationSec: currentElapsedSeconds()
+        )
     }
 
     private func resumeLesson() {
         guard isUserPaused else { return }
+        showRecalibrateSheet = true
+    }
+
+    private func resumeAfterRecalibration() {
+        guard isUserPaused else { return }
+        if let lid = lessonId {
+            if !LessonSensorInsightsCollector.shared.resumeFromDraft(lessonId: lid) {
+                startSensorInsightsCollection(lessonId: lid)
+            }
+        }
+        loadCalibrationData()
         isUserPaused = false
         elapsedReferenceTime = Date()
         startElapsedTimer()

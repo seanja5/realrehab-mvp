@@ -85,7 +85,7 @@ struct LessonAnalyticsView: View {
 
                 // Section 1: Dynamic Valgus
                 analyticsSection(
-                    title: "Dynamic Valgus (Leg Drift Graph)",
+                    title: "Leg Drift",
                     visual: {
                         DriftGraphView(dataPoints: driftData, totalDuration: totalDuration)
                     },
@@ -97,7 +97,7 @@ struct LessonAnalyticsView: View {
 
                 // Section 2: Leg Shakes
                 analyticsSection(
-                    title: "Leg Shakes / Wobbles Graph",
+                    title: "Leg Shake / Tremor",
                     visual: {
                         ShakeGraphView(dataPoints: shakeData, totalDuration: totalDuration)
                     },

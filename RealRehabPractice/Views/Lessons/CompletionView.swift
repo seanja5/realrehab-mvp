@@ -31,7 +31,7 @@ struct CompletionView: View {
     private var repetitionAccuracyValue: String {
         guard let i = insights else { return "—" }
         let pct = i.reps_attempted > 0 ? Int((Double(i.reps_completed) / Double(i.reps_attempted)) * 100) : 0
-        return "\(pct)%"
+        return "\(pct)% repetition accuracy"
     }
 
     private var repetitionAccuracySubtitle: String {
@@ -42,9 +42,13 @@ struct CompletionView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                Text("You Did It!")
-                    .font(.rrHeadline)
-                    .padding(.top, RRSpace.pageTop)
+                VStack(spacing: 4) {
+                    Text("You Did It!")
+                        .font(.rrHeadline)
+                    Text("Your Score:")
+                        .font(.rrHeadline)
+                }
+                .padding(.top, RRSpace.pageTop)
 
                 // Score card: large circular ring + percentage + info icon
                 scoreCardView
@@ -103,9 +107,9 @@ struct CompletionView: View {
         VStack(spacing: 12) {
             ZStack(alignment: .center) {
                 circularProgressRing(progress: computedScore.map { min(1, max(0, Double($0.score) / 100)) } ?? 0)
-                    .frame(width: 140, height: 140)
+                    .frame(width: 168, height: 168)
                 Text(computedScore != nil ? "\(computedScore!.score)%" : "—")
-                    .font(.system(size: 36, weight: .bold))
+                    .font(.system(size: 43, weight: .bold))
                     .foregroundStyle(.primary)
             }
             .overlay(alignment: .topTrailing) {

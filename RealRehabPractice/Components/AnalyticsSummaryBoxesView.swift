@@ -22,9 +22,9 @@ struct AnalyticsSummaryBoxesView: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: RRSpace.stack) {
+        VStack(alignment: .leading, spacing: RRSpace.stack) {
             repetitionAccuracyBox
-            VStack(spacing: RRSpace.stack) {
+            HStack(spacing: RRSpace.stack) {
                 sessionTimeBox
                 restBox
             }
@@ -34,19 +34,20 @@ struct AnalyticsSummaryBoxesView: View {
     private var repetitionAccuracyBox: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(Int(repetitionAccuracyPercent))%")
+                Text("\(Int(repetitionAccuracyPercent))% repetition accuracy")
                     .font(.rrHeadline)
                     .foregroundStyle(.primary)
-                Text("\(attemptsCount) attempts out of \(assignedReps) assigned reps")
+                Text("(\(attemptsCount) attempts / \(assignedReps) assigned)")
                     .font(.rrCaption)
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
             pieChart(progress: min(1, max(0, repetitionAccuracyPercent / 100)))
+                .offset(x: -40)
                 .padding(.trailing, 10)
         }
         .padding(12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(boxBackground)
     }
 

@@ -2,7 +2,16 @@ import SwiftUI
 import CoreBluetooth
 
 struct CalibrateDeviceView: View {
+    let reps: Int?
+    let restSec: Int?
+    let lessonId: UUID?
     @EnvironmentObject var router: Router
+    
+    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil) {
+        self.reps = reps
+        self.restSec = restSec
+        self.lessonId = lessonId
+    }
     @StateObject private var ble = BluetoothManager.shared
     @State private var startSet = false
     @State private var maxSet = false
@@ -161,7 +170,11 @@ struct CalibrateDeviceView: View {
                     isDisabled: !(startSet && maxSet),
                     useLargeFont: true,
                     action: {
-                        router.go(.allSet)
+                        if lessonId != nil {
+                            router.go(.directionsView1(reps: reps, restSec: restSec, lessonId: lessonId))
+                        } else {
+                            router.go(.journeyMap)
+                        }
                     }
                 )
             }

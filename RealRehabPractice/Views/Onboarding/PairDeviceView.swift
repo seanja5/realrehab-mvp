@@ -16,6 +16,7 @@ struct Device: Identifiable, Equatable {
 
 struct PairDeviceView: View {
     @EnvironmentObject var router: Router
+    @Environment(\.dismiss) private var dismiss
     @State private var state: ScanState = .scanning
     @StateObject private var ble = BluetoothManager.shared
 
@@ -121,9 +122,8 @@ struct PairDeviceView: View {
                         if let firstDevice = ble.peripherals.first {
                             print("🔵 PairDeviceView: Pair button tapped, connecting to '\(firstDevice.name)'")
                             ble.connect(firstDevice)
-                            // Wait a moment for connection, then navigate
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                router.go(.calibrateDevice)
+                                dismiss()
                             }
                         } else {
                             print("⚠️ PairDeviceView: No devices available to connect")

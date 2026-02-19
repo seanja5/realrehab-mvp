@@ -15,6 +15,7 @@ struct LessonAnalyticsView: View {
 
     @EnvironmentObject private var router: Router
     @State private var insights: LessonSensorInsightsRow?
+    @State private var restSec: Int?
     @State private var isLoading = true
     @State private var loadError: String?
 
@@ -76,7 +77,8 @@ struct LessonAnalyticsView: View {
                     repetitionAccuracyPercent: repAccuracy,
                     sessionTimeSeconds: insights.total_duration_sec,
                     attemptsCount: insights.reps_attempted,
-                    assignedReps: insights.reps_target
+                    assignedReps: insights.reps_target,
+                    restSec: restSec
                 )
                 .padding(.horizontal, 16)
                 .padding(.bottom, RRSpace.section)
@@ -312,10 +314,18 @@ struct LessonAnalyticsView: View {
         loadError = nil
         defer { isLoading = false }
         do {
-            insights = try await LessonSensorInsightsService.fetch(lessonId: lessonId, patientProfileId: patientProfileId)
+            let fetched = try await LessonSensorInsightsService.fetch(lessonId: lessonId, patientProfileId: patientProfileId)
+            await MainActor.run { insights = fetched }
+            if let i = fetched, let plan = try? await RehabService.currentPlan(ptProfileId: i.pt_profile_id, patientProfileId: patientProfileId),
+               let node = plan.nodes?.first(where: { UUID(uuidString: $0.id) == lessonId }) {
+                await MainActor.run { restSec = node.restSec }
+            } else {
+                await MainActor.run { restSec = nil }
+            }
         } catch {
             loadError = error.localizedDescription
             insights = nil
+            restSec = nil
         }
     }
 }

@@ -88,7 +88,7 @@ struct TestPairDeviceView: View {
                         // Simulate pairing delay, then navigate to calibration
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             isPairing = false
-                            router.go(.calibrateDevice)
+                            router.go(.calibrateDevice(reps: nil, restSec: nil, lessonId: nil))
                         }
                     }
                 )

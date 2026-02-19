@@ -6,7 +6,7 @@ enum Route: Hashable {
     case createAccount
     case ptCreateAccount
     case pairDevice
-    case calibrateDevice
+    case calibrateDevice(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil)
     case allSet
     case ptDetail
     case home

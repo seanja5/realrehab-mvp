@@ -34,7 +34,8 @@ struct AnalyticsView: View {
                     repetitionAccuracyPercent: 86,
                     sessionTimeSeconds: 180,
                     attemptsCount: 13,
-                    assignedReps: 10
+                    assignedReps: 10,
+                    restSec: 3
                 )
                 .padding(.horizontal, 16)
                 .padding(.bottom, RRSpace.section)

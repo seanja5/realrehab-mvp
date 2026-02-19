@@ -12,6 +12,8 @@ struct AnalyticsSummaryBoxesView: View {
     let sessionTimeSeconds: Int
     let attemptsCount: Int
     let assignedReps: Int
+    /// Rest time in seconds between sets (assigned). When nil, rest box shows "—".
+    let restSec: Int?
 
     private var sessionTimeFormatted: String {
         let m = sessionTimeSeconds / 60
@@ -21,12 +23,10 @@ struct AnalyticsSummaryBoxesView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: RRSpace.stack) {
-            // Left: Repetition Accuracy (larger box with pie chart)
             repetitionAccuracyBox
-            // Right: Session Time + Attempts stacked
             VStack(spacing: RRSpace.stack) {
                 sessionTimeBox
-                attemptsBox
+                restBox
             }
         }
     }
@@ -37,7 +37,7 @@ struct AnalyticsSummaryBoxesView: View {
                 Text("\(Int(repetitionAccuracyPercent))%")
                     .font(.rrHeadline)
                     .foregroundStyle(.primary)
-                Text("repetition accuracy")
+                Text("\(attemptsCount) attempts out of \(assignedReps) assigned reps")
                     .font(.rrCaption)
                     .foregroundStyle(.secondary)
             }
@@ -64,12 +64,12 @@ struct AnalyticsSummaryBoxesView: View {
         .background(boxBackground)
     }
 
-    private var attemptsBox: some View {
+    private var restBox: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("\(attemptsCount) attempts")
+            Text(restSec.map { "\($0) secs" } ?? "—")
                 .font(.rrHeadline)
                 .foregroundStyle(.primary)
-            Text("out of \(assignedReps) assigned reps")
+            Text("rest in between sets")
                 .font(.rrCaption)
                 .foregroundStyle(.secondary)
         }
@@ -90,7 +90,7 @@ struct AnalyticsSummaryBoxesView: View {
                 .stroke(Color.gray.opacity(0.2), lineWidth: 14)
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 14, lineCap: .butt))
                 .rotationEffect(.degrees(-90))
         }
         .frame(width: 56, height: 56)

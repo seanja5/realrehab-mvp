@@ -8,6 +8,8 @@ struct CompletionView: View {
     @State private var insights: LessonSensorInsightsRow? = nil
     @State private var isLoadingInsights: Bool = true
     @State private var showScoreExplanation: Bool = false
+    @State private var patientProfileId: UUID?
+    @State private var lessonTitleForAnalytics: String = "Lesson"
 
     init(lessonId: UUID? = nil) {
         self.lessonId = lessonId
@@ -26,10 +28,15 @@ struct CompletionView: View {
         return "\(m):\(s < 10 ? "0" : "")\(s)"
     }
 
-    private var repetitionAccuracyText: String {
+    private var repetitionAccuracyValue: String {
         guard let i = insights else { return "—" }
-        let pct = i.reps_target > 0 ? Int((Double(i.reps_completed) / Double(i.reps_target)) * 100) : 0
-        return "\(i.reps_completed) / \(i.reps_target) reps (\(pct)%)"
+        let pct = i.reps_attempted > 0 ? Int((Double(i.reps_completed) / Double(i.reps_attempted)) * 100) : 0
+        return "\(pct)%"
+    }
+
+    private var repetitionAccuracySubtitle: String {
+        guard let i = insights else { return "—" }
+        return "\(i.reps_attempted) attempts out of \(i.reps_target) assigned reps"
     }
 
     var body: some View {
@@ -48,7 +55,7 @@ struct CompletionView: View {
                 VStack(spacing: 16) {
                     metricCard(icon: "clock", title: "Session", value: isLoadingInsights ? "Loading..." : sessionTimeFormatted)
                     metricCard(icon: "chart.pie", title: "Range gained", value: rangeText, isLoading: isLoadingRange)
-                    metricCard(icon: "chart.bar.fill", title: "Repetition accuracy", value: isLoadingInsights ? "Loading..." : repetitionAccuracyText)
+                    metricCard(icon: "chart.bar.fill", title: isLoadingInsights ? "Loading..." : repetitionAccuracySubtitle, value: isLoadingInsights ? "Loading..." : repetitionAccuracyValue)
                 }
                 .frame(maxWidth: 360)
                 .padding(.horizontal, 24)
@@ -120,7 +127,7 @@ struct CompletionView: View {
                 .stroke(Color.gray.opacity(0.2), lineWidth: 18)
             Circle()
                 .trim(from: 0, to: min(1, max(0, progress)))
-                .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 18, lineCap: .round))
+                .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 18, lineCap: .butt))
                 .rotationEffect(.degrees(-90))
         }
     }
@@ -162,14 +169,38 @@ struct CompletionView: View {
     private var scoreExplanationSheet: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: RRSpace.section) {
-                    Text(computedScore.map { PatientLessonScore.scoreExplanation(for: $0.score) } ?? "")
+                VStack(alignment: .leading, spacing: RRSpace.section * 2) {
+                    Text("What your score means")
+                        .font(.rrTitle)
+                        .foregroundStyle(.primary)
+                    Text(computedScore.map { PatientLessonScore.whatItMeans(for: $0.score) } ?? "")
                         .font(.rrBody)
                         .foregroundStyle(.primary)
+
+                    Text("How we calculated it")
+                        .font(.rrTitle)
+                        .foregroundStyle(.primary)
+                        .padding(.top, 8)
+                    Text(insights.map { PatientLessonScore.howCalculated(insights: $0) } ?? "")
+                        .font(.rrBody)
+                        .foregroundStyle(.primary)
+
+                    if let pid = patientProfileId, let lid = lessonId {
+                        Button {
+                            showScoreExplanation = false
+                            router.go(.ptLessonAnalytics(lessonTitle: lessonTitleForAnalytics, lessonId: lid, patientProfileId: pid))
+                        } label: {
+                            Text("Advanced Analytics")
+                                .font(.rrBody)
+                                .underline()
+                                .foregroundStyle(Color.brandLightBlue)
+                        }
+                        .padding(.top, 16)
+                    }
                 }
                 .padding(24)
             }
-            .navigationTitle("What this score means")
+            .navigationTitle("Current Patient Score")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -199,7 +230,10 @@ struct CompletionView: View {
         do {
             let profile = try await PatientService.myPatientProfile()
             let fetched = try await LessonSensorInsightsService.fetch(lessonId: lessonId, patientProfileId: profile.id)
-            await MainActor.run { insights = fetched }
+            await MainActor.run {
+                insights = fetched
+                patientProfileId = profile.id
+            }
         } catch {
             await MainActor.run { insights = nil }
         }
@@ -238,6 +272,10 @@ struct CompletionView: View {
                 lessonTitle = "Lesson"
             }
             try await PatientService.notifyPTSessionComplete(patientProfileId: patientProfileId, lessonId: lessonId, lessonTitle: lessonTitle)
+            await MainActor.run {
+                self.patientProfileId = patientProfileId
+                self.lessonTitleForAnalytics = lessonTitle
+            }
         } catch { }
     }
 }

@@ -37,7 +37,7 @@ struct RealRehabPracticeApp: App {
                                 case .createAccount: CreateAccountView()
                                 case .ptCreateAccount: PTCreateAccountView()
                                 case .pairDevice: PairDeviceView()
-                                case .calibrateDevice: CalibrateDeviceView()
+                                case .calibrateDevice(let reps, let restSec, let lessonId): CalibrateDeviceView(reps: reps, restSec: restSec, lessonId: lessonId)
                                 case .allSet: AllSetView()
                                 case .ptDetail: PTDetailView()
                                 case .home: HomeView()

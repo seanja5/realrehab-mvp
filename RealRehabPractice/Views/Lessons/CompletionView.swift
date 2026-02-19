@@ -64,10 +64,6 @@ struct CompletionView: View {
                 .frame(maxWidth: 360)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 40)
-
-                RecoveryChartWeekView()
-                    .padding(.top, 16)
-                    .padding(.bottom, 40)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -80,6 +76,7 @@ struct CompletionView: View {
                 }
             }
             .padding(.horizontal, 24)
+            .padding(.top, 20)
             .padding(.bottom, 24)
             .background(.ultraThinMaterial)
         }

@@ -93,6 +93,7 @@
 		C8B2D0082ED00001004D9354 /* LessonAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */; };
 		C8C1D1E22ED00009004D9348 /* MessagingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C1D1E12ED00009004D9347 /* MessagingView.swift */; };
 		C8C1D1E42ED0000A004D9348 /* MessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C1D1E32ED0000A004D9347 /* MessagingService.swift */; };
+		D1E2F3A52ED0000B004D9348 /* PatientLessonScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A42ED0000B004D9347 /* PatientLessonScore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -187,6 +188,7 @@
 		C8E1A0012ED00001004D9347 /* PendingLinkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingLinkStore.swift; sourceTree = "<group>"; };
 		C8E1A0032ED00001004D9349 /* InvitedPatientsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvitedPatientsStore.swift; sourceTree = "<group>"; };
 		C8E1A0052ED00001004D934B /* ShareSheetHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheetHelper.swift; sourceTree = "<group>"; };
+		D1E2F3A42ED0000B004D9347 /* PatientLessonScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientLessonScore.swift; sourceTree = "<group>"; };
 		C8F4A7012ED2C79A00BADF02 /* BluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 		C8F4A8212ED2F3B500BADF02 /* PTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTService.swift; sourceTree = "<group>"; };
 		C8F4A8232ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSessionCompleteNotifier.swift; sourceTree = "<group>"; };
@@ -404,6 +406,7 @@
 				C82D70372ED09AC7004D9350 /* GenderMapper.swift */,
 				C82537812F2B12D400465343 /* PhaseHeaderPreferenceKey.swift */,
 				C8E1A0052ED00001004D934B /* ShareSheetHelper.swift */,
+				D1E2F3A42ED0000B004D9347 /* PatientLessonScore.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -688,6 +691,7 @@
 				C8F4A8242ED2F3B500BADF02 /* PTCreateAccountView.swift in Sources */,
 				C8C1D1E22ED00009004D9348 /* MessagingView.swift in Sources */,
 				C8C1D1E42ED0000A004D9348 /* MessagingService.swift in Sources */,
+				D1E2F3A52ED0000B004D9348 /* PatientLessonScore.swift in Sources */,
 			);
 		};
 		C89A84BA2EB138170074B855 /* Sources */ = {

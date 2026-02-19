@@ -6,6 +6,7 @@ struct JourneyMapView: View {
     @StateObject private var vm = JourneyMapViewModel()
     
     @State private var showCallout = false
+    @State private var showCompletedLessonPopover = false
     @State private var showPhaseGoals = false
     @State private var selectedNodeIndex: Int?
     @State private var showLockedPopup = false
@@ -113,6 +114,8 @@ struct JourneyMapView: View {
                                         selectedNodeIndex = index
                                         if node.isLocked {
                                             showLockedPopup = true
+                                        } else if vm.lessonProgress[node.id]?.isCompleted == true {
+                                            showCompletedLessonPopover = true
                                         } else {
                                             showCallout = true
                                         }
@@ -238,6 +241,54 @@ struct JourneyMapView: View {
                             }
                         }
                 }
+                if showCompletedLessonPopover, let idx = selectedNodeIndex, idx < vm.nodes.count {
+                    let node = vm.nodes[idx]
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            showCompletedLessonPopover = false
+                            selectedNodeIndex = nil
+                        }
+                        .overlay(alignment: .top) {
+                            VStack(spacing: 16) {
+                                Text("Completed \(node.title.isEmpty ? "Lesson" : node.title)")
+                                    .font(.rrTitle)
+                                    .foregroundStyle(.primary)
+                                
+                                if let desc = ACLJourneyModels.lessonDescription(for: node.title) {
+                                    Text(desc)
+                                        .font(.rrBody)
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
+                                
+                                Text("\(node.reps) reps, \(node.restSec) sec rest")
+                                    .font(.rrCaption)
+                                    .foregroundStyle(.secondary)
+                                
+                                PrimaryButton(title: "View Results") {
+                                    router.go(.completion(lessonId: node.id))
+                                    showCompletedLessonPopover = false
+                                    selectedNodeIndex = nil
+                                }
+                                .padding(.horizontal, 24)
+                                
+                                SecondaryButton(title: "Close") {
+                                    showCompletedLessonPopover = false
+                                    selectedNodeIndex = nil
+                                }
+                                .padding(.horizontal, 24)
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
+                            )
+                            .padding(.top, 140)
+                        }
+                }
+                
                 if showCallout {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()

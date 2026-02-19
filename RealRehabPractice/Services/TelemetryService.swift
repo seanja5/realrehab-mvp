@@ -239,24 +239,29 @@ enum TelemetryService {
     let recordedAt: Date
   }
   
-  // Fetch all maximum calibration values for the current patient
-  static func getAllMaximumCalibrationsForPatient() async throws -> [MaximumCalibrationPoint] {
+  // Fetch all maximum calibration values for the current patient.
+  // If `before` is set, only returns points with recordedAt <= before (for per-lesson range gained).
+  static func getAllMaximumCalibrationsForPatient(before: Date? = nil) async throws -> [MaximumCalibrationPoint] {
     // Get current user's profile and patient profile ID
     guard let profile = try await AuthService.myProfile() else {
       throw NSError(domain: "TelemetryService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profile not found"])
     }
     
     let patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
-    return try await getAllMaximumCalibrationsForPatient(patientProfileId: patientProfileId)
+    return try await getAllMaximumCalibrationsForPatient(patientProfileId: patientProfileId, before: before)
   }
   
-    // Fetch all maximum calibration values for a specific patient by patientProfileId
+    // Fetch all maximum calibration values for a specific patient by patientProfileId.
+    // If `before` is set, filters to points with recordedAt <= before (so range gained reflects that lesson only).
     // Uses disk cache so data persists when switching tabs or offline
-    static func getAllMaximumCalibrationsForPatient(patientProfileId: UUID) async throws -> [MaximumCalibrationPoint] {
+    static func getAllMaximumCalibrationsForPatient(patientProfileId: UUID, before: Date? = nil) async throws -> [MaximumCalibrationPoint] {
       let cacheKey = CacheKey.calibrationPoints(patientProfileId: patientProfileId)
 
       // Check cache first (disk persistence for tab switching/offline)
       if let cached = await CacheService.shared.getCached(cacheKey, as: [MaximumCalibrationPoint].self, useDisk: true) {
+        if let cutoff = before {
+          return cached.filter { $0.recordedAt <= cutoff }
+        }
         return cached
       }
 
@@ -337,12 +342,12 @@ enum TelemetryService {
       }
       
       // Sort by recorded_at to ensure chronological order
-      let result = calibrationPoints.sorted { $0.recordedAt < $1.recordedAt }
-
-      // Cache the result (disk persistence for tab switching/offline)
-      await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.calibrationPoints, useDisk: true)
-
-      return result
+      let fullList = calibrationPoints.sorted { $0.recordedAt < $1.recordedAt }
+      await CacheService.shared.setCached(fullList, forKey: cacheKey, ttl: CacheService.TTL.calibrationPoints, useDisk: true)
+      if let cutoff = before {
+        return fullList.filter { $0.recordedAt <= cutoff }
+      }
+      return fullList
     }
   
   // Convert raw flex sensor value to degrees (same formula as CalibrateDeviceView)

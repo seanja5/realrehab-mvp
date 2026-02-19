@@ -59,7 +59,7 @@ struct CompletionView: View {
                 VStack(spacing: 16) {
                     metricCard(icon: "clock", title: "Session", value: isLoadingInsights ? "Loading..." : sessionTimeFormatted)
                     metricCard(icon: "chart.pie", title: "Range gained", value: rangeText, isLoading: isLoadingRange)
-                    metricCard(icon: "chart.bar.fill", title: isLoadingInsights ? "Loading..." : repetitionAccuracySubtitle, value: isLoadingInsights ? "Loading..." : repetitionAccuracyValue)
+                    metricCard(icon: "scope", title: isLoadingInsights ? "Loading..." : repetitionAccuracySubtitle, value: isLoadingInsights ? "Loading..." : repetitionAccuracyValue)
                 }
                 .frame(maxWidth: 360)
                 .padding(.horizontal, 24)
@@ -242,8 +242,10 @@ struct CompletionView: View {
 
     private func loadRangeGained() async {
         isLoadingRange = true
+        // Use this lesson's completed_at so range gained is specific to this lesson (calibrations as of then).
+        let completedBefore = await MainActor.run { insights?.completed_at }
         do {
-            let points = try await TelemetryService.getAllMaximumCalibrationsForPatient()
+            let points = try await TelemetryService.getAllMaximumCalibrationsForPatient(before: completedBefore)
             guard points.count >= 2 else {
                 await MainActor.run { rangeGained = nil; isLoadingRange = false }
                 return

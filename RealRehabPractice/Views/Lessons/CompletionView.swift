@@ -10,10 +10,13 @@ struct CompletionView: View {
     @State private var showScoreExplanation: Bool = false
     @State private var patientProfileId: UUID?
     @State private var lessonTitleForAnalytics: String = "Lesson"
-    // Animated score: circle and percentage both count up in sync (ease-out over 1.2s).
+    // Animated score: number shows immediately; circle driven by TimelineView (time-based, one update per frame).
     @State private var displayedScore: Int = 0
-    @State private var displayedProgress: Double = 0
+    @State private var animationStartTime: Date? = nil
+    @State private var targetProgress: Double = 0
     @State private var hasAnimatedScore: Bool = false
+
+    private let circleAnimationDuration: Double = 1.2
 
     /// True until both insights and range have finished loading — use for full-screen skeleton.
     private var isScreenLoading: Bool {
@@ -117,7 +120,10 @@ struct CompletionView: View {
         .onChange(of: computedScore?.score) { _, newValue in
             guard let targetScore = newValue, !hasAnimatedScore else { return }
             hasAnimatedScore = true
-            runCountUpAnimation(targetScore: targetScore)
+            let target = min(100, max(0, targetScore))
+            displayedScore = target
+            targetProgress = Double(target) / 100
+            animationStartTime = Date()
         }
     }
 
@@ -125,15 +131,18 @@ struct CompletionView: View {
         VStack(spacing: 12) {
             ZStack(alignment: .center) {
                 if isScreenLoading {
-                    // Skeleton: circle placeholder + number placeholder (matches final layout)
-                    Circle()
-                        .stroke(Color(white: 0.88), lineWidth: 18)
+                    // Loading: empty circle (no skeleton/shimmer) + placeholder text
+                    circularProgressRing(progress: 0)
                         .frame(width: 168, height: 168)
-                        .shimmer()
-                    SkeletonBlock(width: 72, height: 36)
+                    Text("—")
+                        .font(.system(size: 43, weight: .bold))
+                        .foregroundStyle(.secondary)
                 } else {
-                    circularProgressRing(progress: displayedProgress)
-                        .frame(width: 168, height: 168)
+                    TimelineView(.animation(minimumInterval: 1.0/60.0)) { context in
+                        let progress = progressForCircle(at: context.date)
+                        circularProgressRing(progress: progress)
+                    }
+                    .frame(width: 168, height: 168)
                     Text("\(displayedScore)%")
                         .font(.system(size: 43, weight: .bold))
                         .foregroundStyle(.primary)
@@ -153,25 +162,13 @@ struct CompletionView: View {
         }
     }
 
-    /// Drives circle and percentage from 0 to target over 1.2s with ease-out (discrete steps so both animate).
-    private func runCountUpAnimation(targetScore: Int) {
-        let duration: Double = 1.2
-        let steps = 40
-        let stepInterval = duration / Double(steps)
-        let target = min(100, max(0, targetScore))
-        displayedScore = 0
-        displayedProgress = 0
-        Task { @MainActor in
-            for i in 0..<steps {
-                try? await Task.sleep(nanoseconds: UInt64(stepInterval * 1_000_000_000))
-                let t = Double(i + 1) / Double(steps)
-                let easeOut = 1 - (1 - t) * (1 - t)
-                displayedProgress = min(1, max(0, easeOut * Double(target) / 100))
-                displayedScore = min(target, max(0, Int(round(easeOut * Double(target)))))
-            }
-            displayedScore = target
-            displayedProgress = min(1, max(0, Double(target) / 100))
-        }
+    /// Progress 0...1 for the circle at the given time (ease-out over circleAnimationDuration).
+    private func progressForCircle(at now: Date) -> Double {
+        guard let start = animationStartTime else { return 0 }
+        let elapsed = now.timeIntervalSince(start)
+        let t = min(1, elapsed / circleAnimationDuration)
+        let easeOut = 1 - (1 - t) * (1 - t)
+        return min(1, max(0, easeOut * targetProgress))
     }
 
     private func circularProgressRing(progress: Double) -> some View {
@@ -182,7 +179,6 @@ struct CompletionView: View {
                 .trim(from: 0, to: min(1, max(0, progress)))
                 .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 18, lineCap: .butt))
                 .rotationEffect(.degrees(-90))
-                .animation(.linear(duration: 0.03), value: progress)
         }
     }
 

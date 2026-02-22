@@ -10,6 +10,15 @@ struct CompletionView: View {
     @State private var showScoreExplanation: Bool = false
     @State private var patientProfileId: UUID?
     @State private var lessonTitleForAnalytics: String = "Lesson"
+    // Animated score: circle and percentage both count up in sync (ease-out over 1.2s).
+    @State private var displayedScore: Int = 0
+    @State private var displayedProgress: Double = 0
+    @State private var hasAnimatedScore: Bool = false
+
+    /// True until both insights and range have finished loading — use for full-screen skeleton.
+    private var isScreenLoading: Bool {
+        isLoadingInsights || isLoadingRange
+    }
 
     init(lessonId: UUID? = nil) {
         self.lessonId = lessonId
@@ -43,23 +52,30 @@ struct CompletionView: View {
         ScrollView {
             VStack(spacing: 0) {
                 VStack(spacing: 4) {
-                    Text("You Did It!")
-                        .font(.rrHeadline)
-                    Text("Your Score:")
-                        .font(.rrHeadline)
+                    if isScreenLoading {
+                        SkeletonBlock(width: 140, height: 24)
+                        SkeletonBlock(width: 100, height: 22)
+                            .padding(.top, 2)
+                    } else {
+                        Text("You Did It!")
+                            .font(.rrHeadline)
+                        Text("Your Score:")
+                            .font(.rrHeadline)
+                    }
                 }
                 .padding(.top, RRSpace.pageTop)
+                .frame(minHeight: 56)
 
                 // Score card: large circular ring + percentage + info icon
                 scoreCardView
                     .padding(.top, 24)
                     .padding(.bottom, 24)
 
-                // Metric cards
+                // Metric cards — all use same skeleton layout while screen is loading
                 VStack(spacing: 16) {
-                    metricCard(icon: "clock", title: "Session", value: isLoadingInsights ? "Loading..." : sessionTimeFormatted)
-                    metricCard(icon: "chart.pie", title: "Range gained", value: rangeText, isLoading: isLoadingRange)
-                    metricCard(icon: "scope", title: isLoadingInsights ? "Loading..." : repetitionAccuracySubtitle, value: isLoadingInsights ? "Loading..." : repetitionAccuracyValue)
+                    metricCard(icon: "clock", title: "Session", value: sessionTimeFormatted, isLoading: isScreenLoading)
+                    metricCard(icon: "chart.pie", title: "Range gained", value: rangeText, isLoading: isScreenLoading)
+                    metricCard(icon: "scope", title: repetitionAccuracySubtitle, value: repetitionAccuracyValue, isLoading: isScreenLoading)
                 }
                 .frame(maxWidth: 360)
                 .padding(.horizontal, 24)
@@ -98,16 +114,30 @@ struct CompletionView: View {
             await loadRangeGained()
             await notifyPTIfNeeded()
         }
+        .onChange(of: computedScore?.score) { _, newValue in
+            guard let targetScore = newValue, !hasAnimatedScore else { return }
+            hasAnimatedScore = true
+            runCountUpAnimation(targetScore: targetScore)
+        }
     }
 
     private var scoreCardView: some View {
         VStack(spacing: 12) {
             ZStack(alignment: .center) {
-                circularProgressRing(progress: computedScore.map { min(1, max(0, Double($0.score) / 100)) } ?? 0)
-                    .frame(width: 168, height: 168)
-                Text(computedScore != nil ? "\(computedScore!.score)%" : "—")
-                    .font(.system(size: 43, weight: .bold))
-                    .foregroundStyle(.primary)
+                if isScreenLoading {
+                    // Skeleton: circle placeholder + number placeholder (matches final layout)
+                    Circle()
+                        .stroke(Color(white: 0.88), lineWidth: 18)
+                        .frame(width: 168, height: 168)
+                        .shimmer()
+                    SkeletonBlock(width: 72, height: 36)
+                } else {
+                    circularProgressRing(progress: displayedProgress)
+                        .frame(width: 168, height: 168)
+                    Text("\(displayedScore)%")
+                        .font(.system(size: 43, weight: .bold))
+                        .foregroundStyle(.primary)
+                }
             }
             .overlay(alignment: .topTrailing) {
                 Button {
@@ -118,7 +148,29 @@ struct CompletionView: View {
                         .foregroundStyle(.secondary)
                 }
                 .offset(x: 8, y: -8)
+                .opacity(isScreenLoading ? 0 : 1)
             }
+        }
+    }
+
+    /// Drives circle and percentage from 0 to target over 1.2s with ease-out (discrete steps so both animate).
+    private func runCountUpAnimation(targetScore: Int) {
+        let duration: Double = 1.2
+        let steps = 40
+        let stepInterval = duration / Double(steps)
+        let target = min(100, max(0, targetScore))
+        displayedScore = 0
+        displayedProgress = 0
+        Task { @MainActor in
+            for i in 0..<steps {
+                try? await Task.sleep(nanoseconds: UInt64(stepInterval * 1_000_000_000))
+                let t = Double(i + 1) / Double(steps)
+                let easeOut = 1 - (1 - t) * (1 - t)
+                displayedProgress = min(1, max(0, easeOut * Double(target) / 100))
+                displayedScore = min(target, max(0, Int(round(easeOut * Double(target)))))
+            }
+            displayedScore = target
+            displayedProgress = min(1, max(0, Double(target) / 100))
         }
     }
 
@@ -130,17 +182,23 @@ struct CompletionView: View {
                 .trim(from: 0, to: min(1, max(0, progress)))
                 .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 18, lineCap: .butt))
                 .rotationEffect(.degrees(-90))
+                .animation(.linear(duration: 0.03), value: progress)
         }
     }
 
     private func metricCard(icon: String, title: String, value: String, isLoading: Bool = false) -> some View {
         HStack(spacing: 12) {
             if isLoading {
+                // Skeleton layout matching real card: icon + value line + title line
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(white: 0.88))
                     .frame(width: 24, height: 24)
                     .shimmer()
-                SkeletonBlock(width: 120, height: 20)
+                VStack(alignment: .leading, spacing: 4) {
+                    SkeletonBlock(width: 80, height: 20)
+                    SkeletonBlock(width: 120, height: 14)
+                }
+                Spacer(minLength: 0)
             } else {
                 Image(systemName: icon)
                     .font(.rrBody)

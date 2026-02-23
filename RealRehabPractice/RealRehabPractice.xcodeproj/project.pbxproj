@@ -85,6 +85,7 @@
 		C8B2D0022ED00001004D9348 /* LessonSensorInsightsCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */; };
 		C8B2D0042ED00001004D9350 /* LessonSensorInsightsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */; };
 		C8B2D0062ED00001004D9352 /* LessonSensorInsightsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0052ED00001004D9351 /* LessonSensorInsightsSync.swift */; };
+		C8D1E2F42ED0000C004D9348 /* LessonSummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D1E2F32ED0000C004D9347 /* LessonSummaryService.swift */; };
 		C8A5B6C82ED0007004D9348 /* StreakService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A5B6C72ED0007004D9347 /* StreakService.swift */; };
 		C8A6B7CA2ED0008004D9348 /* StreakIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A6B7C92ED0008004D9347 /* StreakIconView.swift */; };
 		C8B2D0082ED00001004D9354 /* LessonAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */; };
@@ -193,6 +194,7 @@
 		C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsCollector.swift; sourceTree = "<group>"; };
 		C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsService.swift; sourceTree = "<group>"; };
 		C8B2D0052ED00001004D9351 /* LessonSensorInsightsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsSync.swift; sourceTree = "<group>"; };
+		C8D1E2F32ED0000C004D9347 /* LessonSummaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSummaryService.swift; sourceTree = "<group>"; };
 		C8A5B6C72ED0007004D9347 /* StreakService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakService.swift; sourceTree = "<group>"; };
 		C8A6B7C92ED0008004D9347 /* StreakIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakIconView.swift; sourceTree = "<group>"; };
 		C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonAnalyticsView.swift; sourceTree = "<group>"; };
@@ -265,6 +267,7 @@
 				C8F4A8252ED2F3B600BADF04 /* NPIVerificationService.swift */,
 				C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */,
 				C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */,
+				C8D1E2F32ED0000C004D9347 /* LessonSummaryService.swift */,
 				C8C1D1E32ED0000A004D9347 /* MessagingService.swift */,
 			);
 			path = Services;
@@ -659,6 +662,7 @@
 				C8B2D0062ED00001004D9352 /* LessonSensorInsightsSync.swift in Sources */,
 				C8B2D0022ED00001004D9348 /* LessonSensorInsightsCollector.swift in Sources */,
 				C8B2D0042ED00001004D9350 /* LessonSensorInsightsService.swift in Sources */,
+				C8D1E2F42ED0000C004D9348 /* LessonSummaryService.swift in Sources */,
 				C8B2D0082ED00001004D9354 /* LessonAnalyticsView.swift in Sources */,
 				C8E1A0022ED00001004D9348 /* PendingLinkStore.swift in Sources */,
 				C8E1A0042ED00001004D934A /* InvitedPatientsStore.swift in Sources */,

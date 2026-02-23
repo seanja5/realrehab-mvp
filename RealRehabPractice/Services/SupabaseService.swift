@@ -11,6 +11,8 @@ import Supabase
 final class SupabaseService {
     static let shared = SupabaseService()
     let client: SupabaseClient
+    /// Base URL for the Supabase project (e.g. for Edge Function calls).
+    let baseURL: URL
 
     private init() {
         // Load values from SupabaseConfig.plist in the app bundle
@@ -26,6 +28,7 @@ final class SupabaseService {
         }
 
         client = SupabaseClient(supabaseURL: supabaseURL, supabaseKey: key)
+        baseURL = supabaseURL
         print("✅ Supabase initialized")
     }
 }

@@ -16,6 +16,10 @@ struct CompletionView: View {
     @State private var targetProgress: Double = 0
     @State private var hasAnimatedScore: Bool = false
 
+    /// AI-generated summary (nil = use PatientLessonScore fallback)
+    @State private var aiPatientSummary: String? = nil
+    @State private var aiNextTimeCue: String? = nil
+
     private let circleAnimationDuration: Double = 1.2
 
     /// True until both insights and range have finished loading — use for full-screen skeleton.
@@ -116,6 +120,7 @@ struct CompletionView: View {
             await loadInsights()
             await loadRangeGained()
             await notifyPTIfNeeded()
+            await loadAISummary()
         }
         .onChange(of: computedScore?.score) { _, newValue in
             guard let targetScore = newValue, !hasAnimatedScore else { return }
@@ -228,9 +233,19 @@ struct CompletionView: View {
                     Text("What your score means")
                         .font(.rrTitle)
                         .foregroundStyle(.primary)
-                    Text(computedScore.map { PatientLessonScore.whatItMeans(for: $0.score) } ?? "")
+                    Text(aiPatientSummary ?? computedScore.map { PatientLessonScore.whatItMeans(for: $0.score) } ?? "")
                         .font(.rrBody)
                         .foregroundStyle(.primary)
+
+                    if let cue = aiNextTimeCue {
+                        Text("Next time try")
+                            .font(.rrTitle)
+                            .foregroundStyle(.primary)
+                            .padding(.top, 8)
+                        Text(cue)
+                            .font(.rrBody)
+                            .foregroundStyle(.primary)
+                    }
 
                     Text("How we calculated it")
                         .font(.rrTitle)
@@ -334,5 +349,21 @@ struct CompletionView: View {
                 self.lessonTitleForAnalytics = lessonTitle
             }
         } catch { }
+    }
+
+    private func loadAISummary() async {
+        guard let lessonId = lessonId,
+              let patientProfileId = patientProfileId,
+              let insights = insights else { return }
+        if let result = await LessonSummaryService.fetchPatientSummary(
+            lessonId: lessonId,
+            patientProfileId: patientProfileId,
+            insights: insights
+        ) {
+            await MainActor.run {
+                aiPatientSummary = result.patientSummary
+                aiNextTimeCue = result.nextTimeCue
+            }
+        }
     }
 }

@@ -19,6 +19,9 @@ struct LessonAnalyticsView: View {
     @State private var isLoading = true
     @State private var loadError: String?
 
+    /// AI-generated PT summary (nil = hide card, no fallback)
+    @State private var aiPtSummary: String? = nil
+
     private var totalDuration: Double {
         guard let i = insights else { return 180 }
         return max(1, Double(i.total_duration_sec))
@@ -71,6 +74,29 @@ struct LessonAnalyticsView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: RRSpace.section * 2) {
                 headerView
+
+                // AI summary card (only when available)
+                if let summary = aiPtSummary {
+                    VStack(alignment: .leading, spacing: RRSpace.stack) {
+                        Text("Summary")
+                            .font(.rrTitle)
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 16)
+                        Text(summary)
+                            .font(.rrBody)
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                            )
+                            .padding(.horizontal, 16)
+                    }
+                    .padding(.bottom, RRSpace.section)
+                }
 
                 // Summary boxes (dynamic from insights)
                 AnalyticsSummaryBoxesView(
@@ -326,6 +352,18 @@ struct LessonAnalyticsView: View {
             loadError = error.localizedDescription
             insights = nil
             restSec = nil
+        }
+        await loadAISummary()
+    }
+
+    private func loadAISummary() async {
+        guard let insights = insights else { return }
+        if let summary = await LessonSummaryService.fetchPTSummary(
+            lessonId: lessonId,
+            patientProfileId: patientProfileId,
+            insights: insights
+        ) {
+            await MainActor.run { aiPtSummary = summary }
         }
     }
 }

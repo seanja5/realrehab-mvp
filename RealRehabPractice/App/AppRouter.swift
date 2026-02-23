@@ -7,10 +7,7 @@ enum Route: Hashable {
     case ptCreateAccount
     case pairDevice
     case calibrateDevice(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil)
-    case allSet
     case ptDetail
-    case home
-    case homeSubCategory
     case rehabOverview
     case journeyMap
     case patientSettings

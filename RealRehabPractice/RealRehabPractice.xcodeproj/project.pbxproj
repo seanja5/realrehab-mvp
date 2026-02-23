@@ -42,18 +42,15 @@
 		C8A4B5C72ED0006004D9348 /* AnalyticsSummaryBoxesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A4B5C62ED0006004D9347 /* AnalyticsSummaryBoxesView.swift */; };
 		C8A9B3E22ED0010A004D9348 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */; };
 		C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */; };
-		C8AEECB32EB2D7A200720184 /* AllSetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */; };
 		C8AEECB42EB2D7A200720184 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */; };
 		C8AEECB52EB2D7A200720184 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA22EB2D7A200720184 /* ContentView.swift */; };
 		C8AEECB62EB2D7A200720184 /* SensorSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAE2EB2D7A200720184 /* SensorSample.swift */; };
 		C8AEECB72EB2D7A200720184 /* CreateAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA32EB2D7A200720184 /* CreateAccount.swift */; };
 		C8AEECB82EB2D7A200720184 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */; };
-		C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */; };
 		C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */; };
 		C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */; };
 		C8AEECBC2EB2D7A200720184 /* LessonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA82EB2D7A200720184 /* LessonView.swift */; };
 		C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA12EB2D7A200720184 /* CompletionView.swift */; };
-		C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA52EB2D7A200720184 /* HomeView.swift */; };
 		C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */; };
 		C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */; };
 		C8AEECC32EB2D7A200720185 /* TestCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA12EB2D7A200720185 /* TestCalibrationView.swift */; };
@@ -151,15 +148,12 @@
 		C8A3B4E72ED00005004D9347 /* NotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationDelegate.swift; sourceTree = "<group>"; };
 		C8A4B5C62ED0006004D9347 /* AnalyticsSummaryBoxesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsSummaryBoxesView.swift; sourceTree = "<group>"; };
 		C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
-		C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllSetView.swift; sourceTree = "<group>"; };
 		C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrateDeviceView.swift; sourceTree = "<group>"; };
 		C8AEECA12EB2D7A200720184 /* CompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionView.swift; sourceTree = "<group>"; };
 		C8AEECA12EB2D7A200720185 /* TestCalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestCalibrationView.swift; sourceTree = "<group>"; };
 		C8AEECA22EB2D7A200720184 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C8AEECA32EB2D7A200720184 /* CreateAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateAccount.swift; sourceTree = "<group>"; };
-		C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSubCategoryView.swift; sourceTree = "<group>"; };
-		C8AEECA52EB2D7A200720184 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyMapView.swift; sourceTree = "<group>"; };
 		C8AEECA82EB2D7A200720184 /* LessonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonView.swift; sourceTree = "<group>"; };
 		C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeSensorSimulator.swift; sourceTree = "<group>"; };
@@ -420,7 +414,6 @@
 				C8D677BC2EB8285A00829146 /* TestPairDeviceView.swift */,
 				C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */,
 				C8AEECA12EB2D7A200720185 /* TestCalibrationView.swift */,
-				C8AEEC9D2EB2D7A200720184 /* AllSetView.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -429,8 +422,6 @@
 			isa = PBXGroup;
 			children = (
 				C8D677FF2EBB095E00829144 /* PTDetailView.swift */,
-				C8AEECA52EB2D7A200720184 /* HomeView.swift */,
-				C8AEECA42EB2D7A200720184 /* HomeSubCategoryView.swift */,
 				C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */,
 			);
 			path = Home;
@@ -616,7 +607,6 @@
 				C82D70122EBE91D3004D9347 /* AuthService.swift in Sources */,
 				C8F4A7002ED2C79A00BADF02 /* BluetoothManager.swift in Sources */,
 				C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */,
-				C8AEECB32EB2D7A200720184 /* AllSetView.swift in Sources */,
 				C8AEECB42EB2D7A200720184 /* WelcomeView.swift in Sources */,
 				C8AEECB52EB2D7A200720184 /* ContentView.swift in Sources */,
 				C8AEECB62EB2D7A200720184 /* SensorSample.swift in Sources */,
@@ -630,7 +620,6 @@
 				C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */,
 				C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */,
 				C8A9B3E22ED0010A004D9348 /* AnalyticsView.swift in Sources */,
-				C8AEECB92EB2D7A200720184 /* HomeSubCategoryView.swift in Sources */,
 				C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */,
 				C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */,
 				C8D677BD2EB8285A00829144 /* PairDeviceView.swift in Sources */,
@@ -639,7 +628,6 @@
 				C8AEECC62EB2D7A200720186 /* DirectionsView1.swift in Sources */,
 				C8AEECC72EB2D7A200720187 /* DirectionsView2.swift in Sources */,
 				C8AEECC92EB2D7A200720188 /* AssessmentView.swift in Sources */,
-				C8AEECC02EB2D7A200720184 /* HomeView.swift in Sources */,
 				C8A4B5C72ED0006004D9348 /* AnalyticsSummaryBoxesView.swift in Sources */,
 				C8A5B6C82ED0007004D9348 /* StreakService.swift in Sources */,
 				C8A6B7CA2ED0008004D9348 /* StreakIconView.swift in Sources */,

@@ -119,7 +119,7 @@ struct TestCalibrationView: View {
                     isDisabled: false,
                     useLargeFont: true,
                     action: {
-                        router.go(.allSet)
+                        router.go(.ptDetail)
                     }
                 )
             }

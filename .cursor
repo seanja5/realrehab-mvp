@@ -22,8 +22,8 @@
 ## Routing (`AppRouter.swift`)
 
 **Route enum**:
-- Patient: `welcome`, `createAccount`, `pairDevice`, `calibrateDevice`, `allSet`, `ptDetail`, `home`, `homeSubCategory`, `rehabOverview`, `journeyMap`, `patientSettings`, `directionsView1(reps,restSec,lessonId)`, `directionsView2`, `lesson(reps,restSec,lessonId)`, `assessment(lessonId)`, `completion(lessonId)`.
-- PT: `ptCreateAccount`, `ptSettings`, `patientList`, `ptPatientDetail(patientProfileId)`, `ptCategorySelect(patientProfileId)`, `ptInjurySelect(patientProfileId)`, `ptJourneyMap(patientProfileId, planId)`.
+- Patient: `welcome`, `createAccount`, `pairDevice`, `calibrateDevice(reps,restSec,lessonId)`, `allSet`, `ptDetail`, `home`, `homeSubCategory`, `rehabOverview`, `journeyMap`, `patientSettings`, `directionsView1(reps,restSec,lessonId)`, `directionsView2`, `lesson(reps,restSec,lessonId)`, `assessment(lessonId)`, `completion(lessonId)`.
+- PT: `ptCreateAccount`, `ptSettings`, `patientList`, `ptPatientDetail(patientProfileId)`, `ptCategorySelect(patientProfileId)`, `ptInjurySelect(patientProfileId)`, `ptJourneyMap(patientProfileId, planId)`, `ptLessonAnalytics(lessonTitle, lessonId, patientProfileId)`.
 
 **Tab bar routes** (Router): `ptDetail`, `journeyMap`, `patientSettings`, `ptSettings`, `patientList`.
 
@@ -42,8 +42,10 @@
 - **NotificationManager**: `requestAuthorizationIfNeeded`, `authorizationStatus`, `scheduleScheduleReminders(slots:firstName:)`, `cancelScheduleReminders`, `showSessionCompleteNotification(patientName:lessonName:patientProfileId)` (PT: "X just completed Y, tap to view insights"); categories `SCHEDULE_REMINDER`, `PT_SESSION_COMPLETE`; deep link to journeyMap or ptPatientDetail via `userInfo`.
 - **ShareSheetHelper**: `activityItems(for: code)` (ShareImage from Assets, message, https URL for rich preview), `presentShareSheet(code:...)`; share link base URL configurable for Open Graph when site exists.
 - **PTSessionCompleteNotifier**: When PT app becomes active, fetches `PTService.fetchRecentSessionCompleteEvents`, shows local notification for each new event (tracks notified IDs in UserDefaults); tap opens patient detail.
-- **TelemetryService**: Sessions, calibration (save/fetch), device assignment (RPC `get_or_create_device_assignment`); uses Supabase auth + PatientService for profile.
+- **TelemetryService**: Sessions, calibration (save/fetch), device assignment (RPC `get_or_create_device_assignment`); uses Supabase auth + PatientService for profile. **Range gained**: `getAllMaximumCalibrationsForPatient(before: Date? = nil)` returns max calibration points; when `before` is set (e.g. lesson `completed_at`), only points with `recordedAt <= before` are returned so "range gained" is per-lesson (latest minus second‑latest as of that lesson).
 - **LessonEngine**: In-memory lesson state (phase, reps, fill, validation); used by LessonView/AssessmentView.
+- **LessonSensorInsightsService**: `fetch(lessonId, patientProfileId)` → `LessonSensorInsightsRow` from `rehab.lesson_sensor_insights`. Used by CompletionView and LessonAnalyticsView.
+- **LessonSensorInsightsCollector**: In-lesson collection of IMU/shake/events; draft persisted to disk; `pauseAndPersistDraft`, `resumeFromDraft`, `finishAndSaveDraft`; sync via OutboxSyncManager.
 - **CacheService** (`@MainActor`): `getCached`/`setCached` (async, TTL), `invalidate`/`invalidateMatching`; keys via `CacheKey`; memory-first, optional disk.
 - **BluetoothManager**: BLE scan, connect, flex sensor value; used by PairDeviceView, CalibrateDeviceView, LessonView, AssessmentView.
 
@@ -65,9 +67,9 @@
 
 ## Views (Concise)
 
-**Patient onboarding**: WelcomeView (Login / Get Started) → CreateAccountView (account type: Patient or PT; patient fields: DOB, gender, access code, etc.; PT fields: license, NPI, etc.). Patient → ptDetail; PT → patientList. Pairing (optional): Add button → PairDeviceView (BLE scan, pair) → CalibrateDeviceView or TestCalibrationView (starting/max position) → AllSetView → ptDetail.
+**Patient onboarding**: WelcomeView (Login / Get Started) → CreateAccountView (account type: Patient or PT; patient fields: DOB, gender, access code, etc.; PT fields: license, NPI, etc.). Patient → ptDetail; PT → patientList. Pairing (optional): Add button → PairDeviceView (BLE scan, pair); on successful pair, PairDeviceView dismisses and returns to previous screen (no CalibrateDevice or AllSet in this flow). Calibration is done later, before each lesson (see Calibration flow below).
 
-**Patient main**: PTDetailView (Dashboard tab): PT info, current rehab plan, "My Schedule" (ScheduleVisualizerView), Create/Edit Schedule → RehabOverviewView, RecoveryChartWeekView, ActivityConsistencyCard. RehabOverviewView: days/times (up to 2 per day), Allow Reminders toggle, Confirm Schedule → saves to ScheduleService, PatientService.setScheduleRemindersEnabled, NotificationManager. Lesson flow: DirectionsView1/2 → LessonView (LessonEngine, BLE flex value) → AssessmentView(lessonId) → CompletionView(lessonId). CompletionView notifies PT via PatientService.notifyPTSessionComplete when lessonId present (if PT has notify_session_complete on). PatientSettingsView: profile, Allow reminders toggle (synced with schedule_reminders_enabled), Allow camera, link PT (access code), sign out.
+**Patient main**: PTDetailView (Dashboard tab): PT info, current rehab plan, "My Schedule" (ScheduleVisualizerView), Create/Edit Schedule → RehabOverviewView, RecoveryChartWeekView, ActivityConsistencyCard. RehabOverviewView: days/times (up to 2 per day), Allow Reminders toggle, Confirm Schedule → saves to ScheduleService, PatientService.setScheduleRemindersEnabled, NotificationManager. **Lesson flow**: Journey Map → tap "Go!" on a lesson → **CalibrateDeviceView** (reps, restSec, lessonId) → DirectionsView1/2 → LessonView (LessonEngine, BLE flex value) → AssessmentView(lessonId) → CompletionView(lessonId). CompletionView notifies PT via PatientService.notifyPTSessionComplete when lessonId present (if PT has notify_session_complete on). PatientSettingsView: profile, Allow reminders toggle (synced with schedule_reminders_enabled), Allow camera, link PT (access code), sign out.
 
 **PT flow**: WelcomeView → CreateAccountView (PT type) or login → PatientListView (PTService.listMyPatients). Patient list cards: show "Invite" only when patient is not linked (profile_id == nil); Invite opens share sheet (ShareSheetHelper); button stays until patient actually links. PatientDetailView: demographics, notes (saved to plan), RecoveryChartWeekView, ActivityConsistencyCard, access code section with "Invite Patient" button (shown only when patient not linked), "Select Rehab Plan" → CategorySelectView → InjurySelectView → PTJourneyMapView (nodes editable, save to RehabService.saveACLPlan). PTSettingsView: Account → Practice → Notifications (Patient session completed, Missed day reminders toggles; only session complete is implemented) → Sign out; toggles persisted to pt_profiles via PTService.updateNotificationPreferences. When PT app becomes active, PTSessionCompleteNotifier fetches new pt_session_complete_events and shows local notification; tap → Patient Detail.
 
@@ -75,10 +77,42 @@
 
 ---
 
+## Calibration flow
+
+- **Before lesson**: From Journey Map, tapping "Go!" on a lesson navigates to `calibrateDevice(reps, restSec, lessonId)` (JourneyMapView). After calibration, user continues to directions then lesson. CalibrateDeviceView is shown every time a lesson is started, not during initial pair.
+- **Pair device**: PairDeviceView dismisses after successful pair and returns to the previous screen; no All Set or calibration in that flow.
+- **CalibrateDeviceView**: Initializer `(reps, restSec, lessonId, fromUnpause, onFinish)`. When `fromUnpause == true`, shows message "Since you paused the lesson, we need to recalibrate…" and on "Finish Calibration!" calls `onFinish?()` instead of navigating (used when resuming a paused lesson). Otherwise navigates to directions/lesson after calibration.
+
+---
+
+## Patient completion screen & score
+
+- **CompletionView** (`Views/Lessons/CompletionView.swift`): Shows "You Did It!", score circle, Session / Range gained / Rep accuracy cards, Back to Journey Map, Return to Dashboard. Loads `LessonSensorInsightsService.fetch` and range via `TelemetryService.getAllMaximumCalibrationsForPatient(before: insights?.completed_at)` so **range gained is per-lesson** (not global latest).
+- **Score**: From `PatientLessonScore.compute(insights)` — weights: rep completion 40%, drift 25%, steadiness 20%, pace 15%. Score 0–100; `whatItMeans(for:)` and `howCalculated(insights:)` for explanation copy.
+- **Circle animation**: TimelineView-driven (no step loop). State: `animationStartTime`, `targetProgress`, `displayedScore`. When score is available, `animationStartTime = Date()`, `targetProgress = score/100`. `progressForCircle(at:)` uses elapsed time and ease-out `1 - (1-t)²` over 1.2s. Number shows final value immediately; circle fills smoothly. `TimelineView(.animation(minimumInterval: 1.0/60.0))` for frame-based updates.
+- **Loading**: `isScreenLoading = isLoadingInsights || isLoadingRange`. Full-screen skeleton for header and all three metric cards (icon + value/title placeholders). Score card while loading: empty circle (no skeleton/shimmer) + "—" in center.
+- **Score explanation sheet**: "What your score means" (segment-based), "How we calculated it", and "Advanced Analytics" link → `ptLessonAnalytics` (same view as PT). Rep accuracy card uses "scope" icon; format "X% repetition accuracy" and "N attempts out of M assigned reps".
+
+---
+
+## Lesson analytics (PT)
+
+- **LessonAnalyticsView** (`Views/PTViews/LessonAnalyticsView.swift`): Fetches `LessonSensorInsightsService.fetch`, then `RehabService.currentPlan` for `restSec` of the lesson. Uses **AnalyticsSummaryBoxesView** with: full-width repetition accuracy box (pie chart, "X% repetition accuracy", "(N attempts / M assigned)"); below, session time and rest boxes side by side ("X secs" / "rest in between sets"). Graph titles: "Leg Drift", "Leg Shake / Tremor". Pie/circle stroke uses `lineCap: .butt`.
+
+---
+
+## Pause & resume lesson
+
+- **LessonView**: On pause, calls `LessonSensorInsightsCollector.shared.pauseAndPersistDraft(repsCompleted, totalDurationSec)` (no sync, no completedAt). On resume, shows full-screen **CalibrateDeviceView** with `fromUnpause: true` and `onFinish: { resumeAfterRecalibration() }`. After calibration, `resumeAfterRecalibration()` calls `LessonSensorInsightsCollector.shared.resumeFromDraft(lessonId:)` (or `startSensorInsightsCollection` if no draft), then continues lesson.
+- **LessonSensorInsightsCollector** (`Services/LessonSensorInsightsCollector.swift`): `pauseAndPersistDraft` writes draft to disk (RealRehabSensorInsights/{lessonId}.json), stops 100ms sampling, clears in-memory draft. `resumeFromDraft(lessonId:)` loads draft from disk, sets `completedAt = nil`, restores draft and sampling. Ensures pause → complete still produces one synced lesson_sensor_insights row and analytics work.
+
+---
+
 ## Data Models (Key)
 
 - **Profiles**: AuthService `Profile` (id, user_id, role, email, first_name, last_name, phone). PatientService `PatientProfileRow`; PTService `PTProfileRow`, `SimplePatient`. RehabService: `AssignmentRow`, `ProgramRow`, `Lesson`, `PlanRow`, `LessonNode` (id, title, icon, isLocked, reps, restSec); plan nodes stored as JSON in `rehab_plans.nodes`.
 - **rehab_plans** (Supabase): id, pt_profile_id, patient_profile_id, category, injury, status (e.g. active/archived), created_at, nodes (JSON array), notes. One active plan per patient; save via RehabService.saveACLPlan/updatePlanNotes.
+- **rehab.lesson_sensor_insights**: Per-lesson sensor data (LessonSensorInsightsRow: lesson_id, patient_profile_id, pt_profile_id, started_at, completed_at, total_duration_sec, reps_target/completed/attempted, events, imu_samples, shake_frequency_samples). Fetched by LessonSensorInsightsService; written by LessonSensorInsightsSync from LessonSensorInsightsCollector draft.
 - **patient_schedule_slots** (Supabase): id, patient_profile_id, day_of_week (0–6), slot_time ("HH:mm:ss"); 30-min blocks; ScheduleService get/save.
 - **patient_profiles.schedule_reminders_enabled**: Boolean; PatientService.getScheduleRemindersEnabled/setScheduleRemindersEnabled.
 - **Linking**: pt_patient_map links patient_profile_id ↔ pt_profile_id. Patients link via access code (PatientService.linkPatientViaAccessCode, RPCs); PT adds patients via PTService.addPatient (RPC add_patient_with_mapping). Deep link realrehab://link?code=... or https .../link?code=... opens app; PendingLinkStore holds code for CreateAccount/PatientSettings pre-fill. Invite: ShareSheetHelper shares ShareImage, message, and URL; Invite button only when patient not linked (profile_id == nil).
@@ -117,12 +151,14 @@ When adding a screen or feature:
 ## Key Files
 
 - **Router**: `RealRehabPractice/App/AppRouter.swift`
-- **App entry**: `RealRehabPractice/App/RealRehabPracticeApp.swift` (NotificationDelegate, onOpenURL for realrehab:// and https /link?code= → PendingLinkStore; rescheduleRemindersIfNeeded, checkPTSessionCompleteIfNeeded on scenePhase; scheduleReminderTapped → journeyMap, ptSessionCompleteTapped → ptPatientDetail(patientProfileId))
+- **App entry**: `RealRehabPractice/App/RealRehabPracticeApp.swift` (NotificationDelegate, onOpenURL; scenePhase handlers; navigationDestination for calibrateDevice(reps, restSec, lessonId), directionsView1/2, lesson, completion, ptLessonAnalytics)
 - **NotificationDelegate**: `RealRehabPractice/App/NotificationDelegate.swift` (schedule reminder tap → journeyMap; PT session complete tap → ptPatientDetail)
 - **Theme**: `RealRehabPractice/Components/Theme.swift`
-- **Components**: `RealRehabPractice/Components/Components.swift`, `PatientTabBar.swift`, `ScheduleVisualizerView.swift`
+- **Components**: `RealRehabPractice/Components/Components.swift`, `AnalyticsSummaryBoxesView.swift`, `PatientTabBar.swift`, `ScheduleVisualizerView.swift`
 - **Models**: `RealRehabPractice/Models/SchedulingModels.swift`, `SessionContext.swift`
-- **Services**: `RealRehabPractice/Services/` (Auth, Patient, PT, Rehab, Schedule, NotificationManager, PTSessionCompleteNotifier, Telemetry, Supabase, Cache, BLE, LessonEngine); `RealRehabPractice/Utilities/ShareSheetHelper.swift`
+- **Views**: `RealRehabPractice/Views/Lessons/CompletionView.swift`, `JourneyMapView.swift`, `LessonView.swift`, `RealRehabPractice/Views/PTViews/LessonAnalyticsView.swift`
+- **Utilities**: `RealRehabPractice/Utilities/PatientLessonScore.swift`
+- **Services**: `RealRehabPractice/Services/` (Auth, Patient, PT, Rehab, Schedule, NotificationManager, PTSessionCompleteNotifier, Telemetry, Supabase, Cache, BLE, LessonEngine, LessonSensorInsightsService, LessonSensorInsightsCollector); `RealRehabPractice/Services/Outbox/LessonSensorInsightsSync.swift`; `RealRehabPractice/Utilities/ShareSheetHelper.swift`
 - **Xcode project**: `RealRehabPractice/RealRehabPractice.xcodeproj/project.pbxproj` (edit when adding files)
 
 ---
@@ -133,4 +169,4 @@ When adding a screen or feature:
 
 ---
 
-*Last updated: February 2026 – PT invite/share: ShareSheetHelper (ShareImage, message, URL), Invite Patient on list card and detail (only when patient not linked), deep link realrehab:// and https /link, PendingLinkStore. PT notifications: pt_profiles.notify_session_complete/notify_missed_day, pt_session_complete_events, RPC notify_pt_session_complete, CompletionView triggers notify, PTSessionCompleteNotifier + local notification, tap → patient detail. Routes: assessment(lessonId), completion(lessonId). PTSettings: Account → Practice → Notifications → Sign out; toggles persisted. ScheduleService, NotificationManager, patient_schedule_slots, schedule_reminders_enabled, PatientTabBar, ScheduleVisualizerView, RecoveryChartWeekView, ActivityConsistencyCard, unified CreateAccountView, BluetoothStatusIndicator, bluetoothPopupOverlay.*
+*Last updated: February 2026 – **Completion & analytics**: CompletionView with TimelineView-driven score circle (1.2s ease-out), full-screen skeleton loading (no skeleton on circle), per-lesson range gained via TelemetryService.getAllMaximumCalibrationsForPatient(before: completed_at), PatientLessonScore (40/25/20/15 weights), score explanation sheet + Advanced Analytics → ptLessonAnalytics. LessonAnalyticsView: AnalyticsSummaryBoxesView (rep accuracy full width, session time + rest side by side, restSec from plan), graph titles Leg Drift / Leg Shake Tremor. **Calibration**: Before lesson (Journey Map "Go!" → calibrateDevice(reps, restSec, lessonId) → directions → lesson); PairDeviceView dismisses after pair (no All Set). CalibrateDeviceView fromUnpause + onFinish for recalibration on resume. **Pause/resume**: LessonSensorInsightsCollector.pauseAndPersistDraft / resumeFromDraft; LessonView shows recalibration sheet on resume. PT invite/share, notifications, schedule, CreateAccountView, BluetoothStatusIndicator, bluetoothPopupOverlay (see prior entries).*

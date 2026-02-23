@@ -23,6 +23,10 @@ struct LessonView: View {
     @State private var showRestartConfirmation = false
     @State private var showRecalibrateSheet = false
     
+    // Recalibration on unpause: skip if just re-entered from journey map (they calibrated after "Go!") or if unpause within 10s
+    @State private var resumedFromJourneyMap = false
+    @State private var lastUnpauseTime: Date? = nil
+    
     // Lesson progress (offline resume)
     @State private var elapsedBaseSeconds: Int = 0
     @State private var elapsedReferenceTime: Date? = nil
@@ -644,22 +648,43 @@ struct LessonView: View {
 
     private func resumeLesson() {
         guard isUserPaused else { return }
+        let now = Date()
+        // Unpause within 10 seconds of last unpause → skip calibration (accidental pause)
+        if let last = lastUnpauseTime, now.timeIntervalSince(last) < 10 {
+            performResume(loadCalibration: false)
+            return
+        }
+        // Just re-entered from journey map (calibrated after "Go!") → skip calibration this once
+        if resumedFromJourneyMap {
+            resumedFromJourneyMap = false
+            performResume(loadCalibration: false)
+            return
+        }
+        // Otherwise require recalibration (e.g. stayed on lesson screen and may have moved)
         showRecalibrateSheet = true
     }
 
-    private func resumeAfterRecalibration() {
+    /// Shared resume logic. Call after calibration sheet (with loadCalibration: true) or when skipping calibration.
+    private func performResume(loadCalibration: Bool) {
         guard isUserPaused else { return }
         if let lid = lessonId {
             if !LessonSensorInsightsCollector.shared.resumeFromDraft(lessonId: lid) {
                 startSensorInsightsCollection(lessonId: lid)
             }
         }
-        loadCalibrationData()
+        if loadCalibration {
+            loadCalibrationData()
+        }
         isUserPaused = false
         elapsedReferenceTime = Date()
         startElapsedTimer()
         startSensorValidation()
         startCountdown(isInitial: false)
+        lastUnpauseTime = Date()
+    }
+
+    private func resumeAfterRecalibration() {
+        performResume(loadCalibration: true)
     }
 
     private func restartLesson() {
@@ -675,6 +700,8 @@ struct LessonView: View {
         elapsedReferenceTime = nil
         elapsedDisplaySeconds = 0
         errorCount = 0
+        lastUnpauseTime = nil
+        resumedFromJourneyMap = false
         if let lessonId = lessonId {
             LocalLessonProgressStore.shared.clearDraft(lessonId: lessonId)
             clearLessonProgressOnServerAndCache(lessonId: lessonId)
@@ -707,6 +734,8 @@ struct LessonView: View {
         setupRepCountingCallback()
         engine.phase = .idle
         engine.fill = 0.0
+        // User re-entered from journey map (Go! → calibrate → directions → lesson); they just calibrated, so first unpause should skip recalibration
+        resumedFromJourneyMap = true
     }
 
     private func persistLessonDraft(enqueueForSync: Bool = false) {

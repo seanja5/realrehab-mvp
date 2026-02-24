@@ -75,6 +75,17 @@ struct LessonAnalyticsView: View {
             VStack(alignment: .leading, spacing: RRSpace.section * 2) {
                 headerView
 
+                // Summary boxes (dynamic from insights)
+                AnalyticsSummaryBoxesView(
+                    repetitionAccuracyPercent: repAccuracy,
+                    sessionTimeSeconds: insights.total_duration_sec,
+                    attemptsCount: insights.reps_attempted,
+                    assignedReps: insights.reps_target,
+                    restSec: restSec
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, RRSpace.section)
+
                 // AI summary card (only when available)
                 if let summary = aiPtSummary {
                     VStack(alignment: .leading, spacing: RRSpace.stack) {
@@ -97,17 +108,6 @@ struct LessonAnalyticsView: View {
                     }
                     .padding(.bottom, RRSpace.section)
                 }
-
-                // Summary boxes (dynamic from insights)
-                AnalyticsSummaryBoxesView(
-                    repetitionAccuracyPercent: repAccuracy,
-                    sessionTimeSeconds: insights.total_duration_sec,
-                    attemptsCount: insights.reps_attempted,
-                    assignedReps: insights.reps_target,
-                    restSec: restSec
-                )
-                .padding(.horizontal, 16)
-                .padding(.bottom, RRSpace.section)
 
                 // Section 1: Dynamic Valgus
                 analyticsSection(

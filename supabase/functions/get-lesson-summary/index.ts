@@ -1,4 +1,6 @@
 // get-lesson-summary: returns AI summary for a lesson (patient or PT). Checks cache first; on miss calls OpenAI and caches.
+// Requires: SUPABASE_URL, OPENAI_API_KEY; SERVICE_ROLE_KEY for cache read/write (table rehab.lesson_ai_summaries uses lesson_id, patient_profile_id, audience — no pt_profile_id).
+// Ensure API exposes "rehab" schema (Dashboard > Settings > API > Exposed schemas).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -63,9 +65,15 @@ Deno.serve(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceRoleKey = Deno.env.get("SERVICE_ROLE_KEY");
+  // Use SERVICE_ROLE_KEY secret (set in Dashboard > Edge Functions > Secrets). Fallback to SUPABASE_SERVICE_ROLE_KEY if present.
+  const serviceRoleKey = Deno.env.get("SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const useCache = Boolean(serviceRoleKey && serviceRoleKey.length > 0);
+  if (!useCache) {
+    console.error("get-lesson-summary: CACHE DISABLED - SERVICE_ROLE_KEY not set. Add secret 'SERVICE_ROLE_KEY' in Supabase Dashboard > Edge Functions > get-lesson-summary > Secrets with your project service_role key (Project Settings > API > service_role) to persist summaries and avoid repeated OpenAI calls.");
+  }
   const supabase = createClient(supabaseUrl, serviceRoleKey ?? "", {});
+
+  console.log("get-lesson-summary: useCache=", useCache, "audience=", audience);
 
   // 1) Check cache (only if service role key is set)
   if (useCache) {
@@ -78,14 +86,19 @@ Deno.serve(async (req) => {
     .eq("audience", audience)
     .maybeSingle();
 
+    if (cacheError) {
+      console.error("lesson_ai_summaries cache read error:", cacheError.message, cacheError.details);
+    }
     if (!cacheError && cached) {
       if (audience === "patient" && cached.patient_summary && cached.next_time_cue) {
+        console.log("get-lesson-summary: cache hit (patient)");
         return new Response(
           JSON.stringify({ patientSummary: cached.patient_summary, nextTimeCue: cached.next_time_cue }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (audience === "pt" && cached.pt_summary) {
+        console.log("get-lesson-summary: cache hit (pt)");
         return new Response(
           JSON.stringify({ ptSummary: cached.pt_summary }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -120,6 +133,7 @@ Deno.serve(async (req) => {
     responseKey = "ptSummary";
   }
 
+  console.log("get-lesson-summary: calling OpenAI");
   let openaiRes: Response;
   try {
     openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -192,10 +206,16 @@ Deno.serve(async (req) => {
       });
     }
     if (useCache) {
-      await supabase.schema("rehab").from("lesson_ai_summaries").upsert(
-        { ...row, patient_summary: patientSummary, next_time_cue: nextTimeCue },
+      const upsertPayload = { ...row, patient_summary: patientSummary, next_time_cue: nextTimeCue };
+      const { error: upsertError } = await supabase.schema("rehab").from("lesson_ai_summaries").upsert(
+        upsertPayload,
         { onConflict: "lesson_id,patient_profile_id,audience" }
       );
+      if (upsertError) {
+        console.error("lesson_ai_summaries upsert (patient) error:", upsertError.message, upsertError.details);
+      } else {
+        console.log("get-lesson-summary: cache written (patient)");
+      }
     }
     return new Response(
       JSON.stringify({ patientSummary, nextTimeCue }),
@@ -210,10 +230,16 @@ Deno.serve(async (req) => {
       });
     }
     if (useCache) {
-      await supabase.schema("rehab").from("lesson_ai_summaries").upsert(
-        { ...row, pt_summary: ptSummary },
+      const upsertPayload = { ...row, pt_summary: ptSummary };
+      const { error: upsertError } = await supabase.schema("rehab").from("lesson_ai_summaries").upsert(
+        upsertPayload,
         { onConflict: "lesson_id,patient_profile_id,audience" }
       );
+      if (upsertError) {
+        console.error("lesson_ai_summaries upsert (pt) error:", upsertError.message, upsertError.details);
+      } else {
+        console.log("get-lesson-summary: cache written (pt)");
+      }
     }
     return new Response(
       JSON.stringify({ ptSummary }),

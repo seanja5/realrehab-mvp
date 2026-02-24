@@ -16,9 +16,11 @@ struct CompletionView: View {
     @State private var targetProgress: Double = 0
     @State private var hasAnimatedScore: Bool = false
 
-    /// AI-generated summary (nil = use PatientLessonScore fallback)
+    /// AI-generated summary (nil = use PatientLessonScore fallback after load completes)
     @State private var aiPatientSummary: String? = nil
     @State private var aiNextTimeCue: String? = nil
+    /// True while fetching AI summary; sheet shows skeleton until this is false.
+    @State private var isLoadingAISummary: Bool = false
 
     private let circleAnimationDuration: Double = 1.2
 
@@ -117,6 +119,9 @@ struct CompletionView: View {
             }
         }
         .task {
+            if lessonId != nil {
+                isLoadingAISummary = true
+            }
             await loadInsights()
             await loadRangeGained()
             await notifyPTIfNeeded()
@@ -233,16 +238,37 @@ struct CompletionView: View {
                     Text("What your score means")
                         .font(.rrTitle)
                         .foregroundStyle(.primary)
-                    Text(aiPatientSummary ?? computedScore.map { PatientLessonScore.whatItMeans(for: $0.score) } ?? "")
-                        .font(.rrBody)
-                        .foregroundStyle(.primary)
 
-                    if let cue = aiNextTimeCue {
+                    if isLoadingAISummary {
+                        VStack(alignment: .leading, spacing: 8) {
+                            SkeletonBlock(width: 280, height: 16)
+                                .shimmer()
+                            SkeletonBlock(width: 260, height: 16)
+                                .shimmer()
+                            SkeletonBlock(width: 240, height: 16)
+                                .shimmer()
+                        }
                         Text("Next time try")
                             .font(.rrTitle)
                             .foregroundStyle(.primary)
-                            .padding(.top, 8)
-                        Text(cue)
+                            .padding(.top, 12)
+                        SkeletonBlock(width: 220, height: 16)
+                            .shimmer()
+                    } else if let summary = aiPatientSummary {
+                        Text(summary)
+                            .font(.rrBody)
+                            .foregroundStyle(.primary)
+                        if let cue = aiNextTimeCue {
+                            Text("Next time try")
+                                .font(.rrTitle)
+                                .foregroundStyle(.primary)
+                                .padding(.top, 8)
+                            Text(cue)
+                                .font(.rrBody)
+                                .foregroundStyle(.primary)
+                        }
+                    } else {
+                        Text(computedScore.map { PatientLessonScore.whatItMeans(for: $0.score) } ?? "")
                             .font(.rrBody)
                             .foregroundStyle(.primary)
                     }
@@ -355,6 +381,8 @@ struct CompletionView: View {
         guard let lessonId = lessonId,
               let patientProfileId = patientProfileId,
               let insights = insights else { return }
+        await MainActor.run { isLoadingAISummary = true }
+        defer { Task { @MainActor in isLoadingAISummary = false } }
         if let result = await LessonSummaryService.fetchPatientSummary(
             lessonId: lessonId,
             patientProfileId: patientProfileId,

@@ -83,8 +83,8 @@ struct CompletionView: View {
                 // Metric cards: Session and Range side-by-side, then Rep accuracy full width
                 VStack(spacing: 16) {
                     HStack(spacing: 16) {
-                        metricCard(icon: "clock", title: "Session", value: sessionTimeFormatted, isLoading: isScreenLoading)
-                        metricCard(icon: "chart.pie", title: "Range gained", value: rangeText, isLoading: isScreenLoading)
+                        metricCard(icon: "clock", title: "Session", value: sessionTimeFormatted, isLoading: isScreenLoading, compactSkeleton: true)
+                        metricCard(icon: "chart.pie", title: "Range gained", value: rangeText, isLoading: isScreenLoading, compactSkeleton: true)
                     }
                     metricCard(icon: "scope", title: repetitionAccuracySubtitle, value: repetitionAccuracyValue, isLoading: isScreenLoading)
                 }
@@ -171,12 +171,13 @@ struct CompletionView: View {
         VStack(spacing: 12) {
             ZStack(alignment: .center) {
                 if isScreenLoading {
-                    // Loading: empty circle (no skeleton/shimmer) + placeholder text
+                    // Loading: empty circle + skeleton where score will appear
                     circularProgressRing(progress: 0)
                         .frame(width: 168, height: 168)
-                    Text("—")
-                        .font(.system(size: 43, weight: .bold))
-                        .foregroundStyle(.secondary)
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(white: 0.88))
+                        .frame(width: 56, height: 44)
+                        .shimmer()
                 } else {
                     TimelineView(.animation(minimumInterval: 1.0/60.0)) { context in
                         let progress = progressForCircle(at: context.date)
@@ -222,17 +223,20 @@ struct CompletionView: View {
         }
     }
 
-    private func metricCard(icon: String, title: String, value: String, isLoading: Bool = false) -> some View {
+    private func metricCard(icon: String, title: String, value: String, isLoading: Bool = false, compactSkeleton: Bool = false) -> some View {
         HStack(spacing: 12) {
             if isLoading {
-                // Skeleton layout matching real card: icon + value line + title line
+                // Skeleton layout: smaller blocks when compactSkeleton (e.g. side-by-side Session/Range cards)
+                let iconSize: CGFloat = compactSkeleton ? 20 : 24
+                let valueW: CGFloat = compactSkeleton ? 48 : 80
+                let titleW: CGFloat = compactSkeleton ? 64 : 120
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(white: 0.88))
-                    .frame(width: 24, height: 24)
+                    .frame(width: iconSize, height: iconSize)
                     .shimmer()
                 VStack(alignment: .leading, spacing: 4) {
-                    SkeletonBlock(width: 80, height: 20)
-                    SkeletonBlock(width: 120, height: 14)
+                    SkeletonBlock(width: valueW, height: compactSkeleton ? 16 : 20)
+                    SkeletonBlock(width: titleW, height: compactSkeleton ? 12 : 14)
                 }
                 Spacer(minLength: 0)
             } else {
@@ -264,10 +268,16 @@ struct CompletionView: View {
     /// Summary block below metric cards (same style as PT analytics). Shows AI summary or fallback.
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: RRSpace.stack) {
-            Text("Summary")
-                .font(.rrTitle)
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 8)
+            if isLoadingAISummary {
+                SkeletonBlock(width: 100, height: 22)
+                    .shimmer()
+                    .padding(.horizontal, 8)
+            } else {
+                Text("Summary")
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 8)
+            }
 
             if isLoadingAISummary {
                 VStack(alignment: .leading, spacing: 8) {

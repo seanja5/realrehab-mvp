@@ -123,9 +123,9 @@ struct CompletionView: View {
                 isLoadingAISummary = true
             }
             await loadInsights()
+            await loadAISummary()
             await loadRangeGained()
             await notifyPTIfNeeded()
-            await loadAISummary()
         }
         .onChange(of: computedScore?.score) { _, newValue in
             guard let targetScore = newValue, !hasAnimatedScore else { return }
@@ -303,6 +303,12 @@ struct CompletionView: View {
                     Button("Done") { showScoreExplanation = false }
                 }
             }
+            .onAppear {
+                if lessonId != nil, patientProfileId != nil, insights != nil,
+                   aiPatientSummary == nil, !isLoadingAISummary {
+                    Task { await loadAISummary() }
+                }
+            }
         }
     }
 
@@ -380,9 +386,11 @@ struct CompletionView: View {
     private func loadAISummary() async {
         guard let lessonId = lessonId,
               let patientProfileId = patientProfileId,
-              let insights = insights else { return }
+              let insights = insights else {
+            await MainActor.run { isLoadingAISummary = false }
+            return
+        }
         await MainActor.run { isLoadingAISummary = true }
-        defer { Task { @MainActor in isLoadingAISummary = false } }
         if let result = await LessonSummaryService.fetchPatientSummary(
             lessonId: lessonId,
             patientProfileId: patientProfileId,
@@ -393,5 +401,6 @@ struct CompletionView: View {
                 aiNextTimeCue = result.nextTimeCue
             }
         }
+        await MainActor.run { isLoadingAISummary = false }
     }
 }

@@ -57,10 +57,10 @@ enum LessonSummaryService {
         guard let (data, _) = await callEdgeFunction(payload: payload) else { return nil }
         guard let decoded = try? JSONDecoder().decode(PatientSummaryResponse.self, from: data),
               let summary = decoded.patientSummary?.trimmingCharacters(in: .whitespacesAndNewlines),
-              let cue = decoded.nextTimeCue?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !summary.isEmpty, !cue.isEmpty else {
+              !summary.isEmpty else {
             return nil
         }
+        let cue = decoded.nextTimeCue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return (summary, cue)
     }
 

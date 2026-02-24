@@ -124,12 +124,20 @@ Deno.serve(async (req) => {
   let responseKey: "patientSummary" | "ptSummary";
 
   if (audience === "patient") {
-    systemPrompt = "You are a supportive physical therapy assistant. Respond only with valid JSON. No markdown or extra text.";
-    userPrompt = `Given this knee extension lesson data: ${stats}. Return a JSON object with exactly two keys: "patientSummary" (2-4 sentences for the patient: what their score means, what went well, what to focus on; encouraging and plain language) and "nextTimeCue" (one short line starting with "Next time try: " and one concrete cue based on the main issue, e.g. drift, pace, or steadiness).`;
+    systemPrompt = "You are a supportive physical therapy assistant. Respond only with valid JSON. No markdown or extra text. Write in plain, natural language. Never use technical or database terms (e.g. no drift_left, too_slow, max_not_reached). Use everyday words like leg straightness, pace, full extension, steadiness.";
+    userPrompt = `Given this knee extension lesson data: ${stats}.
+
+Return a JSON object with exactly two keys:
+
+1) "patientSummary": One concise paragraph (3–5 sentences) for the patient. Structure: a brief encouraging overall summary of the lesson (always supportive, even if they struggled), then what they did well, then what they could improve on. Use only necessary information and natural language. Include specific numbers where helpful (e.g. reps completed, session time). Never use technical or internal field names—only reader-friendly language.
+
+2) "nextTimeCue": One short line starting with "Next time try: " and one concrete cue in plain language.`;
     responseKey = "patientSummary";
   } else {
-    systemPrompt = "You are a clinical physical therapy assistant. Respond only with valid JSON. No markdown or extra text.";
-    userPrompt = `Given this knee extension lesson data: ${stats}. Return a JSON object with one key "ptSummary": 2-3 sentences for the PT (what went well, what to focus on, any cue suggestion). Clinical but concise.`;
+    systemPrompt = "You are a clinical physical therapy assistant. Respond only with valid JSON. No markdown or extra text. Write in plain, professional language. Never use technical or database terms (e.g. no drift_left, too_slow). Use clinical but readable terms.";
+    userPrompt = `Given this knee extension lesson data: ${stats}.
+
+Return a JSON object with one key "ptSummary": One concise paragraph (3–5 sentences) for the PT. Structure: brief overall summary of how the patient performed, then what they did well, then what to improve on or watch. No fluff or encouragement—strictly performance and data. Include specific numbers. Use natural, professional language only; never internal field names.`;
     responseKey = "ptSummary";
   }
 

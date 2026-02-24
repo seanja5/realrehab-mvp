@@ -80,15 +80,22 @@ struct CompletionView: View {
                     .padding(.top, 24)
                     .padding(.bottom, 24)
 
-                // Metric cards — all use same skeleton layout while screen is loading
+                // Metric cards: Session and Range side-by-side, then Rep accuracy full width
                 VStack(spacing: 16) {
-                    metricCard(icon: "clock", title: "Session", value: sessionTimeFormatted, isLoading: isScreenLoading)
-                    metricCard(icon: "chart.pie", title: "Range gained", value: rangeText, isLoading: isScreenLoading)
+                    HStack(spacing: 16) {
+                        metricCard(icon: "clock", title: "Session", value: sessionTimeFormatted, isLoading: isScreenLoading)
+                        metricCard(icon: "chart.pie", title: "Range gained", value: rangeText, isLoading: isScreenLoading)
+                    }
                     metricCard(icon: "scope", title: repetitionAccuracySubtitle, value: repetitionAccuracyValue, isLoading: isScreenLoading)
                 }
                 .frame(maxWidth: 360)
                 .padding(.horizontal, 24)
-                .padding(.bottom, 40)
+                .padding(.bottom, RRSpace.section)
+
+                // Summary (same style as PT analytics) — AI summary or fallback
+                summarySection
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 40)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -119,13 +126,36 @@ struct CompletionView: View {
             }
         }
         .task {
-            if lessonId != nil {
-                isLoadingAISummary = true
+            guard let lid = lessonId else { return }
+            // Restore from cache so we don't show skeleton when returning to this screen
+            if let cached = await CompletionPageCache.shared.get(lid), cached.insights != nil {
+                await MainActor.run {
+                    insights = cached.insights
+                    isLoadingInsights = false
+                    rangeGained = cached.rangeGained
+                    isLoadingRange = false
+                    aiPatientSummary = cached.aiPatientSummary
+                    aiNextTimeCue = cached.aiNextTimeCue
+                    isLoadingAISummary = false
+                    if let pid = cached.patientProfileId { patientProfileId = pid }
+                    lessonTitleForAnalytics = cached.lessonTitleForAnalytics
+                    if !hasAnimatedScore, let i = cached.insights {
+                        let result = PatientLessonScore.compute(insights: i)
+                        hasAnimatedScore = true
+                        displayedScore = min(100, max(0, result.score))
+                        targetProgress = Double(displayedScore) / 100
+                        animationStartTime = Date()
+                    }
+                }
+                return
             }
+            isLoadingAISummary = true
             await loadInsights()
             await loadAISummary()
             await loadRangeGained()
             await notifyPTIfNeeded()
+            // Cache so next time we open this completion screen it shows instantly
+            await cacheCompletionPage(lessonId: lid)
         }
         .onChange(of: computedScore?.score) { _, newValue in
             guard let targetScore = newValue, !hasAnimatedScore else { return }
@@ -231,52 +261,65 @@ struct CompletionView: View {
         )
     }
 
+    /// Summary block below metric cards (same style as PT analytics). Shows AI summary or fallback.
+    private var summarySection: some View {
+        VStack(alignment: .leading, spacing: RRSpace.stack) {
+            Text("Summary")
+                .font(.rrTitle)
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 8)
+
+            if isLoadingAISummary {
+                VStack(alignment: .leading, spacing: 8) {
+                    SkeletonBlock(width: 280, height: 16)
+                        .shimmer()
+                    SkeletonBlock(width: 260, height: 16)
+                        .shimmer()
+                    SkeletonBlock(width: 240, height: 16)
+                        .shimmer()
+                    SkeletonBlock(width: 220, height: 16)
+                        .shimmer()
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                )
+            } else if let summary = aiPatientSummary, !summary.isEmpty {
+                Text(summary)
+                    .font(.rrBody)
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white)
+                            .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                    )
+            } else if let fallback = computedScore.map({ PatientLessonScore.whatItMeans(for: $0.score) }) {
+                Text(fallback)
+                    .font(.rrBody)
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white)
+                            .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                    )
+            }
+        }
+    }
+
     private var scoreExplanationSheet: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: RRSpace.section * 2) {
-                    Text("What your score means")
-                        .font(.rrTitle)
-                        .foregroundStyle(.primary)
-
-                    if isLoadingAISummary {
-                        VStack(alignment: .leading, spacing: 8) {
-                            SkeletonBlock(width: 280, height: 16)
-                                .shimmer()
-                            SkeletonBlock(width: 260, height: 16)
-                                .shimmer()
-                            SkeletonBlock(width: 240, height: 16)
-                                .shimmer()
-                        }
-                        Text("Next time try")
-                            .font(.rrTitle)
-                            .foregroundStyle(.primary)
-                            .padding(.top, 12)
-                        SkeletonBlock(width: 220, height: 16)
-                            .shimmer()
-                    } else if let summary = aiPatientSummary {
-                        Text(summary)
-                            .font(.rrBody)
-                            .foregroundStyle(.primary)
-                        if let cue = aiNextTimeCue {
-                            Text("Next time try")
-                                .font(.rrTitle)
-                                .foregroundStyle(.primary)
-                                .padding(.top, 8)
-                            Text(cue)
-                                .font(.rrBody)
-                                .foregroundStyle(.primary)
-                        }
-                    } else {
-                        Text(computedScore.map { PatientLessonScore.whatItMeans(for: $0.score) } ?? "")
-                            .font(.rrBody)
-                            .foregroundStyle(.primary)
-                    }
-
                     Text("How we calculated it")
                         .font(.rrTitle)
                         .foregroundStyle(.primary)
-                        .padding(.top, 8)
                     Text(insights.map { PatientLessonScore.howCalculated(insights: $0) } ?? "")
                         .font(.rrBody)
                         .foregroundStyle(.primary)
@@ -296,17 +339,11 @@ struct CompletionView: View {
                 }
                 .padding(24)
             }
-            .navigationTitle("Current Patient Score")
+            .navigationTitle("Your Score")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { showScoreExplanation = false }
-                }
-            }
-            .onAppear {
-                if lessonId != nil, patientProfileId != nil, insights != nil,
-                   aiPatientSummary == nil, !isLoadingAISummary {
-                    Task { await loadAISummary() }
                 }
             }
         }
@@ -403,4 +440,34 @@ struct CompletionView: View {
         }
         await MainActor.run { isLoadingAISummary = false }
     }
+
+    private func cacheCompletionPage(lessonId: UUID) async {
+        let entry = await MainActor.run {
+            CompletionPageCache.Entry(
+                insights: insights,
+                rangeGained: rangeGained,
+                aiPatientSummary: aiPatientSummary,
+                aiNextTimeCue: aiNextTimeCue,
+                patientProfileId: patientProfileId,
+                lessonTitleForAnalytics: lessonTitleForAnalytics
+            )
+        }
+        await CompletionPageCache.shared.set(lessonId, entry)
+    }
+}
+
+// MARK: - Completion page cache (in-memory so returning to the screen shows data instantly)
+private actor CompletionPageCache {
+    struct Entry {
+        var insights: LessonSensorInsightsRow?
+        var rangeGained: Int?
+        var aiPatientSummary: String?
+        var aiNextTimeCue: String?
+        var patientProfileId: UUID?
+        var lessonTitleForAnalytics: String
+    }
+    static let shared = CompletionPageCache()
+    private var storage: [UUID: Entry] = [:]
+    func get(_ lessonId: UUID) -> Entry? { storage[lessonId] }
+    func set(_ lessonId: UUID, _ entry: Entry) { storage[lessonId] = entry }
 }

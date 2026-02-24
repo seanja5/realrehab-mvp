@@ -19,8 +19,9 @@ struct LessonAnalyticsView: View {
     @State private var isLoading = true
     @State private var loadError: String?
 
-    /// AI-generated PT summary (nil = hide card, no fallback)
+    /// AI-generated PT summary (nil until loaded; fallback: show skeleton)
     @State private var aiPtSummary: String? = nil
+    @State private var isLoadingAISummary = false
 
     private var totalDuration: Double {
         guard let i = insights else { return 180 }
@@ -47,7 +48,12 @@ struct LessonAnalyticsView: View {
             }
         }
         .swipeToGoBack()
-        .task { await loadInsights() }
+        .task {
+            await loadInsights()
+            isLoadingAISummary = true
+            await loadAISummary()
+            await MainActor.run { isLoadingAISummary = false }
+        }
     }
 
     private func contentView(insights: LessonSensorInsightsRow) -> some View {
@@ -86,13 +92,30 @@ struct LessonAnalyticsView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, RRSpace.section)
 
-                // AI summary card (only when available)
-                if let summary = aiPtSummary {
-                    VStack(alignment: .leading, spacing: RRSpace.stack) {
-                        Text("Summary")
-                            .font(.rrTitle)
-                            .foregroundStyle(.primary)
-                            .padding(.horizontal, 16)
+                // AI summary: show "Summary" + skeleton while loading, then content when loaded
+                VStack(alignment: .leading, spacing: RRSpace.stack) {
+                    Text("Summary")
+                        .font(.rrTitle)
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 16)
+                    if isLoadingAISummary {
+                        VStack(alignment: .leading, spacing: 8) {
+                            SkeletonBlock(width: 280, height: 16)
+                                .shimmer()
+                            SkeletonBlock(width: 260, height: 16)
+                                .shimmer()
+                            SkeletonBlock(width: 240, height: 16)
+                                .shimmer()
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                        )
+                        .padding(.horizontal, 16)
+                    } else if let summary = aiPtSummary {
                         Text(summary)
                             .font(.rrBody)
                             .foregroundStyle(.primary)
@@ -106,8 +129,8 @@ struct LessonAnalyticsView: View {
                             )
                             .padding(.horizontal, 16)
                     }
-                    .padding(.bottom, RRSpace.section)
                 }
+                .padding(.bottom, RRSpace.section)
 
                 // Section 1: Dynamic Valgus
                 analyticsSection(
@@ -353,7 +376,6 @@ struct LessonAnalyticsView: View {
             insights = nil
             restSec = nil
         }
-        await loadAISummary()
     }
 
     private func loadAISummary() async {

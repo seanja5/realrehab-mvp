@@ -151,16 +151,17 @@ struct CompletionView: View {
             }
             isLoadingAISummary = true
             await loadInsights()
-            await loadAISummary()
-            await loadRangeGained()
+            async let summaryTask: () = loadAISummary()
+            async let rangeTask: () = loadRangeGained()
             await notifyPTIfNeeded()
-            // Cache so next time we open this completion screen it shows instantly
+            _ = await summaryTask
+            _ = await rangeTask
             await cacheCompletionPage(lessonId: lid)
         }
-        .onChange(of: computedScore?.score) { _, newValue in
-            guard let targetScore = newValue, !hasAnimatedScore else { return }
+        .onChange(of: isScreenLoading) { _, nowLoaded in
+            guard nowLoaded == false, !hasAnimatedScore, let score = computedScore?.score else { return }
             hasAnimatedScore = true
-            let target = min(100, max(0, targetScore))
+            let target = min(100, max(0, score))
             displayedScore = target
             targetProgress = Double(target) / 100
             animationStartTime = Date()
@@ -266,9 +267,10 @@ struct CompletionView: View {
     }
 
     /// Summary block below metric cards (same style as PT analytics). Shows AI summary or fallback.
+    /// "Summary" title is skeleton while whole screen loads; once top content is loaded, show "Summary" text even while AI paragraph loads.
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: RRSpace.stack) {
-            if isLoadingAISummary {
+            if isScreenLoading {
                 SkeletonBlock(width: 100, height: 22)
                     .shimmer()
                     .padding(.horizontal, 8)

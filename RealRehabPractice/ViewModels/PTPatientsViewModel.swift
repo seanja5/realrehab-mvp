@@ -25,7 +25,7 @@ final class PTPatientsViewModel: ObservableObject {
         guard let ptProfileId = ptProfileId else {
             errorMessage = "PT profile not available"
             isLoading = false
-            print("❌ PTPatientsViewModel.load: ptProfileId is nil")
+            debugLog("❌ PTPatientsViewModel.load: ptProfileId is nil")
             return
         }
         
@@ -36,7 +36,7 @@ final class PTPatientsViewModel: ObservableObject {
             let (list, isStale) = try await PTService.listMyPatientsForDisplay(ptProfileId: ptProfileId)
             self.patients = list
             self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (isStale || forceRefresh)
-            print("✅ PTPatientsViewModel.load: loaded \(self.patients.count) patients for pt_profile_id=\(ptProfileId.uuidString)")
+            debugLog("✅ PTPatientsViewModel.load: loaded \(self.patients.count) patients for pt_profile_id=\(ptProfileId.uuidString)")
         } catch {
             if error is CancellationError || Task.isCancelled {
                 isLoading = false
@@ -44,7 +44,7 @@ final class PTPatientsViewModel: ObservableObject {
             }
             if patients.isEmpty {
                 errorMessage = error.localizedDescription
-                print("❌ PTPatientsViewModel.load error: \(error)")
+                debugLog("❌ PTPatientsViewModel.load error: \(error)")
             }
         }
         isLoading = false
@@ -87,7 +87,7 @@ final class PTPatientsViewModel: ObservableObject {
                 return
             }
             errorMessage = error.localizedDescription
-            print("❌ PTPatientsViewModel.addPatient error: \(error)")
+            debugLog("❌ PTPatientsViewModel.addPatient error: \(error)")
         }
         isLoading = false
     }
@@ -109,7 +109,7 @@ final class PTPatientsViewModel: ObservableObject {
                 return
             }
             errorMessage = error.localizedDescription
-            print("❌ PTPatientsViewModel.delete error: \(error)")
+            debugLog("❌ PTPatientsViewModel.delete error: \(error)")
         }
         isLoading = false
     }

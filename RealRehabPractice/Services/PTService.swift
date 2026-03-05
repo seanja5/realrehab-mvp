@@ -149,7 +149,7 @@ enum PTService {
         
         // Check cache first (disk persistence enabled)
         if let cached = await CacheService.shared.getCached(cacheKey, as: PTProfileRow.self, useDisk: true) {
-            print("✅ PTService.myPTProfile: cache hit")
+            debugLog("✅ PTService.myPTProfile: cache hit")
             return cached
         }
         
@@ -171,7 +171,7 @@ enum PTService {
         
         // Cache the result (disk persistence enabled)
         await CacheService.shared.setCached(pt, forKey: cacheKey, ttl: CacheService.TTL.profile, useDisk: true)
-        print("✅ PTService.myPTProfile: cached result")
+        debugLog("✅ PTService.myPTProfile: cached result")
         
         return pt
     }
@@ -179,7 +179,7 @@ enum PTService {
     /// Update PT notification preferences. Invalidates PT profile cache.
     @MainActor
     static func updateNotificationPreferences(ptProfileId: UUID, notifySessionComplete: Bool, notifyMissedDay: Bool, notifyMessages: Bool = true) async throws {
-        print("📤 PTService.updateNotificationPreferences: pt_profile_id=\(ptProfileId), notify_session_complete=\(notifySessionComplete), notify_missed_day=\(notifyMissedDay), notify_messages=\(notifyMessages)")
+        debugLog("📤 PTService.updateNotificationPreferences: pt_profile_id=\(ptProfileId), notify_session_complete=\(notifySessionComplete), notify_missed_day=\(notifyMissedDay), notify_messages=\(notifyMessages)")
         do {
             _ = try await client
                 .schema("accounts")
@@ -193,9 +193,9 @@ enum PTService {
                 .select("id")
                 .single()
                 .execute()
-            print("✅ PTService.updateNotificationPreferences: success")
+            debugLog("✅ PTService.updateNotificationPreferences: success")
         } catch {
-            print("❌ PTService.updateNotificationPreferences: \(error)")
+            debugLog("❌ PTService.updateNotificationPreferences: \(error)")
             throw error
         }
         if let profile = try? await AuthService.myProfile() {
@@ -271,7 +271,7 @@ enum PTService {
         dob: Date,
         gender: String
     ) async throws {
-        print("🔍 PTService.addPatient: calling RPC function with firstName=\(firstName), lastName=\(lastName), gender=\(gender), ptProfileId=\(ptProfileId)")
+        debugLog("🔍 PTService.addPatient: calling RPC function with firstName=\(firstName), lastName=\(lastName), gender=\(gender), ptProfileId=\(ptProfileId)")
         
         do {
             // Call RPC function to create patient profile AND pt_patient_map entry
@@ -311,16 +311,16 @@ enum PTService {
                 )
             }
             
-            print("✅ PTService.addPatient: successfully created patient_profile \(pid) and pt_patient_map entry via RPC")
+            debugLog("✅ PTService.addPatient: successfully created patient_profile \(pid) and pt_patient_map entry via RPC")
             
             // Invalidate patient list cache
             let cacheKey = CacheKey.patientList(ptProfileId: ptProfileId)
             await CacheService.shared.invalidate(cacheKey)
-            print("✅ PTService.addPatient: invalidated patient list cache")
+            debugLog("✅ PTService.addPatient: invalidated patient list cache")
         } catch {
-            print("❌ PTService.addPatient: RLS error or other failure: \(error)")
+            debugLog("❌ PTService.addPatient: RLS error or other failure: \(error)")
             if let postgrestError = error as? PostgrestError {
-                print("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
+                debugLog("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
             }
             throw error
         }
@@ -332,7 +332,7 @@ enum PTService {
         
         // Check cache first (disk persistence for offline/tab switching)
         if let cached = await CacheService.shared.getCached(cacheKey, as: [SimplePatient].self, useDisk: true) {
-            print("✅ PTService.listMyPatients: cache hit")
+            debugLog("✅ PTService.listMyPatients: cache hit")
             return cached
         }
         
@@ -372,16 +372,16 @@ enum PTService {
             .decoded()
         
         // Log phone numbers from patient_profiles
-        print("📱 PTService.listMyPatients: phone numbers from patient_profiles:")
+        debugLog("📱 PTService.listMyPatients: phone numbers from patient_profiles:")
         for patient in patients {
-            print("   - Patient \(patient.id): phone=\(patient.phone ?? "NULL")")
+            debugLog("   - Patient \(patient.id): phone=\(patient.phone ?? "NULL")")
         }
         
         // Fetch emails and phones for those with a profile_id
         var emailByProfile: [UUID: String] = [:]
         var phoneByProfile: [UUID: String] = [:]
         let profileIds = patients.compactMap { $0.profile_id?.uuidString }
-        print("🔍 PTService.listMyPatients: fetching emails/phones for \(profileIds.count) profile IDs: \(profileIds)")
+        debugLog("🔍 PTService.listMyPatients: fetching emails/phones for \(profileIds.count) profile IDs: \(profileIds)")
         
         if !profileIds.isEmpty {
             struct PRow: Decodable {
@@ -396,24 +396,24 @@ enum PTService {
                 .in("id", values: profileIds)
                 .decoded()
             
-            print("📧 PTService.listMyPatients: fetched \(baseProfiles.count) profiles from accounts.profiles")
+            debugLog("📧 PTService.listMyPatients: fetched \(baseProfiles.count) profiles from accounts.profiles")
             
             // Build email map - handle citext by converting to String explicitly
             emailByProfile = Dictionary(uniqueKeysWithValues: baseProfiles.compactMap { profile in
                 guard let email = profile.email, !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
                 let emailString = String(describing: email).trimmingCharacters(in: .whitespacesAndNewlines)
-                print("✅ PTService.listMyPatients: found email '\(emailString)' for profile \(profile.id)")
+                debugLog("✅ PTService.listMyPatients: found email '\(emailString)' for profile \(profile.id)")
                 return (profile.id, emailString)
             })
             
             // Build phone map
             phoneByProfile = Dictionary(uniqueKeysWithValues: baseProfiles.compactMap { profile in
                 guard let phone = profile.phone, !phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-                print("✅ PTService.listMyPatients: found phone '\(phone)' for profile \(profile.id)")
+                debugLog("✅ PTService.listMyPatients: found phone '\(phone)' for profile \(profile.id)")
                 return (profile.id, phone)
             })
             
-            print("📊 PTService.listMyPatients: built email map with \(emailByProfile.count) entries, phone map with \(phoneByProfile.count) entries")
+            debugLog("📊 PTService.listMyPatients: built email map with \(emailByProfile.count) entries, phone map with \(phoneByProfile.count) entries")
         }
         
         let result = patients.map { patient in
@@ -426,12 +426,12 @@ enum PTService {
             let emailValue = patient.profile_id.flatMap { profileId in emailByProfile[profileId] }
             
             if let profileId = patient.profile_id {
-                print("🔍 PTService.listMyPatients: patient \(patient.id) has profile_id \(profileId)")
-                print("   📧 Email: patient_profiles=\(emailValue ?? "nil"), profiles=\(emailValue ?? "nil")")
-                print("   📱 Phone: patient_profiles=\(phoneFromPatientProfiles ?? "NULL"), profiles=\(phoneFromProfiles ?? "NULL"), final=\(phoneValue ?? "nil")")
+                debugLog("🔍 PTService.listMyPatients: patient \(patient.id) has profile_id \(profileId)")
+                debugLog("   📧 Email: patient_profiles=\(emailValue ?? "nil"), profiles=\(emailValue ?? "nil")")
+                debugLog("   📱 Phone: patient_profiles=\(phoneFromPatientProfiles ?? "NULL"), profiles=\(phoneFromProfiles ?? "NULL"), final=\(phoneValue ?? "nil")")
             } else {
-                print("⚠️ PTService.listMyPatients: patient \(patient.id) has no profile_id (unlinked)")
-                print("   📱 Phone: patient_profiles=\(phoneFromPatientProfiles ?? "NULL"), final=\(phoneValue ?? "nil")")
+                debugLog("⚠️ PTService.listMyPatients: patient \(patient.id) has no profile_id (unlinked)")
+                debugLog("   📱 Phone: patient_profiles=\(phoneFromPatientProfiles ?? "NULL"), final=\(phoneValue ?? "nil")")
             }
             
             return SimplePatient(
@@ -451,7 +451,7 @@ enum PTService {
         
         // Cache the result (disk persistence for offline/tab switching)
         await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.patientList, useDisk: true)
-        print("✅ PTService.listMyPatients: cached \(result.count) patients")
+        debugLog("✅ PTService.listMyPatients: cached \(result.count) patients")
         
         return result
     }
@@ -480,7 +480,7 @@ enum PTService {
         
         // Check cache first (disk persistence for offline/tab switching)
         if let cached = await CacheService.shared.getCached(cacheKey, as: SimplePatient.self, useDisk: true) {
-            print("✅ PTService.getPatient: cache hit")
+            debugLog("✅ PTService.getPatient: cache hit")
             return cached
         }
         
@@ -563,7 +563,7 @@ enum PTService {
         
         // Cache the result (disk persistence for offline/tab switching)
         await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.patientDetail, useDisk: true)
-        print("✅ PTService.getPatient: cached result")
+        debugLog("✅ PTService.getPatient: cached result")
         
         return result
     }
@@ -600,9 +600,9 @@ enum PTService {
                 .rpc("delete_pt_patient_mapping", params: params)
                 .execute()
             
-            print("✅ PTService.deletePatientMapping: RPC function succeeded")
+            debugLog("✅ PTService.deletePatientMapping: RPC function succeeded")
         } catch {
-            print("⚠️ PTService.deletePatientMapping: RPC failed, trying direct delete: \(error)")
+            debugLog("⚠️ PTService.deletePatientMapping: RPC failed, trying direct delete: \(error)")
             // Fall back to direct delete if RPC doesn't exist
             _ = try await client
                 .schema("accounts")
@@ -618,7 +618,7 @@ enum PTService {
         let detailCacheKey = CacheKey.patientDetail(patientProfileId: patientProfileId)
         await CacheService.shared.invalidate(listCacheKey)
         await CacheService.shared.invalidate(detailCacheKey)
-        print("✅ PTService.deletePatientMapping: invalidated patient list and detail caches")
+        debugLog("✅ PTService.deletePatientMapping: invalidated patient list and detail caches")
     }
     
     // MARK: - Update PT Profile
@@ -676,10 +676,10 @@ enum PTService {
         if let profile = try? await AuthService.myProfile() {
             let cacheKey = CacheKey.ptProfile(profileId: profile.id)
             await CacheService.shared.invalidate(cacheKey)
-            print("✅ PTService.updatePTProfile: invalidated PT profile cache")
+            debugLog("✅ PTService.updatePTProfile: invalidated PT profile cache")
         }
         
-        print("✅ PTService.updatePTProfile: successfully updated profile")
+        debugLog("✅ PTService.updatePTProfile: successfully updated profile")
     }
 }
 

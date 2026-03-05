@@ -432,7 +432,7 @@ struct PatientDetailView: View {
     private func loadPatientData(patientProfileId: UUID, forceRefresh: Bool = false) async {
         guard let ptProfileId = session.ptProfileId else {
             errorMessage = "PT profile not available"
-            print("❌ PatientDetailView.loadPatientData: ptProfileId is nil")
+            debugLog("❌ PatientDetailView.loadPatientData: ptProfileId is nil")
             return
         }
         
@@ -450,7 +450,7 @@ struct PatientDetailView: View {
                 return
             }
             if patient == nil && currentPlan == nil {
-                print("❌ PatientDetailView.loadPatientData error: \(error)")
+                debugLog("❌ PatientDetailView.loadPatientData error: \(error)")
                 errorMessage = error.localizedDescription
             }
         }
@@ -459,7 +459,7 @@ struct PatientDetailView: View {
     
     private func saveNotes() async {
         guard let ptProfileId = session.ptProfileId else {
-            print("❌ PatientDetailView.saveNotes: ptProfileId is nil")
+            debugLog("❌ PatientDetailView.saveNotes: ptProfileId is nil")
             return
         }
         
@@ -469,13 +469,13 @@ struct PatientDetailView: View {
                 patientProfileId: patientProfileId,
                 notes: notes.isEmpty ? nil : notes
             )
-            print("✅ PatientDetailView: saved notes")
+            debugLog("✅ PatientDetailView: saved notes")
         } catch {
             // Ignore cancellation errors when navigating quickly
             if error is CancellationError || Task.isCancelled {
                 return
             }
-            print("❌ PatientDetailView.saveNotes error: \(error)")
+            debugLog("❌ PatientDetailView.saveNotes error: \(error)")
             errorMessage = "Failed to save notes: \(error.localizedDescription)"
         }
     }

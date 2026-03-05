@@ -52,7 +52,7 @@ struct TestCalibrationView: View {
                         SecondaryButton(title: startSet ? "Starting Position ✓" : "Set Starting Position") {
                             startingPositionValue = testStartingValue
                             startSet = true
-                            print("✅ TestCalibrationView: Set Starting Position button clicked - Test value: \(testStartingValue)")
+                            debugLog("✅ TestCalibrationView: Set Starting Position button clicked - Test value: \(testStartingValue)")
                             
                             // Save to database
                             Task {
@@ -76,7 +76,7 @@ struct TestCalibrationView: View {
                         SecondaryButton(title: maxSet ? "Maximum Position ✓" : "Set Maximum Position") {
                             maximumPositionValue = testMaximumValue
                             maxSet = true
-                            print("✅ TestCalibrationView: Set Maximum Position button clicked - Test value: \(testMaximumValue)")
+                            debugLog("✅ TestCalibrationView: Set Maximum Position button clicked - Test value: \(testMaximumValue)")
                             
                             // Save to database
                             Task {
@@ -173,7 +173,7 @@ struct TestCalibrationView: View {
                 } else {
                     isSavingMaximum = false
                 }
-                print("✅ TestCalibrationView: Successfully saved \(stage) calibration with flex_value: \(flexValue)")
+                debugLog("✅ TestCalibrationView: Successfully saved \(stage) calibration with flex_value: \(flexValue)")
             }
         } catch {
             await MainActor.run {
@@ -183,7 +183,7 @@ struct TestCalibrationView: View {
                     isSavingMaximum = false
                 }
                 errorMessage = "Failed to save calibration: \(error.localizedDescription)"
-                print("❌ TestCalibrationView: Failed to save \(stage) calibration: \(error)")
+                debugLog("❌ TestCalibrationView: Failed to save \(stage) calibration: \(error)")
             }
         }
     }

@@ -31,10 +31,10 @@ final class PatientDashboardViewModel: ObservableObject {
       let fetchedLessons = try await RehabService.lessons(for: assignment.program_id)
       self.lessons = fetchedLessons
 
-      print("PatientDashboardViewModel: loaded \(fetchedLessons.count) lessons")
+      debugLog("PatientDashboardViewModel: loaded \(fetchedLessons.count) lessons")
     } catch {
       self.errorMessage = error.localizedDescription
-      print("PatientDashboardViewModel error: \(error)")
+      debugLog("PatientDashboardViewModel error: \(error)")
     }
 
     self.isLoading = false

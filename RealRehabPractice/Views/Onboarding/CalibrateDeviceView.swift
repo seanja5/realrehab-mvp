@@ -110,14 +110,14 @@ struct CalibrateDeviceView: View {
                                 let degrees = convertToDegrees(currentValue)
                                 startingPositionValue = degrees
                                 startSet = true
-                                print("✅ CalibrateDeviceView: Set Starting Position button clicked - Saved flex sensor value: \(currentValue) → \(degrees) degrees")
+                                debugLog("✅ CalibrateDeviceView: Set Starting Position button clicked - Saved flex sensor value: \(currentValue) → \(degrees) degrees")
                                 
                                 // Save to database (save degrees, not raw value)
                                 Task {
                                     await saveCalibration(stage: "starting_position", flexValue: degrees)
                                 }
                             } else {
-                                print("⚠️ CalibrateDeviceView: Set Starting Position button clicked - No flex sensor value available")
+                                debugLog("⚠️ CalibrateDeviceView: Set Starting Position button clicked - No flex sensor value available")
                                 errorMessage = "No flex sensor value available. Please ensure your device is connected."
                             }
                         }
@@ -140,14 +140,14 @@ struct CalibrateDeviceView: View {
                                 let degrees = convertToDegrees(currentValue)
                                 maximumPositionValue = degrees
                                 maxSet = true
-                                print("✅ CalibrateDeviceView: Set Maximum Position button clicked - Saved flex sensor value: \(currentValue) → \(degrees) degrees")
+                                debugLog("✅ CalibrateDeviceView: Set Maximum Position button clicked - Saved flex sensor value: \(currentValue) → \(degrees) degrees")
                                 
                                 // Save to database (save degrees, not raw value)
                                 Task {
                                     await saveCalibration(stage: "maximum_position", flexValue: degrees)
                                 }
                             } else {
-                                print("⚠️ CalibrateDeviceView: Set Maximum Position button clicked - No flex sensor value available")
+                                debugLog("⚠️ CalibrateDeviceView: Set Maximum Position button clicked - No flex sensor value available")
                                 errorMessage = "No flex sensor value available. Please ensure your device is connected."
                             }
                         }
@@ -207,23 +207,23 @@ struct CalibrateDeviceView: View {
             }
         }
         .onAppear {
-            print("📱 CalibrateDeviceView: View appeared")
+            debugLog("📱 CalibrateDeviceView: View appeared")
             if let peripheral = ble.connectedPeripheral {
-                print("✅ CalibrateDeviceView: Device is connected: \(peripheral.name ?? "Unknown")")
+                debugLog("✅ CalibrateDeviceView: Device is connected: \(peripheral.name ?? "Unknown")")
             } else {
-                print("⚠️ CalibrateDeviceView: No device connected")
+                debugLog("⚠️ CalibrateDeviceView: No device connected")
             }
             if let flexValue = ble.currentFlexSensorValue {
                 let degrees = convertToDegrees(flexValue)
-                print("📊 CalibrateDeviceView: Current flex sensor value: \(flexValue) → \(degrees)°")
+                debugLog("📊 CalibrateDeviceView: Current flex sensor value: \(flexValue) → \(degrees)°")
             } else {
-                print("⚠️ CalibrateDeviceView: No flex sensor value available yet")
+                debugLog("⚠️ CalibrateDeviceView: No flex sensor value available yet")
             }
         }
         .onChange(of: ble.currentFlexSensorValue) { oldValue, newValue in
             if let value = newValue {
                 let degrees = convertToDegrees(value)
-                print("📊 CalibrateDeviceView: Flex sensor value updated: \(value) → \(degrees)°")
+                debugLog("📊 CalibrateDeviceView: Flex sensor value updated: \(value) → \(degrees)°")
             }
         }
         .alert("Error", isPresented: .constant(errorMessage != nil)) {
@@ -272,7 +272,7 @@ struct CalibrateDeviceView: View {
                 } else {
                     isSavingMaximum = false
                 }
-                print("✅ CalibrateDeviceView: Successfully saved \(stage) calibration with flex_value: \(flexValue)")
+                debugLog("✅ CalibrateDeviceView: Successfully saved \(stage) calibration with flex_value: \(flexValue)")
             }
         } catch {
             await MainActor.run {
@@ -282,7 +282,7 @@ struct CalibrateDeviceView: View {
                     isSavingMaximum = false
                 }
                 errorMessage = "Failed to save calibration: \(error.localizedDescription)"
-                print("❌ CalibrateDeviceView: Failed to save \(stage) calibration: \(error)")
+                debugLog("❌ CalibrateDeviceView: Failed to save \(stage) calibration: \(error)")
             }
         }
     }

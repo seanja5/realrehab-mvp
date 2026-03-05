@@ -52,7 +52,7 @@ final class BluetoothManager: NSObject, ObservableObject {
         targetPrefix = targetNamePrefix
         guard central.state == .poweredOn else {
             lastError = "Bluetooth not powered on"
-            print("❌ BluetoothManager: Cannot start scan - Bluetooth not powered on")
+            debugLog("❌ BluetoothManager: Cannot start scan - Bluetooth not powered on")
             return
         }
 
@@ -60,7 +60,7 @@ final class BluetoothManager: NSObject, ObservableObject {
         peripherals.removeAll()
         
         let prefix = targetNamePrefix ?? "all devices"
-        print("🔍 BluetoothManager: Starting scan for devices with prefix '\(prefix)'")
+        debugLog("🔍 BluetoothManager: Starting scan for devices with prefix '\(prefix)'")
 
         central.scanForPeripherals(
             withServices: nil,
@@ -72,20 +72,20 @@ final class BluetoothManager: NSObject, ObservableObject {
     func stopScan() {
         central.stopScan()
         isScanning = false
-        print("🛑 BluetoothManager: Stopped scanning")
+        debugLog("🛑 BluetoothManager: Stopped scanning")
     }
 
     func connect(_ dp: DiscoveredPeripheral) {
-        print("🔵 BluetoothManager: Attempting to connect to '\(dp.name)' (UUID: \(dp.id))")
+        debugLog("🔵 BluetoothManager: Attempting to connect to '\(dp.name)' (UUID: \(dp.id))")
         central.connect(dp.peripheral, options: nil)
     }
     
     func disconnect() {
         guard let peripheral = connectedPeripheral else {
-            print("⚠️ BluetoothManager: No device connected to disconnect")
+            debugLog("⚠️ BluetoothManager: No device connected to disconnect")
             return
         }
-        print("🔵 BluetoothManager: Disconnecting from '\(peripheral.name ?? "Unknown Device")'")
+        debugLog("🔵 BluetoothManager: Disconnecting from '\(peripheral.name ?? "Unknown Device")'")
         central.cancelPeripheralConnection(peripheral)
         // The didDisconnectPeripheral delegate method will handle cleanup
     }
@@ -93,7 +93,7 @@ final class BluetoothManager: NSObject, ObservableObject {
     func zeroIMUValue() {
         // Only zero once - if already zeroed, don't do it again
         guard !isIMUZeroed else {
-            print("📊 BluetoothManager: IMU already zeroed, skipping")
+            debugLog("📊 BluetoothManager: IMU already zeroed, skipping")
             return
         }
         
@@ -103,12 +103,12 @@ final class BluetoothManager: NSObject, ObservableObject {
             isIMUZeroed = true
             // Update current IMU value to be zero (or close to zero)
             currentIMUValue = rawValue - imuZeroOffset
-            print("📊 BluetoothManager: Zeroing IMU value ONCE. Raw value: \(rawValue), offset set to: \(imuZeroOffset), zeroed value: \(currentIMUValue ?? 0)")
+            debugLog("📊 BluetoothManager: Zeroing IMU value ONCE. Raw value: \(rawValue), offset set to: \(imuZeroOffset), zeroed value: \(currentIMUValue ?? 0)")
         } else {
             imuZeroOffset = 0.0
             currentIMUValue = 0.0
             isIMUZeroed = true
-            print("📊 BluetoothManager: Zeroing IMU value ONCE. No current value, offset set to 0")
+            debugLog("📊 BluetoothManager: Zeroing IMU value ONCE. No current value, offset set to 0")
         }
     }
     
@@ -134,12 +134,12 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         case .poweredOn: stateString = "Powered On"
         @unknown default: stateString = "Unknown"
         }
-        print("📡 BluetoothManager: State changed to \(stateString)")
+        debugLog("📡 BluetoothManager: State changed to \(stateString)")
         if central.state != .poweredOn {
             isScanning = false
             if connectedPeripheral != nil {
                 connectedPeripheral = nil
-                print("📱 Bluetooth Status: NOT connected to RealRehab device (Bluetooth powered off)")
+                debugLog("📱 Bluetooth Status: NOT connected to RealRehab device (Bluetooth powered off)")
             }
         }
     }
@@ -169,7 +169,7 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         if known[dp.id] == nil {
             known[dp.id] = dp
             peripherals = Array(known.values)
-            print("📡 BluetoothManager: Discovered device '\(dp.name)' (RSSI: \(dp.rssi), UUID: \(dp.id))")
+            debugLog("📡 BluetoothManager: Discovered device '\(dp.name)' (RSSI: \(dp.rssi), UUID: \(dp.id))")
         }
     }
 
@@ -177,11 +177,11 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         peripheral.delegate = self
         connectedPeripheral = peripheral
         let deviceName = peripheral.name ?? "Unknown Device"
-        print("✅ BluetoothManager: CONNECTED to '\(deviceName)' (UUID: \(peripheral.identifier))")
-        print("📱 Bluetooth Status: Connected to RealRehab device")
+        debugLog("✅ BluetoothManager: CONNECTED to '\(deviceName)' (UUID: \(peripheral.identifier))")
+        debugLog("📱 Bluetooth Status: Connected to RealRehab device")
         
         // Discover services after connection
-        print("🔍 BluetoothManager: Discovering services...")
+        debugLog("🔍 BluetoothManager: Discovering services...")
         peripheral.discoverServices(nil) // Discover all services to find the flex sensor service
     }
 
@@ -193,9 +193,9 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         connectedPeripheral = nil
         let deviceName = peripheral.name ?? "Unknown Device"
         let errorMsg = error?.localizedDescription ?? "Unknown error"
-        print("❌ BluetoothManager: FAILED to connect to '\(deviceName)' (UUID: \(peripheral.identifier))")
-        print("❌ Error: \(errorMsg)")
-        print("📱 Bluetooth Status: NOT connected to RealRehab device")
+        debugLog("❌ BluetoothManager: FAILED to connect to '\(deviceName)' (UUID: \(peripheral.identifier))")
+        debugLog("❌ Error: \(errorMsg)")
+        debugLog("📱 Bluetooth Status: NOT connected to RealRehab device")
         lastError = error?.localizedDescription
     }
 
@@ -207,12 +207,12 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         if connectedPeripheral?.identifier == peripheral.identifier {
             connectedPeripheral = nil
             let deviceName = peripheral.name ?? "Unknown Device"
-            print("⚠️ BluetoothManager: DISCONNECTED from '\(deviceName)' (UUID: \(peripheral.identifier))")
-            print("📱 Bluetooth Status: NOT connected to RealRehab device")
+            debugLog("⚠️ BluetoothManager: DISCONNECTED from '\(deviceName)' (UUID: \(peripheral.identifier))")
+            debugLog("📱 Bluetooth Status: NOT connected to RealRehab device")
             stopReadingFlexSensor()
         }
         if let error {
-            print("❌ Disconnect error: \(error.localizedDescription)")
+            debugLog("❌ Disconnect error: \(error.localizedDescription)")
             lastError = error.localizedDescription
         }
     }
@@ -221,42 +221,42 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         if let error {
-            print("❌ BluetoothManager: Error discovering services: \(error.localizedDescription)")
+            debugLog("❌ BluetoothManager: Error discovering services: \(error.localizedDescription)")
             return
         }
         
         guard let services = peripheral.services else {
-            print("⚠️ BluetoothManager: No services found")
+            debugLog("⚠️ BluetoothManager: No services found")
             return
         }
         
-        print("✅ BluetoothManager: Discovered \(services.count) service(s)")
+        debugLog("✅ BluetoothManager: Discovered \(services.count) service(s)")
         
         for service in services {
-            print("📡 BluetoothManager: Service UUID: \(service.uuid)")
+            debugLog("📡 BluetoothManager: Service UUID: \(service.uuid)")
             // Discover characteristics for all services (we'll find the flex sensor one)
-            print("🔍 BluetoothManager: Discovering characteristics for service \(service.uuid)...")
+            debugLog("🔍 BluetoothManager: Discovering characteristics for service \(service.uuid)...")
             peripheral.discoverCharacteristics(nil, for: service) // Discover all characteristics
         }
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         if let error {
-            print("❌ BluetoothManager: Error discovering characteristics: \(error.localizedDescription)")
+            debugLog("❌ BluetoothManager: Error discovering characteristics: \(error.localizedDescription)")
             return
         }
         
         guard let characteristics = service.characteristics else {
-            print("⚠️ BluetoothManager: No characteristics found for service \(service.uuid)")
+            debugLog("⚠️ BluetoothManager: No characteristics found for service \(service.uuid)")
             return
         }
         
-        print("✅ BluetoothManager: Discovered \(characteristics.count) characteristic(s) for service \(service.uuid)")
+        debugLog("✅ BluetoothManager: Discovered \(characteristics.count) characteristic(s) for service \(service.uuid)")
         
         // Look for both flex sensor and IMU characteristics
         for characteristic in characteristics {
-            print("📡 BluetoothManager: Characteristic UUID: \(characteristic.uuid)")
-            print("   Properties: \(characteristic.properties.rawValue)")
+            debugLog("📡 BluetoothManager: Characteristic UUID: \(characteristic.uuid)")
+            debugLog("   Properties: \(characteristic.properties.rawValue)")
             
             // Check if this is the flex sensor characteristic (2A56)
             if characteristic.uuid == flexSensorCharacteristicUUID && flexSensorCharacteristic == nil {
@@ -265,10 +265,10 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
                     
                     // Try to subscribe to notifications first (preferred for continuous data)
                     if characteristic.properties.contains(.notify) {
-                        print("🔔 BluetoothManager: Subscribing to notifications for flex sensor data...")
+                        debugLog("🔔 BluetoothManager: Subscribing to notifications for flex sensor data...")
                         peripheral.setNotifyValue(true, for: characteristic)
                     } else if characteristic.properties.contains(.read) {
-                        print("📖 BluetoothManager: Characteristic supports read, starting periodic reads...")
+                        debugLog("📖 BluetoothManager: Characteristic supports read, starting periodic reads...")
                         startReadingFlexSensor(peripheral: peripheral, characteristic: characteristic)
                     }
                 }
@@ -281,10 +281,10 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
                     
                     // Try to subscribe to notifications first (preferred for continuous data)
                     if characteristic.properties.contains(.notify) {
-                        print("🔔 BluetoothManager: Subscribing to notifications for IMU data...")
+                        debugLog("🔔 BluetoothManager: Subscribing to notifications for IMU data...")
                         peripheral.setNotifyValue(true, for: characteristic)
                     } else if characteristic.properties.contains(.read) {
-                        print("📖 BluetoothManager: IMU characteristic supports read, starting periodic reads...")
+                        debugLog("📖 BluetoothManager: IMU characteristic supports read, starting periodic reads...")
                         startReadingIMU(peripheral: peripheral, characteristic: characteristic)
                     }
                 }
@@ -294,12 +294,12 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         if let error {
-            print("❌ BluetoothManager: Error reading characteristic value: \(error.localizedDescription)")
+            debugLog("❌ BluetoothManager: Error reading characteristic value: \(error.localizedDescription)")
             return
         }
         
         guard let data = characteristic.value else {
-            print("⚠️ BluetoothManager: No data received")
+            debugLog("⚠️ BluetoothManager: No data received")
             return
         }
         
@@ -309,9 +309,9 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
             if let flexValue = parseFlexSensorData(data) {
                 currentFlexSensorValue = flexValue
                 // Reduced logging for performance - only log occasionally
-                // print("📊 BluetoothManager: Flex sensor value read: \(flexValue)")
+                // debugLog("📊 BluetoothManager: Flex sensor value read: \(flexValue)")
             } else {
-                print("⚠️ BluetoothManager: Failed to parse flex sensor data. Raw data: \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
+                debugLog("⚠️ BluetoothManager: Failed to parse flex sensor data. Raw data: \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
             }
         }
         // Check if this is the IMU characteristic
@@ -331,27 +331,27 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
                     currentIMUValue = imuValue
                 }
                 // Reduced logging for performance - only log occasionally
-                // print("📊 BluetoothManager: IMU raw: \(imuValue), zeroed: \(currentIMUValue ?? 0)")
+                // debugLog("📊 BluetoothManager: IMU raw: \(imuValue), zeroed: \(currentIMUValue ?? 0)")
             } else {
-                print("⚠️ BluetoothManager: Failed to parse IMU data. Raw data: \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
+                debugLog("⚠️ BluetoothManager: Failed to parse IMU data. Raw data: \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
             }
         }
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         if let error {
-            print("❌ BluetoothManager: Error updating notification state: \(error.localizedDescription)")
+            debugLog("❌ BluetoothManager: Error updating notification state: \(error.localizedDescription)")
             return
         }
         
         if characteristic.isNotifying {
             if characteristic.uuid == flexSensorCharacteristicUUID {
-                print("✅ BluetoothManager: Successfully subscribed to notifications for flex sensor")
+                debugLog("✅ BluetoothManager: Successfully subscribed to notifications for flex sensor")
             } else if characteristic.uuid == imuCharacteristicUUID {
-                print("✅ BluetoothManager: Successfully subscribed to notifications for IMU")
+                debugLog("✅ BluetoothManager: Successfully subscribed to notifications for IMU")
             }
         } else {
-            print("⚠️ BluetoothManager: Notifications disabled for characteristic")
+            debugLog("⚠️ BluetoothManager: Notifications disabled for characteristic")
         }
     }
     
@@ -411,7 +411,7 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
     private func parseIMUData(_ data: Data) -> Float? {
         // IMU sends float (4 bytes)
         guard data.count >= 4 else {
-            print("⚠️ BluetoothManager: IMU data too short: \(data.count) bytes")
+            debugLog("⚠️ BluetoothManager: IMU data too short: \(data.count) bytes")
             return nil
         }
         
@@ -433,7 +433,7 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         
         // Validate the float value
         if floatValue.isNaN || floatValue.isInfinite {
-            print("⚠️ BluetoothManager: Invalid IMU float value (NaN or Infinite)")
+            debugLog("⚠️ BluetoothManager: Invalid IMU float value (NaN or Infinite)")
             return nil
         }
         

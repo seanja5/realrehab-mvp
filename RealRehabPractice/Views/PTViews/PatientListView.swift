@@ -74,7 +74,7 @@ struct PatientListView: View {
                                     patientProfileId: patient.patient_profile_id,
                                     isLinked: patient.profile_id != nil,
                                     onTap: {
-                                        print("📋 Opening patient \(patient.patient_profile_id.uuidString) with pt_profile_id=\(session.ptProfileId?.uuidString ?? "nil")")
+                                        debugLog("📋 Opening patient \(patient.patient_profile_id.uuidString) with pt_profile_id=\(session.ptProfileId?.uuidString ?? "nil")")
                                         router.go(.ptPatientDetail(patientProfileId: patient.patient_profile_id))
                                     },
                                     onInvite: {

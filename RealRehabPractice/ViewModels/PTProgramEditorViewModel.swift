@@ -17,10 +17,10 @@ final class PTProgramEditorViewModel: ObservableObject {
     do {
       let fetchedLessons = try await RehabService.lessons(for: programId)
       self.lessons = fetchedLessons
-      print("PTProgramEditorViewModel: fetched \(fetchedLessons.count) lessons for program \(programId)")
+      debugLog("PTProgramEditorViewModel: fetched \(fetchedLessons.count) lessons for program \(programId)")
     } catch {
       self.errorMessage = error.localizedDescription
-      print("PTProgramEditorViewModel load error: \(error)")
+      debugLog("PTProgramEditorViewModel load error: \(error)")
     }
 
     self.isLoading = false
@@ -29,14 +29,14 @@ final class PTProgramEditorViewModel: ObservableObject {
   func updateParams(lessonId: UUID, params: [String: Any]) async {
     await performSave {
       try await RehabService.updateLessonParams(lessonId: lessonId, params: params)
-      print("PTProgramEditorViewModel: updated params for \(lessonId)")
+      debugLog("PTProgramEditorViewModel: updated params for \(lessonId)")
     }
   }
 
   func move(lessonId: UUID, to newIndex: Int) async {
     await performSave {
       try await RehabService.updateLessonOrder(lessonId: lessonId, newOrderIndex: newIndex)
-      print("PTProgramEditorViewModel: moved \(lessonId) to \(newIndex)")
+      debugLog("PTProgramEditorViewModel: moved \(lessonId) to \(newIndex)")
     }
   }
 
@@ -51,7 +51,7 @@ final class PTProgramEditorViewModel: ObservableObject {
       try await operation()
     } catch {
       self.errorMessage = error.localizedDescription
-      print("PTProgramEditorViewModel save error: \(error)")
+      debugLog("PTProgramEditorViewModel save error: \(error)")
     }
 
     self.isSaving = false

@@ -338,7 +338,7 @@ struct PatientSettingsView: View {
                 return
             }
             if patientProfile == nil {
-                print("❌ PatientSettingsView.loadProfile error: \(error)")
+                debugLog("❌ PatientSettingsView.loadProfile error: \(error)")
                 errorMessage = error.localizedDescription
             }
         }
@@ -364,7 +364,7 @@ struct PatientSettingsView: View {
             if error is CancellationError || Task.isCancelled {
                 return
             }
-            print("❌ PatientSettingsView.checkIfHasPT error: \(error)")
+            debugLog("❌ PatientSettingsView.checkIfHasPT error: \(error)")
             hasPT = false
         }
     }
@@ -435,14 +435,14 @@ struct PatientSettingsView: View {
             accessCode = ""
             hasPT = true
             
-            print("✅ PatientSettingsView: Successfully connected patient to PT")
+            debugLog("✅ PatientSettingsView: Successfully connected patient to PT")
         } catch {
             // Ignore cancellation errors when navigating quickly
             if error is CancellationError || Task.isCancelled {
                 isPairing = false
                 return
             }
-            print("❌ PatientSettingsView.connectWithPT error: \(error)")
+            debugLog("❌ PatientSettingsView.connectWithPT error: \(error)")
             errorMessage = "Failed to connect: \(error.localizedDescription)"
         }
         

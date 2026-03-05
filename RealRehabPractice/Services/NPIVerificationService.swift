@@ -57,7 +57,7 @@ enum NPIVerificationService {
             
             return namesMatch ? .verified : .notVerified
         } catch {
-            print("⚠️ NPIVerificationService: \(error)")
+            debugLog("⚠️ NPIVerificationService: \(error)")
             return .error
         }
     }

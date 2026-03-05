@@ -16,10 +16,10 @@ final class LessonSessionViewModel: ObservableObject {
       let sessionId = try await TelemetryService.startSession(programId: programId, exerciseId: exerciseId)
       self.currentSessionId = sessionId
       self.isRecording = true
-      print("LessonSessionViewModel: started session \(sessionId)")
+      debugLog("LessonSessionViewModel: started session \(sessionId)")
     } catch {
       self.errorMessage = error.localizedDescription
-      print("LessonSessionViewModel start error: \(error)")
+      debugLog("LessonSessionViewModel start error: \(error)")
     }
   }
 
@@ -41,7 +41,7 @@ final class LessonSessionViewModel: ObservableObject {
       )
     } catch {
       self.errorMessage = error.localizedDescription
-      print("LessonSessionViewModel record error: \(error)")
+      debugLog("LessonSessionViewModel record error: \(error)")
     }
   }
 
@@ -49,12 +49,12 @@ final class LessonSessionViewModel: ObservableObject {
     guard let sessionId = self.currentSessionId else { return }
     do {
       try await TelemetryService.endSession(sessionId: sessionId)
-      print("LessonSessionViewModel: ended session \(sessionId)")
+      debugLog("LessonSessionViewModel: ended session \(sessionId)")
       self.currentSessionId = nil
       self.isRecording = false
     } catch {
       self.errorMessage = error.localizedDescription
-      print("LessonSessionViewModel end error: \(error)")
+      debugLog("LessonSessionViewModel end error: \(error)")
     }
   }
 }

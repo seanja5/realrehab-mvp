@@ -29,7 +29,7 @@ final class SupabaseService {
 
         client = SupabaseClient(supabaseURL: supabaseURL, supabaseKey: key)
         baseURL = supabaseURL
-        print("✅ Supabase initialized")
+        debugLog("✅ Supabase initialized")
     }
 }
 

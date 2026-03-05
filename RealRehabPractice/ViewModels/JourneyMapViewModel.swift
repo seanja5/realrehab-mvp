@@ -73,7 +73,7 @@ public final class JourneyMapViewModel: ObservableObject {
             } else {
                 patientProfileId = try await PatientService.myPatientProfileId(profileId: profile.id)
             }
-            print("🔍 JourneyMapViewModel: patient_profile_id=\(patientProfileId.uuidString)")
+            debugLog("🔍 JourneyMapViewModel: patient_profile_id=\(patientProfileId.uuidString)")
             
             if forceRefresh {
                 await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
@@ -88,17 +88,17 @@ public final class JourneyMapViewModel: ObservableObject {
                 ptProfileId = try await PatientService.getPTProfileId(patientProfileId: patientProfileId)
             }
             guard let ptProfileId = ptProfileId else {
-                print("⚠️ JourneyMapViewModel: no pt_patient_map found for patient")
+                debugLog("⚠️ JourneyMapViewModel: no pt_patient_map found for patient")
                 isLinkedToPT = false
                 isLoading = false
                 return
             }
             isLinkedToPT = true
-            print("🔍 JourneyMapViewModel: pt_profile_id=\(ptProfileId.uuidString)")
+            debugLog("🔍 JourneyMapViewModel: pt_profile_id=\(ptProfileId.uuidString)")
             
             let (plan, planStale) = try await RehabService.currentPlanForDisplay(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
             guard let plan = plan else {
-                print("ℹ️ JourneyMapViewModel: no active plan found")
+                debugLog("ℹ️ JourneyMapViewModel: no active plan found")
                 planTitle = nil
                 isLoading = false
                 return
@@ -117,10 +117,16 @@ public final class JourneyMapViewModel: ObservableObject {
                     let phase = phases[index]
                     return JourneyNode(id: lessonId, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
                 }
-                print("✅ JourneyMapViewModel: loaded \(nodes.count) nodes from plan")
+                debugLog("✅ JourneyMapViewModel: loaded \(nodes.count) nodes from plan")
                 
                 var progress: [UUID: LessonProgressInfo] = [:]
-                let (remoteProgress, progressStale) = (try? await RehabService.getLessonProgressForDisplay(patientProfileId: patientProfileId)) ?? ([:], false)
+
+                // Fetch lesson progress and completion dates concurrently (independent calls)
+                async let progressFetch = RehabService.getLessonProgressForDisplay(patientProfileId: patientProfileId)
+                async let datesFetch = RehabService.getCompletionDates(patientProfileId: patientProfileId)
+                let (remoteProgress, progressStale) = (try? await progressFetch) ?? ([:], false)
+                let completionDates = (try? await datesFetch) ?? []
+
                 anyStale = anyStale || (NetworkMonitor.shared.isOnline ? false : progressStale)
                 for node in nodes where node.nodeType == .lesson {
                     let lessonId = node.id
@@ -142,11 +148,10 @@ public final class JourneyMapViewModel: ObservableObject {
                 }
                 lessonProgress = progress
 
-                // Load streak from completion dates (patient side)
-                let completionDates = (try? await RehabService.getCompletionDates(patientProfileId: patientProfileId)) ?? []
+                // Compute streak from completion dates (fetched concurrently above)
                 streakState = StreakService.computeStreakState(completionDates: completionDates, patientProfileId: patientProfileId)
             } else {
-                print("ℹ️ JourneyMapViewModel: plan has no nodes")
+                debugLog("ℹ️ JourneyMapViewModel: plan has no nodes")
                 streakState = .hidden
             }
             showOfflineBanner = !NetworkMonitor.shared.isOnline && (anyStale || forceRefresh)
@@ -157,7 +162,7 @@ public final class JourneyMapViewModel: ObservableObject {
             }
             if nodes.isEmpty {
                 errorMessage = error.localizedDescription
-                print("❌ JourneyMapViewModel.load error: \(error)")
+                debugLog("❌ JourneyMapViewModel.load error: \(error)")
             }
         }
         isLoading = false

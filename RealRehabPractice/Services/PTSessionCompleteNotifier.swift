@@ -37,7 +37,7 @@ enum PTSessionCompleteNotifier {
             }
             Self.saveNotifiedIds(notified)
         } catch {
-            print("⚠️ PTSessionCompleteNotifier: \(error)")
+            debugLog("⚠️ PTSessionCompleteNotifier: \(error)")
         }
     }
     

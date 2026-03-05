@@ -359,7 +359,7 @@ struct PTSettingsView: View {
                 return
             }
             if ptProfile == nil {
-                print("❌ PTSettingsView.loadProfile error: \(error)")
+                debugLog("❌ PTSettingsView.loadProfile error: \(error)")
                 errorMessage = error.localizedDescription
             }
         }
@@ -387,7 +387,7 @@ struct PTSettingsView: View {
             return
         }
         guard let ptId = session.ptProfileId else {
-            print("⚠️ PTSettingsView.saveNotificationPreferences: no ptProfileId")
+            debugLog("⚠️ PTSettingsView.saveNotificationPreferences: no ptProfileId")
             return
         }
         Task { @MainActor in
@@ -395,7 +395,7 @@ struct PTSettingsView: View {
                 try await PTService.updateNotificationPreferences(ptProfileId: ptId, notifySessionComplete: notifySessionComplete, notifyMissedDay: notifyMissedDay, notifyMessages: notifyMessages)
             } catch {
                 errorMessage = error.localizedDescription
-                print("❌ PTSettingsView.saveNotificationPreferences: \(error)")
+                debugLog("❌ PTSettingsView.saveNotificationPreferences: \(error)")
             }
         }
     }

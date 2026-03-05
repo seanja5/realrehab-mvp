@@ -93,14 +93,14 @@ struct AssessmentView: View {
                                 let degrees = convertToDegrees(currentValue)
                                 maximumPositionValue = degrees
                                 maxSet = true
-                                print("✅ AssessmentView: Set Maximum Position button clicked - Saved flex sensor value: \(currentValue) → \(degrees) degrees")
+                                debugLog("✅ AssessmentView: Set Maximum Position button clicked - Saved flex sensor value: \(currentValue) → \(degrees) degrees")
                                 
                                 // Save to database (save degrees, not raw value)
                                 Task {
                                     await saveCalibration(stage: "maximum_position", flexValue: degrees)
                                 }
                             } else {
-                                print("⚠️ AssessmentView: Set Maximum Position button clicked - No flex sensor value available")
+                                debugLog("⚠️ AssessmentView: Set Maximum Position button clicked - No flex sensor value available")
                                 errorMessage = "No flex sensor value available. Please ensure your device is connected."
                             }
                         }
@@ -191,13 +191,13 @@ struct AssessmentView: View {
             
             await MainActor.run {
                 isSavingMaximum = false
-                print("✅ AssessmentView: Successfully saved \(stage) calibration with flex_value: \(flexValue)")
+                debugLog("✅ AssessmentView: Successfully saved \(stage) calibration with flex_value: \(flexValue)")
             }
         } catch {
             await MainActor.run {
                 isSavingMaximum = false
                 errorMessage = "Failed to save calibration: \(error.localizedDescription)"
-                print("❌ AssessmentView: Failed to save \(stage) calibration: \(error)")
+                debugLog("❌ AssessmentView: Failed to save \(stage) calibration: \(error)")
             }
         }
     }

@@ -120,13 +120,13 @@ struct PairDeviceView: View {
                     action: {
                         // Connect to the first available RealRehab device
                         if let firstDevice = ble.peripherals.first {
-                            print("🔵 PairDeviceView: Pair button tapped, connecting to '\(firstDevice.name)'")
+                            debugLog("🔵 PairDeviceView: Pair button tapped, connecting to '\(firstDevice.name)'")
                             ble.connect(firstDevice)
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 dismiss()
                             }
                         } else {
-                            print("⚠️ PairDeviceView: No devices available to connect")
+                            debugLog("⚠️ PairDeviceView: No devices available to connect")
                         }
                     }
                 )

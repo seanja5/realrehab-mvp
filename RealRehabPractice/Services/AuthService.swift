@@ -31,7 +31,7 @@ enum AuthService {
     // Clear all caches on logout
     Task { @MainActor in
       CacheService.shared.clearAll()
-      print("✅ AuthService.signOut: cleared all caches")
+      debugLog("✅ AuthService.signOut: cleared all caches")
     }
   }
 
@@ -78,7 +78,7 @@ enum AuthService {
     
     // Check cache first (disk persistence enabled, 24h TTL)
     if let cached = await CacheService.shared.getCached(cacheKey, as: Profile?.self, useDisk: true) {
-      print("✅ AuthService.myProfile: cache hit")
+      debugLog("✅ AuthService.myProfile: cache hit")
       return cached
     }
     
@@ -95,7 +95,7 @@ enum AuthService {
     
     // Cache the result (disk persistence enabled, 24h TTL)
     await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.profile, useDisk: true)
-    print("✅ AuthService.myProfile: cached result")
+    debugLog("✅ AuthService.myProfile: cached result")
     
     return result
   }
@@ -162,9 +162,9 @@ enum AuthService {
       let uid = try currentUserId()
       let bootstrap = ResolvedSessionBootstrap(profileId: profileId, ptProfileId: ptProfileId, role: role)
       await CacheService.shared.setCached(bootstrap, forKey: CacheKey.resolvedSession(userId: uid), ttl: CacheService.TTL.resolvedSession, useDisk: true)
-      print("✅ AuthService.cacheResolvedSession: cached for offline")
+      debugLog("✅ AuthService.cacheResolvedSession: cached for offline")
     } catch {
-      print("❌ AuthService.cacheResolvedSession: \(error)")
+      debugLog("❌ AuthService.cacheResolvedSession: \(error)")
     }
   }
   
@@ -178,7 +178,7 @@ enum AuthService {
     
     // Check cache first (disk - survives app restart, works offline)
     if let cached = await CacheService.shared.getCached(cacheKey, as: ResolvedSessionBootstrap.self, useDisk: true) {
-      print("✅ AuthService.resolveSessionForLaunch: cache hit (offline/restart)")
+      debugLog("✅ AuthService.resolveSessionForLaunch: cache hit (offline/restart)")
       return cached
     }
     
@@ -194,10 +194,10 @@ enum AuthService {
         role: role
       )
       await CacheService.shared.setCached(bootstrap, forKey: cacheKey, ttl: CacheService.TTL.resolvedSession, useDisk: true)
-      print("✅ AuthService.resolveSessionForLaunch: cached for offline")
+      debugLog("✅ AuthService.resolveSessionForLaunch: cached for offline")
       return bootstrap
     } catch {
-      print("❌ AuthService.resolveSessionForLaunch: \(error)")
+      debugLog("❌ AuthService.resolveSessionForLaunch: \(error)")
       return nil
     }
   }

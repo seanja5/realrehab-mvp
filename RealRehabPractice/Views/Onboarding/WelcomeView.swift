@@ -75,7 +75,7 @@ struct WelcomeView: View {
                                             let ids = try await AuthService.resolveIdsForCurrentUser()
                                             session.profileId = ids.profileId
                                             session.ptProfileId = ids.ptProfileId
-                                            print("✅ Login resolved IDs: profile=\(ids.profileId?.uuidString ?? "nil"), pt_profile=\(ids.ptProfileId?.uuidString ?? "nil")")
+                                            debugLog("✅ Login resolved IDs: profile=\(ids.profileId?.uuidString ?? "nil"), pt_profile=\(ids.ptProfileId?.uuidString ?? "nil")")
                                             
                                             let (_, role) = try await AuthService.myProfileIdAndRole()
                                             await AuthService.cacheResolvedSession(profileId: ids.profileId!, ptProfileId: ids.ptProfileId, role: role)

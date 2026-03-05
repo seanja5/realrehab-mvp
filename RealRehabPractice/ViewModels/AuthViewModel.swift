@@ -51,7 +51,7 @@ final class AuthViewModel: ObservableObject {
 
       // Note: PT linking happens automatically if a matching placeholder was found and linked
       // PTs add patients first, then patients sign up with matching info to link
-      print("✅ PatientService.ensurePatientProfile: created/linked patient_profile \(patientProfileId)")
+      debugLog("✅ PatientService.ensurePatientProfile: created/linked patient_profile \(patientProfileId)")
       try self.logCurrentUser()
     }
   }
@@ -66,7 +66,7 @@ final class AuthViewModel: ObservableObject {
   func signOut() async {
     await run {
       try await AuthService.signOut()
-      print("AuthViewModel.signOut: user signed out")
+      debugLog("AuthViewModel.signOut: user signed out")
     }
   }
 
@@ -74,7 +74,7 @@ final class AuthViewModel: ObservableObject {
     do {
       let profile = try await AuthService.myProfile()
       if let profile {
-        print("AuthViewModel.myProfile: loaded profile for \(profile.user_id)")
+        debugLog("AuthViewModel.myProfile: loaded profile for \(profile.user_id)")
       }
       return profile
     } catch {
@@ -99,12 +99,12 @@ final class AuthViewModel: ObservableObject {
 
   private func setError(_ error: Error) async {
     self.errorMessage = error.localizedDescription
-    print("AuthViewModel error: \(error)")
+    debugLog("AuthViewModel error: \(error)")
   }
 
   private func logCurrentUser() throws {
     let userId = try AuthService.currentUserId()
-    print("AuthViewModel: current user \(userId)")
+    debugLog("AuthViewModel: current user \(userId)")
   }
 }
 

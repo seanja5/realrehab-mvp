@@ -89,7 +89,7 @@ enum RehabService {
     
     // Check cache first (memory only, 10min TTL)
     if let cached = await CacheService.shared.getCached(cacheKey, as: AssignmentRow.self, useDisk: false) {
-      print("✅ RehabService.myActiveAssignment: cache hit")
+      debugLog("✅ RehabService.myActiveAssignment: cache hit")
       return cached
     }
     
@@ -111,7 +111,7 @@ enum RehabService {
     
     // Cache the result (memory only, 10min TTL)
     await CacheService.shared.setCached(first, forKey: cacheKey, ttl: CacheService.TTL.assignment, useDisk: false)
-    print("✅ RehabService.myActiveAssignment: cached result")
+    debugLog("✅ RehabService.myActiveAssignment: cached result")
 
     return first
   }
@@ -122,7 +122,7 @@ enum RehabService {
     
     // Check cache first (memory only, 10min TTL)
     if let cached = await CacheService.shared.getCached(cacheKey, as: [Lesson].self, useDisk: false) {
-      print("✅ RehabService.lessons: cache hit")
+      debugLog("✅ RehabService.lessons: cache hit")
       return cached
     }
     
@@ -135,7 +135,7 @@ enum RehabService {
     
     // Cache the result (memory only, 10min TTL)
     await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.lessons, useDisk: false)
-    print("✅ RehabService.lessons: cached \(result.count) lessons")
+    debugLog("✅ RehabService.lessons: cached \(result.count) lessons")
     
     return result
   }
@@ -146,7 +146,7 @@ enum RehabService {
     
     // Check cache first (memory only, 10min TTL)
     if let cached = await CacheService.shared.getCached(cacheKey, as: ProgramRow?.self, useDisk: false) {
-      print("✅ RehabService.program: cache hit")
+      debugLog("✅ RehabService.program: cache hit")
       return cached
     }
     
@@ -161,7 +161,7 @@ enum RehabService {
     
     // Cache the result (memory only, 10min TTL)
     await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.program, useDisk: false)
-    print("✅ RehabService.program: cached result")
+    debugLog("✅ RehabService.program: cached result")
     
     return result
   }
@@ -278,13 +278,13 @@ enum RehabService {
   // MARK: - Rehab Plans (MVP)
   
   static func currentPlan(ptProfileId: UUID, patientProfileId: UUID) async throws -> PlanRow? {
-    print("🔍 RehabService.currentPlan: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
+    debugLog("🔍 RehabService.currentPlan: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
     
     let cacheKey = CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
     
     // Check cache first (disk persistence for tab switching/offline)
     if let cached = await CacheService.shared.getCached(cacheKey, as: PlanRow?.self, useDisk: true) {
-      print("✅ RehabService.currentPlan: cache hit")
+      debugLog("✅ RehabService.currentPlan: cache hit")
       return cached
     }
     
@@ -302,21 +302,21 @@ enum RehabService {
       let result = rows.first
       
       if let plan = result {
-        print("✅ RehabService.currentPlan: found plan id=\(plan.id.uuidString), category=\(plan.category), injury=\(plan.injury)")
+        debugLog("✅ RehabService.currentPlan: found plan id=\(plan.id.uuidString), category=\(plan.category), injury=\(plan.injury)")
       } else {
-        print("ℹ️ RehabService.currentPlan: no active plan found for pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
+        debugLog("ℹ️ RehabService.currentPlan: no active plan found for pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
       }
       
       // Cache the result (disk persistence for tab switching/offline)
       await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.rehabPlan, useDisk: true)
-      print("✅ RehabService.currentPlan: cached result")
+      debugLog("✅ RehabService.currentPlan: cached result")
       
       return result
     } catch {
       // Handle permission errors with user-friendly message
       if let postgrestError = error as? PostgrestError {
         if postgrestError.code == "42501" || postgrestError.code == "PGRST301" {
-          print("❌ RehabService.currentPlan: permission denied (403/42501) for pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
+          debugLog("❌ RehabService.currentPlan: permission denied (403/42501) for pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
           throw NSError(
             domain: "RehabService",
             code: 403,
@@ -324,7 +324,7 @@ enum RehabService {
           )
         }
       }
-      print("❌ RehabService.currentPlan error: \(error)")
+      debugLog("❌ RehabService.currentPlan error: \(error)")
       throw error
     }
   }
@@ -348,11 +348,11 @@ enum RehabService {
   }
   
   static func saveACLPlan(ptProfileId: UUID, patientProfileId: UUID, nodes: [LessonNode], notes: String? = nil) async throws {
-    print("💾 RehabService.saveACLPlan: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString), nodes=\(nodes.count)")
+    debugLog("💾 RehabService.saveACLPlan: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString), nodes=\(nodes.count)")
     
     do {
       // Set any existing active plans for this patient to archived
-      print("📝 RehabService.saveACLPlan: archiving existing active plans...")
+      debugLog("📝 RehabService.saveACLPlan: archiving existing active plans...")
       _ = try await supabase
         .schema("accounts")
         .from("rehab_plans")
@@ -381,7 +381,7 @@ enum RehabService {
       let nodesJSONValue = try JSONDecoder().decode(JSONValue.self, from: nodesJSONData)
       
       // Insert new active plan
-      print("➕ RehabService.saveACLPlan: inserting new active plan...")
+      debugLog("➕ RehabService.saveACLPlan: inserting new active plan...")
       var payload: [String: Any] = [
         "pt_profile_id": ptProfileId.uuidString,
         "patient_profile_id": patientProfileId.uuidString,
@@ -405,14 +405,14 @@ enum RehabService {
       // Invalidate cache for this plan
       let cacheKey = CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
       await CacheService.shared.invalidate(cacheKey)
-      print("✅ RehabService.saveACLPlan: invalidated cache")
+      debugLog("✅ RehabService.saveACLPlan: invalidated cache")
       
-      print("✅ RehabService.saveACLPlan: successfully saved plan with \(nodes.count) nodes")
+      debugLog("✅ RehabService.saveACLPlan: successfully saved plan with \(nodes.count) nodes")
     } catch {
       // Handle permission errors with user-friendly message
       if let postgrestError = error as? PostgrestError {
         if postgrestError.code == "42501" || postgrestError.code == "PGRST301" {
-          print("❌ RehabService.saveACLPlan: permission denied (403/42501) for pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
+          debugLog("❌ RehabService.saveACLPlan: permission denied (403/42501) for pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
           throw NSError(
             domain: "RehabService",
             code: 403,
@@ -420,14 +420,14 @@ enum RehabService {
           )
         }
       }
-      print("❌ RehabService.saveACLPlan error: \(error)")
+      debugLog("❌ RehabService.saveACLPlan error: \(error)")
       throw error
     }
   }
   
   // MARK: - Fetch plan by ID (for loading saved plans)
   static func fetchPlan(planId: UUID) async throws -> PlanRow? {
-    print("🔍 RehabService.fetchPlan: planId=\(planId.uuidString)")
+    debugLog("🔍 RehabService.fetchPlan: planId=\(planId.uuidString)")
     let cacheKey = CacheKey.plan(planId: planId)
 
     // Check cache first (disk persistence for tab switching/offline)
@@ -446,17 +446,17 @@ enum RehabService {
       
       let result = rows.first
       if let plan = result {
-        print("✅ RehabService.fetchPlan: found plan id=\(plan.id.uuidString), nodes=\(plan.nodes?.count ?? 0)")
+        debugLog("✅ RehabService.fetchPlan: found plan id=\(plan.id.uuidString), nodes=\(plan.nodes?.count ?? 0)")
         await CacheService.shared.setCached(plan, forKey: cacheKey, ttl: CacheService.TTL.plan, useDisk: true)
       } else {
-        print("ℹ️ RehabService.fetchPlan: no plan found for planId=\(planId.uuidString)")
+        debugLog("ℹ️ RehabService.fetchPlan: no plan found for planId=\(planId.uuidString)")
       }
 
       return result
     } catch {
       if let postgrestError = error as? PostgrestError {
         if postgrestError.code == "42501" || postgrestError.code == "PGRST301" {
-          print("❌ RehabService.fetchPlan: permission denied (403/42501) for planId=\(planId.uuidString)")
+          debugLog("❌ RehabService.fetchPlan: permission denied (403/42501) for planId=\(planId.uuidString)")
           throw NSError(
             domain: "RehabService",
             code: 403,
@@ -464,7 +464,7 @@ enum RehabService {
           )
         }
       }
-      print("❌ RehabService.fetchPlan error: \(error)")
+      debugLog("❌ RehabService.fetchPlan error: \(error)")
       throw error
     }
   }
@@ -491,7 +491,7 @@ enum RehabService {
   static func fetchDefaultPlan(category: String, injury: String) async throws -> [PlanNodeDTO]? {
     let cacheKey = CacheKey.defaultPlanTemplate(category: category, injury: injury)
     if let cached = await CacheService.shared.getCached(cacheKey, as: [PlanNodeDTO].self, useDisk: true) {
-      print("✅ RehabService.fetchDefaultPlan: cache hit for \(category)/\(injury)")
+      debugLog("✅ RehabService.fetchDefaultPlan: cache hit for \(category)/\(injury)")
       return cached
     }
     do {
@@ -504,21 +504,21 @@ enum RehabService {
         .limit(1)
         .decoded(as: [PlanTemplateRow].self)
       guard let template = rows.first else {
-        print("ℹ️ RehabService.fetchDefaultPlan: no template for \(category)/\(injury)")
+        debugLog("ℹ️ RehabService.fetchDefaultPlan: no template for \(category)/\(injury)")
         return nil
       }
-      print("✅ RehabService.fetchDefaultPlan: fetched \(template.nodes.count) nodes for \(category)/\(injury)")
+      debugLog("✅ RehabService.fetchDefaultPlan: fetched \(template.nodes.count) nodes for \(category)/\(injury)")
       await CacheService.shared.setCached(template.nodes, forKey: cacheKey, ttl: CacheService.TTL.plan, useDisk: true)
       return template.nodes
     } catch {
-      print("❌ RehabService.fetchDefaultPlan error: \(error)")
+      debugLog("❌ RehabService.fetchDefaultPlan error: \(error)")
       throw error
     }
   }
   
   // MARK: - Update notes for a plan
   static func updatePlanNotes(ptProfileId: UUID, patientProfileId: UUID, notes: String?) async throws {
-    print("📝 RehabService.updatePlanNotes: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
+    debugLog("📝 RehabService.updatePlanNotes: pt_profile_id=\(ptProfileId.uuidString), patient_profile_id=\(patientProfileId.uuidString)")
     
     do {
       // Find the active plan for this patient
@@ -539,7 +539,7 @@ enum RehabService {
         // If no plan exists and notes are provided, create a notes-only plan (with empty nodes)
         // This plan won't show in the UI because we check for nodes before displaying
         if let notes = notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-          print("ℹ️ RehabService.updatePlanNotes: no active plan found, creating notes-only plan (hidden from UI)")
+          debugLog("ℹ️ RehabService.updatePlanNotes: no active plan found, creating notes-only plan (hidden from UI)")
           try await saveACLPlan(
             ptProfileId: ptProfileId,
             patientProfileId: patientProfileId,
@@ -548,7 +548,7 @@ enum RehabService {
           )
         } else {
           // No notes to save, nothing to do
-          print("ℹ️ RehabService.updatePlanNotes: no active plan found and no notes to save")
+          debugLog("ℹ️ RehabService.updatePlanNotes: no active plan found and no notes to save")
         }
         return
       }
@@ -571,11 +571,11 @@ enum RehabService {
       // Invalidate caches for this plan
       await CacheService.shared.invalidate(CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId))
       await CacheService.shared.invalidate(CacheKey.plan(planId: plan.id))
-      print("✅ RehabService.updatePlanNotes: invalidated cache")
+      debugLog("✅ RehabService.updatePlanNotes: invalidated cache")
       
-      print("✅ RehabService.updatePlanNotes: successfully updated notes")
+      debugLog("✅ RehabService.updatePlanNotes: successfully updated notes")
     } catch {
-      print("❌ RehabService.updatePlanNotes error: \(error)")
+      debugLog("❌ RehabService.updatePlanNotes error: \(error)")
       throw error
     }
   }

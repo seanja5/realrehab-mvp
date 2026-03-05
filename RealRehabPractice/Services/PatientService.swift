@@ -65,7 +65,7 @@ enum PatientService {
     
     // Check cache first (disk persistence enabled, 24h TTL)
     if let cached = await CacheService.shared.getCached(cacheKey, as: UUID.self, useDisk: true) {
-      print("✅ PatientService.myPatientProfileId: cache hit")
+      debugLog("✅ PatientService.myPatientProfileId: cache hit")
       return cached
     }
     
@@ -82,7 +82,7 @@ enum PatientService {
     
     // Cache the result (disk persistence enabled, 24h TTL)
     await CacheService.shared.setCached(r.id, forKey: cacheKey, ttl: CacheService.TTL.profile, useDisk: true)
-    print("✅ PatientService.myPatientProfileId: cached result")
+    debugLog("✅ PatientService.myPatientProfileId: cached result")
     
     return r.id
   }
@@ -113,7 +113,7 @@ enum PatientService {
     
     // Check cache first (disk persistence for offline/tab switching)
     if let cached = await CacheService.shared.getCached(cacheKey, as: Bool.self, useDisk: true) {
-      print("✅ PatientService.hasPT: cache hit")
+      debugLog("✅ PatientService.hasPT: cache hit")
       return cached
     }
     
@@ -134,7 +134,7 @@ enum PatientService {
     
     // Cache the result (disk persistence for offline/tab switching)
     await CacheService.shared.setCached(hasPT, forKey: cacheKey, ttl: CacheService.TTL.hasPT, useDisk: true)
-    print("✅ PatientService.hasPT: cached result = \(hasPT)")
+    debugLog("✅ PatientService.hasPT: cached result = \(hasPT)")
     
     return hasPT
   }
@@ -149,7 +149,7 @@ enum PatientService {
     
     // Check cache first (disk persistence enabled)
     if let cached = await CacheService.shared.getCached(cacheKey, as: PatientProfileRow.self, useDisk: true) {
-      print("✅ PatientService.myPatientProfile: cache hit")
+      debugLog("✅ PatientService.myPatientProfile: cache hit")
       return cached
     }
     
@@ -168,7 +168,7 @@ enum PatientService {
     
     // Cache the result (disk persistence enabled)
     await CacheService.shared.setCached(row, forKey: cacheKey, ttl: CacheService.TTL.profile, useDisk: true)
-    print("✅ PatientService.myPatientProfile: cached result")
+    debugLog("✅ PatientService.myPatientProfile: cached result")
     
     return row
   }
@@ -263,7 +263,7 @@ enum PatientService {
     
     // Check cache first (disk persistence enabled)
     if let cached = await CacheService.shared.getCached(cacheKey, as: String?.self, useDisk: true) {
-      print("✅ PatientService.getEmail: cache hit")
+      debugLog("✅ PatientService.getEmail: cache hit")
       return cached
     }
     
@@ -284,7 +284,7 @@ enum PatientService {
     
     // Cache the result (disk persistence enabled)
     await CacheService.shared.setCached(email, forKey: cacheKey, ttl: CacheService.TTL.profile, useDisk: true)
-    print("✅ PatientService.getEmail: cached result")
+    debugLog("✅ PatientService.getEmail: cached result")
     
     return email
   }
@@ -295,7 +295,7 @@ enum PatientService {
     
     // Check cache first (disk persistence for offline/tab switching)
     if let cached = await CacheService.shared.getCached(cacheKey, as: UUID?.self, useDisk: true) {
-      print("✅ PatientService.getPTProfileId: cache hit")
+      debugLog("✅ PatientService.getPTProfileId: cache hit")
       return cached
     }
     
@@ -316,7 +316,7 @@ enum PatientService {
     
     // Cache the result (disk persistence for offline/tab switching)
     await CacheService.shared.setCached(result, forKey: cacheKey, ttl: CacheService.TTL.hasPT, useDisk: true)
-    print("✅ PatientService.getPTProfileId: cached result")
+    debugLog("✅ PatientService.getPTProfileId: cached result")
     
     return result
   }
@@ -335,7 +335,7 @@ enum PatientService {
     
     // Check cache first (disk persistence for offline/tab switching)
     if let cached = await CacheService.shared.getCached(actualKey, as: PTInfo?.self, useDisk: true) {
-      print("✅ PatientService.getPTInfo: cache hit")
+      debugLog("✅ PatientService.getPTInfo: cache hit")
       return cached
     }
     
@@ -362,7 +362,7 @@ enum PatientService {
     
     // Cache the result (disk persistence for offline/tab switching)
     await CacheService.shared.setCached(result, forKey: actualKey, ttl: CacheService.TTL.ptInfo, useDisk: true)
-    print("✅ PatientService.getPTInfo: cached result")
+    debugLog("✅ PatientService.getPTInfo: cached result")
     
     return result
   }
@@ -384,7 +384,7 @@ enum PatientService {
       .decoded()
 
     if let r = rows.first {
-      print("PatientService.upsertPTProfile: upsert returned \(r.id) (\(r.email ?? "<no email>"))")
+      debugLog("PatientService.upsertPTProfile: upsert returned \(r.id) (\(r.email ?? "<no email>"))")
       return r
     }
 
@@ -398,7 +398,7 @@ enum PatientService {
     guard let found = sel.first else {
       throw NSError(domain: "PatientService", code: 404, userInfo: [NSLocalizedDescriptionKey: "PT not found after upsert"])
     }
-    print("PatientService.upsertPTProfile: selected existing \(found.id) (\(found.email ?? "<no email>"))")
+    debugLog("PatientService.upsertPTProfile: selected existing \(found.id) (\(found.email ?? "<no email>"))")
     return found
   }
 
@@ -410,13 +410,13 @@ enum PatientService {
       .schema("accounts").from("pt_patient_map")
       .upsert(payload, onConflict: "patient_profile_id")
       .execute()
-    print("PatientService.upsertPTMapping: linked patient_profile \(patientProfileId) to pt_profile \(ptProfileId)")
+    debugLog("PatientService.upsertPTMapping: linked patient_profile \(patientProfileId) to pt_profile \(ptProfileId)")
   }
   
   // Link patient to PT using RPC function (bypasses RLS for patient-initiated linking)
   // Use this when a patient is linking themselves to a PT (e.g., via access code)
   static func linkPatientToPT(patientProfileId: UUID, ptProfileId: UUID) async throws {
-    print("🔗 PatientService.linkPatientToPT: linking patient_profile \(patientProfileId) to pt_profile \(ptProfileId)")
+    debugLog("🔗 PatientService.linkPatientToPT: linking patient_profile \(patientProfileId) to pt_profile \(ptProfileId)")
     
     // Create params in a nonisolated context to avoid Sendable issues
     try await Task { @Sendable in
@@ -436,13 +436,13 @@ enum PatientService {
         .execute()
     }.value
     
-    print("✅ PatientService.linkPatientToPT: successfully linked patient_profile \(patientProfileId) to pt_profile \(ptProfileId)")
+    debugLog("✅ PatientService.linkPatientToPT: successfully linked patient_profile \(patientProfileId) to pt_profile \(ptProfileId)")
   }
   
   // Link patient to PT via access code - updates placeholder instead of creating duplicate
   // This is the preferred method when linking via access code
   static func linkPatientViaAccessCode(accessCode: String, patientProfileId: UUID) async throws {
-    print("🔗 PatientService.linkPatientViaAccessCode: linking patient_profile \(patientProfileId) via access code")
+    debugLog("🔗 PatientService.linkPatientViaAccessCode: linking patient_profile \(patientProfileId) via access code")
     
     let normalizedCode = accessCode.trimmingCharacters(in: .whitespacesAndNewlines)
     
@@ -467,7 +467,7 @@ enum PatientService {
     // Invalidate caches so next load reflects the new PT link
     await CacheService.shared.invalidate(CacheKey.hasPT(patientProfileId: patientProfileId))
     await CacheService.shared.invalidate(CacheKey.ptProfileIdFromPatient(patientProfileId: patientProfileId))
-    print("✅ PatientService.linkPatientViaAccessCode: successfully linked patient_profile \(patientProfileId) via access code")
+    debugLog("✅ PatientService.linkPatientViaAccessCode: successfully linked patient_profile \(patientProfileId) via access code")
   }
 
   // Get PT profile ID by access code (for linking existing accounts)
@@ -479,7 +479,7 @@ enum PatientService {
       return nil
     }
     
-    print("🔍 PatientService.getPTProfileIdByAccessCode: searching for code '\(normalizedCode)'")
+    debugLog("🔍 PatientService.getPTProfileIdByAccessCode: searching for code '\(normalizedCode)'")
     
     // Create params in a nonisolated context to avoid Sendable issues
     let uuidString: String? = try await Task { @Sendable in
@@ -498,10 +498,10 @@ enum PatientService {
     }.value
     
     if let uuidString = uuidString, let ptProfileId = UUID(uuidString: uuidString) {
-      print("✅ PatientService.getPTProfileIdByAccessCode: found PT \(ptProfileId) for code '\(normalizedCode)'")
+      debugLog("✅ PatientService.getPTProfileIdByAccessCode: found PT \(ptProfileId) for code '\(normalizedCode)'")
       return ptProfileId
     } else {
-      print("ℹ️ PatientService.getPTProfileIdByAccessCode: no PT found for code '\(normalizedCode)'")
+      debugLog("ℹ️ PatientService.getPTProfileIdByAccessCode: no PT found for code '\(normalizedCode)'")
       return nil
     }
   }
@@ -520,7 +520,7 @@ enum PatientService {
       return nil
     }
     
-    print("🔍 PatientService.findPatientByAccessCode: searching for code '\(normalizedCode)'")
+    debugLog("🔍 PatientService.findPatientByAccessCode: searching for code '\(normalizedCode)'")
     
     let rows: [AccessCodeRow] = try await client
       .schema("accounts")
@@ -532,10 +532,10 @@ enum PatientService {
       .decoded()
     
     if let row = rows.first {
-      print("✅ PatientService.findPatientByAccessCode: found placeholder \(row.id) for code '\(normalizedCode)'")
+      debugLog("✅ PatientService.findPatientByAccessCode: found placeholder \(row.id) for code '\(normalizedCode)'")
       return row.id
     } else {
-      print("ℹ️ PatientService.findPatientByAccessCode: no placeholder found for code '\(normalizedCode)'")
+      debugLog("ℹ️ PatientService.findPatientByAccessCode: no placeholder found for code '\(normalizedCode)'")
       return nil
     }
   }
@@ -562,27 +562,27 @@ enum PatientService {
     var matchingPlaceholderId: UUID? = nil
     
     if let accessCode = accessCode, !accessCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-      print("🔍 PatientService.ensurePatientProfile: looking up placeholder by access code")
+      debugLog("🔍 PatientService.ensurePatientProfile: looking up placeholder by access code")
       matchingPlaceholderId = try await findPatientByAccessCode(accessCode)
       
       if matchingPlaceholderId != nil {
-        print("✅ PatientService.ensurePatientProfile: found placeholder by access code!")
+        debugLog("✅ PatientService.ensurePatientProfile: found placeholder by access code!")
       } else {
-        print("ℹ️ PatientService.ensurePatientProfile: no placeholder found for access code '\(accessCode)'")
+        debugLog("ℹ️ PatientService.ensurePatientProfile: no placeholder found for access code '\(accessCode)'")
       }
     } else {
-      print("ℹ️ PatientService.ensurePatientProfile: no access code provided, will create new profile")
+      debugLog("ℹ️ PatientService.ensurePatientProfile: no access code provided, will create new profile")
     }
     
     // STEP 2: If matching placeholder found, UPDATE it to link to this profile
     if let placeholderId = matchingPlaceholderId {
-      print("🔗 PatientService.ensurePatientProfile: found placeholder \(placeholderId), linking to profile \(profileId)")
-      print("🔍 PatientService.ensurePatientProfile: attempting to update patient_profiles.id=\(placeholderId) to set profile_id=\(profileId)")
+      debugLog("🔗 PatientService.ensurePatientProfile: found placeholder \(placeholderId), linking to profile \(profileId)")
+      debugLog("🔍 PatientService.ensurePatientProfile: attempting to update patient_profiles.id=\(placeholderId) to set profile_id=\(profileId)")
       
       // Update the placeholder to set profile_id and other fields
       let trimmedPhone = phone?.trimmingCharacters(in: .whitespacesAndNewlines)
       let phoneToSave = trimmedPhone?.isEmpty == false ? trimmedPhone : nil
-      print("📱 PatientService.ensurePatientProfile: updating placeholder with phone='\(phoneToSave ?? "nil")'")
+      debugLog("📱 PatientService.ensurePatientProfile: updating placeholder with phone='\(phoneToSave ?? "nil")'")
       
       let updatePayload = PatientProfileUpsert(
         profile_id: profileId,
@@ -594,7 +594,7 @@ enum PatientService {
       )
       
       do {
-        print("📝 PatientService.ensurePatientProfile: executing UPDATE on patient_profiles...")
+        debugLog("📝 PatientService.ensurePatientProfile: executing UPDATE on patient_profiles...")
         _ = try await client
           .schema("accounts")
           .from("patient_profiles")
@@ -602,7 +602,7 @@ enum PatientService {
           .eq("id", value: placeholderId.uuidString)
           .execute()
         
-        print("✅ PatientService.ensurePatientProfile: UPDATE executed successfully")
+        debugLog("✅ PatientService.ensurePatientProfile: UPDATE executed successfully")
         
         // Verify the update actually worked by querying the row
         struct VerifyRow: Decodable {
@@ -622,23 +622,23 @@ enum PatientService {
           
           if let row = verifyRows.first {
             if row.profile_id == profileId {
-              print("✅ PatientService.ensurePatientProfile: verified profile_id was updated correctly to \(profileId)")
+              debugLog("✅ PatientService.ensurePatientProfile: verified profile_id was updated correctly to \(profileId)")
             } else {
-              print("⚠️ PatientService.ensurePatientProfile: WARNING - profile_id is \(row.profile_id?.uuidString ?? "NULL"), expected \(profileId)")
+              debugLog("⚠️ PatientService.ensurePatientProfile: WARNING - profile_id is \(row.profile_id?.uuidString ?? "NULL"), expected \(profileId)")
             }
             // Verify phone was saved
             if let savedPhone = row.phone, !savedPhone.isEmpty {
-              print("✅ PatientService.ensurePatientProfile: verified phone was saved: '\(savedPhone)'")
+              debugLog("✅ PatientService.ensurePatientProfile: verified phone was saved: '\(savedPhone)'")
             } else if phoneToSave != nil {
-              print("⚠️ PatientService.ensurePatientProfile: WARNING - phone was NOT saved! Expected '\(phoneToSave!)', but got NULL")
+              debugLog("⚠️ PatientService.ensurePatientProfile: WARNING - phone was NOT saved! Expected '\(phoneToSave!)', but got NULL")
             } else {
-              print("ℹ️ PatientService.ensurePatientProfile: phone is NULL (no phone provided)")
+              debugLog("ℹ️ PatientService.ensurePatientProfile: phone is NULL (no phone provided)")
             }
           } else {
-            print("⚠️ PatientService.ensurePatientProfile: WARNING - could not find row after update")
+            debugLog("⚠️ PatientService.ensurePatientProfile: WARNING - could not find row after update")
           }
         } catch {
-          print("⚠️ PatientService.ensurePatientProfile: could not verify update: \(error)")
+          debugLog("⚠️ PatientService.ensurePatientProfile: could not verify update: \(error)")
         }
         
         // Verify pt_patient_map link exists after update
@@ -648,7 +648,7 @@ enum PatientService {
         }
         
         do {
-          print("🔍 PatientService.ensurePatientProfile: verifying pt_patient_map link for patient_profile_id=\(placeholderId)")
+          debugLog("🔍 PatientService.ensurePatientProfile: verifying pt_patient_map link for patient_profile_id=\(placeholderId)")
           let mapRows: [MapRow] = try await client
             .schema("accounts")
             .from("pt_patient_map")
@@ -658,36 +658,36 @@ enum PatientService {
             .decoded()
           
           if let map = mapRows.first {
-            print("✅ PatientService.ensurePatientProfile: verified pt_patient_map link exists to PT \(map.pt_profile_id)")
+            debugLog("✅ PatientService.ensurePatientProfile: verified pt_patient_map link exists to PT \(map.pt_profile_id)")
           } else {
-            print("⚠️ PatientService.ensurePatientProfile: WARNING - no pt_patient_map link found for placeholder \(placeholderId)")
-            print("⚠️ This means the patient will not be able to see their PT in PTDetailView")
+            debugLog("⚠️ PatientService.ensurePatientProfile: WARNING - no pt_patient_map link found for placeholder \(placeholderId)")
+            debugLog("⚠️ This means the patient will not be able to see their PT in PTDetailView")
           }
         } catch {
-          print("⚠️ PatientService.ensurePatientProfile: could not verify pt_patient_map link: \(error)")
+          debugLog("⚠️ PatientService.ensurePatientProfile: could not verify pt_patient_map link: \(error)")
           if let postgrestError = error as? PostgrestError {
-            print("⚠️ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
+            debugLog("⚠️ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
           }
           // Don't throw - the link might still exist, we just can't verify it due to RLS
         }
         
         return placeholderId
       } catch {
-        print("❌ PatientService.ensurePatientProfile: failed to update placeholder \(placeholderId): \(error)")
+        debugLog("❌ PatientService.ensurePatientProfile: failed to update placeholder \(placeholderId): \(error)")
         if let postgrestError = error as? PostgrestError {
-          print("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
-          print("❌ This is likely an RLS policy issue preventing the UPDATE")
+          debugLog("❌ PostgrestError code: \(postgrestError.code ?? "unknown"), message: \(postgrestError.message)")
+          debugLog("❌ This is likely an RLS policy issue preventing the UPDATE")
         }
         throw error
       }
     }
 
     // STEP 3: No matching placeholder found, proceed with normal upsert/insert
-    print("ℹ️ PatientService.ensurePatientProfile: no matching placeholder found, creating new profile")
+    debugLog("ℹ️ PatientService.ensurePatientProfile: no matching placeholder found, creating new profile")
     
     let trimmedPhone = phone?.trimmingCharacters(in: .whitespacesAndNewlines)
     let phoneToSave = trimmedPhone?.isEmpty == false ? trimmedPhone : nil
-    print("📱 PatientService.ensurePatientProfile: creating new profile with phone='\(phoneToSave ?? "nil")'")
+    debugLog("📱 PatientService.ensurePatientProfile: creating new profile with phone='\(phoneToSave ?? "nil")'")
     
     let payload = PatientProfileUpsert(
       profile_id: profileId,
@@ -713,18 +713,18 @@ enum PatientService {
         .decoded()
 
       if let row = rows.first {
-        print("✅ PatientService.ensurePatientProfile: upserted \(row.id) for profile \(profileId)")
+        debugLog("✅ PatientService.ensurePatientProfile: upserted \(row.id) for profile \(profileId)")
         if let savedPhone = row.phone, !savedPhone.isEmpty {
-          print("✅ PatientService.ensurePatientProfile: verified phone was saved via upsert: '\(savedPhone)'")
+          debugLog("✅ PatientService.ensurePatientProfile: verified phone was saved via upsert: '\(savedPhone)'")
         } else if phoneToSave != nil {
-          print("⚠️ PatientService.ensurePatientProfile: WARNING - phone was NOT saved via upsert! Expected '\(phoneToSave!)', but got NULL")
+          debugLog("⚠️ PatientService.ensurePatientProfile: WARNING - phone was NOT saved via upsert! Expected '\(phoneToSave!)', but got NULL")
         } else {
-          print("ℹ️ PatientService.ensurePatientProfile: phone is NULL (no phone provided)")
+          debugLog("ℹ️ PatientService.ensurePatientProfile: phone is NULL (no phone provided)")
         }
         return row.id
       }
     } catch {
-      print("⚠️ PatientService.ensurePatientProfile: upsert failed, trying direct insert: \(error)")
+      debugLog("⚠️ PatientService.ensurePatientProfile: upsert failed, trying direct insert: \(error)")
       // Fall through to direct insert
     }
     
@@ -738,18 +738,18 @@ enum PatientService {
         .decoded()
       
       if let row = inserted.first {
-        print("✅ PatientService.ensurePatientProfile: inserted new row \(row.id) for profile \(profileId)")
+        debugLog("✅ PatientService.ensurePatientProfile: inserted new row \(row.id) for profile \(profileId)")
         if let savedPhone = row.phone, !savedPhone.isEmpty {
-          print("✅ PatientService.ensurePatientProfile: verified phone was saved via insert: '\(savedPhone)'")
+          debugLog("✅ PatientService.ensurePatientProfile: verified phone was saved via insert: '\(savedPhone)'")
         } else if phoneToSave != nil {
-          print("⚠️ PatientService.ensurePatientProfile: WARNING - phone was NOT saved via insert! Expected '\(phoneToSave!)', but got NULL")
+          debugLog("⚠️ PatientService.ensurePatientProfile: WARNING - phone was NOT saved via insert! Expected '\(phoneToSave!)', but got NULL")
         } else {
-          print("ℹ️ PatientService.ensurePatientProfile: phone is NULL (no phone provided)")
+          debugLog("ℹ️ PatientService.ensurePatientProfile: phone is NULL (no phone provided)")
         }
         return row.id
       }
     } catch {
-      print("❌ PatientService.ensurePatientProfile: insert also failed: \(error)")
+      debugLog("❌ PatientService.ensurePatientProfile: insert also failed: \(error)")
       // Fall through to select as last resort
     }
 
@@ -762,7 +762,7 @@ enum PatientService {
       .decoded()
 
     if let found = sel.first {
-      print("✅ PatientService.ensurePatientProfile: found existing \(found.id) for profile \(profileId)")
+      debugLog("✅ PatientService.ensurePatientProfile: found existing \(found.id) for profile \(profileId)")
       return found.id
     }
     

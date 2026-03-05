@@ -83,7 +83,7 @@ struct TestPairDeviceView: View {
                     useLargeFont: true,
                     action: {
                         isPairing = true
-                        print("🔵 TestPairDeviceView: Pair button tapped for test device '\(testDevice.name)'")
+                        debugLog("🔵 TestPairDeviceView: Pair button tapped for test device '\(testDevice.name)'")
                         
                         // Simulate pairing delay, then navigate to calibration
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

@@ -429,7 +429,11 @@ struct CompletionView: View {
                 self.patientProfileId = patientProfileId
                 self.lessonTitleForAnalytics = lessonTitle
             }
-        } catch { }
+        } catch {
+            #if DEBUG
+            debugLog("⚠️ notifyPTIfNeeded error: \(error)")
+            #endif
+        }
     }
 
     private func loadAISummary() async {

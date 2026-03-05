@@ -193,7 +193,7 @@ struct PTCreateAccountView: View {
             
             // Set the ptProfileId in session context immediately
             session.ptProfileId = ptProfileId
-            print("✅ PTCreateAccountView: Set session.ptProfileId=\(ptProfileId.uuidString)")
+            debugLog("✅ PTCreateAccountView: Set session.ptProfileId=\(ptProfileId.uuidString)")
 
             // Cache session for offline app launch
             if let bootstrap = await AuthService.resolveSessionForLaunch() {

@@ -168,7 +168,7 @@ struct PTJourneyMapView: View {
     private func confirmJourney() async {
         guard let ptProfileId = session.ptProfileId else {
             errorMessage = "PT profile not available"
-            print("❌ PTJourneyMapView.confirmJourney: ptProfileId is nil")
+            debugLog("❌ PTJourneyMapView.confirmJourney: ptProfileId is nil")
             return
         }
         
@@ -182,7 +182,7 @@ struct PTJourneyMapView: View {
             router.go(.ptPatientDetail(patientProfileId: patientProfileId))
         } catch {
             errorMessage = error.localizedDescription
-            print("❌ PTJourneyMapView.confirmJourney error: \(error)")
+            debugLog("❌ PTJourneyMapView.confirmJourney error: \(error)")
         }
         
         isLoading = false
@@ -205,7 +205,7 @@ struct PTJourneyMapView: View {
             if let savedNodes = plan.nodes {
                 nodes = RehabService.lessonNodes(from: savedNodes)
                 ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
-                print("✅ PTJourneyMapView: loaded \(nodes.count) nodes from plan")
+                debugLog("✅ PTJourneyMapView: loaded \(nodes.count) nodes from plan")
                 let (remoteProgress, progressStale) = (try? await RehabService.getLessonProgressForDisplay(patientProfileId: patientProfileId)) ?? ([:], false)
                 var progress: [UUID: LessonProgressInfo] = [:]
                 for node in nodes where node.nodeType == .lesson {
@@ -225,7 +225,7 @@ struct PTJourneyMapView: View {
             }
         } catch {
             errorMessage = error.localizedDescription
-            print("❌ PTJourneyMapView.loadPlan error: \(error)")
+            debugLog("❌ PTJourneyMapView.loadPlan error: \(error)")
         }
         isLoading = false
     }
@@ -239,16 +239,16 @@ struct PTJourneyMapView: View {
                !templateNodes.isEmpty {
                 nodes = RehabService.lessonNodes(from: templateNodes)
                 ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
-                print("✅ PTJourneyMapView: loaded \(nodes.count) nodes from default template")
+                debugLog("✅ PTJourneyMapView: loaded \(nodes.count) nodes from default template")
             } else {
                 nodes = ACLJourneyModels.defaultACLPlanNodes()
-                print("✅ PTJourneyMapView: using fallback default (\(nodes.count) nodes)")
+                debugLog("✅ PTJourneyMapView: using fallback default (\(nodes.count) nodes)")
             }
             planTitle = "ACL Tear Recovery Map"
         } catch {
             nodes = ACLJourneyModels.defaultACLPlanNodes()
             planTitle = "ACL Tear Recovery Map"
-            print("⚠️ PTJourneyMapView: fetch failed, using fallback (\(nodes.count) nodes): \(error)")
+            debugLog("⚠️ PTJourneyMapView: fetch failed, using fallback (\(nodes.count) nodes): \(error)")
         }
         isLoading = false
     }

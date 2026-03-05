@@ -8,6 +8,14 @@
 import SwiftUI
 import UIKit
 
+/// Debug-only logging. Compiled out entirely in release builds.
+@inline(__always)
+func debugLog(_ items: Any...) {
+    #if DEBUG
+    print(items.map { "\($0)" }.joined(separator: " "))
+    #endif
+}
+
 enum ShareSheetHelper {
     private static let linkMessage = "Link to my profile on RealRehab. Use this code to connect:"
     

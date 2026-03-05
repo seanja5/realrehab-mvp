@@ -102,7 +102,7 @@ struct RealRehabPracticeApp: App {
                 if let bootstrap = bootstrap {
                     session.profileId = bootstrap.profileId
                     session.ptProfileId = bootstrap.ptProfileId
-                    print("✅ Session restored: profile=\(bootstrap.profileId.uuidString), pt_profile=\(bootstrap.ptProfileId?.uuidString ?? "nil"), role=\(bootstrap.role)")
+                    debugLog("✅ Session restored: profile=\(bootstrap.profileId.uuidString), pt_profile=\(bootstrap.ptProfileId?.uuidString ?? "nil"), role=\(bootstrap.role)")
                     switch bootstrap.role {
                     case "pt":
                         router.reset(to: .patientList)
@@ -158,7 +158,11 @@ struct RealRehabPracticeApp: App {
         do {
             guard let profile = try await AuthService.myProfile(), profile.role == "pt" else { return }
             await PTSessionCompleteNotifier.checkAndNotify()
-        } catch { }
+        } catch {
+            #if DEBUG
+            debugLog("⚠️ checkPTSessionCompleteIfNeeded error: \(error)")
+            #endif
+        }
     }
     
     private func rescheduleRemindersIfNeeded() async {

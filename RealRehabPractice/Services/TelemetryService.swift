@@ -174,7 +174,7 @@ enum TelemetryService {
       await CacheService.shared.invalidate(CacheKey.calibrationPoints(patientProfileId: patientProfileId))
     }
     
-    print("✅ TelemetryService: Saved calibration - stage: \(stage), flex_value: \(flexValue)")
+    debugLog("✅ TelemetryService: Saved calibration - stage: \(stage), flex_value: \(flexValue)")
   }
   
   // MARK: - Calibration Retrieval
@@ -308,7 +308,7 @@ enum TelemetryService {
         // SAFETY CHECK: Only process maximum_position calibrations
         // Double-check stage field to ensure we don't accidentally include rest values
         guard calibration.stage == "maximum_position" else {
-          print("⚠️ TelemetryService: Skipping calibration with stage '\(calibration.stage)' - expected 'maximum_position'")
+          debugLog("⚠️ TelemetryService: Skipping calibration with stage '\(calibration.stage)' - expected 'maximum_position'")
           return nil
         }
         

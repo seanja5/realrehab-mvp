@@ -18,44 +18,54 @@ enum RRSpace {
 
 // MARK: - Brand Background helpers
 extension View {
-    /// Standard page background — flat light gray used on settings, forms, detail views.
+    /// Standard page background — subtle cool gradient replacing the old flat gray.
     func rrPageBackground() -> some View {
         self
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(
-                Color(red: 0.95, green: 0.95, blue: 0.95)
-                    .ignoresSafeArea()
+                LinearGradient(
+                    stops: [
+                        .init(color: Color(red: 0.978, green: 0.978, blue: 0.996), location: 0.0),
+                        .init(color: Color(red: 0.942, green: 0.943, blue: 0.966), location: 1.0)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
             )
     }
 
-    /// Journey map background — subtle cool gradient with a faint brand-blue glow.
-    /// More premium than the flat page background; keeps lesson bubbles clearly readable.
+    /// Journey map background — richer ambient depth with dual radial glows.
     func rrJourneyBackground() -> some View {
         self
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(
                 ZStack {
-                    // Base: very slightly blue-tinted off-white at top fading to cool gray
                     LinearGradient(
                         stops: [
-                            .init(color: Color(red: 0.96, green: 0.97, blue: 0.99), location: 0),
-                            .init(color: Color(red: 0.91, green: 0.92, blue: 0.95), location: 1)
+                            .init(color: Color(red: 0.963, green: 0.968, blue: 1.000), location: 0.0),
+                            .init(color: Color(red: 0.900, green: 0.912, blue: 0.968), location: 1.0)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
-                    // Subtle ambient glow anchored top-right using brand blue at very low opacity
                     RadialGradient(
-                        colors: [Color(red: 0.2, green: 0.4, blue: 0.8).opacity(0.07), Color.clear],
+                        colors: [Color.brandDarkBlue.opacity(0.13), Color.clear],
                         center: .topTrailing,
                         startRadius: 0,
-                        endRadius: 420
+                        endRadius: 430
+                    )
+                    RadialGradient(
+                        colors: [Color.brandElectric.opacity(0.055), Color.clear],
+                        center: .bottomLeading,
+                        startRadius: 0,
+                        endRadius: 320
                     )
                 }
                 .ignoresSafeArea()
             )
     }
-    
+
     /// Dismisses keyboard when tapping outside text fields/editors
     func dismissKeyboardOnTap() -> some View {
         self.onTapGesture {
@@ -63,14 +73,17 @@ extension View {
         }
     }
 }
+
 // MARK: - Animation Constants
 enum RRAnimation {
     /// Fast micro-interactions: button press, icon scale
-    static let micro = Animation.easeOut(duration: 0.15)
+    static let micro   = Animation.easeOut(duration: 0.15)
     /// State transitions: show/hide panels, expand cards
-    static let state = Animation.spring(response: 0.3, dampingFraction: 0.7)
+    static let state   = Animation.spring(response: 0.3, dampingFraction: 0.7)
     /// Snappy spring: matches lesson bubble timing
-    static let snappy = Animation.interactiveSpring(response: 0.2, dampingFraction: 0.7)
+    static let snappy  = Animation.interactiveSpring(response: 0.2, dampingFraction: 0.7)
+    /// Gentle entry: screen-level content fades and reveal animations
+    static let gentle  = Animation.easeOut(duration: 0.4)
 }
 
 // MARK: - Back-compat shim so Components can use Theme.*

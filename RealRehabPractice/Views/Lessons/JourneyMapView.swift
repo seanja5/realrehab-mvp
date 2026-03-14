@@ -208,9 +208,10 @@ struct JourneyMapView: View {
                 headerCard
                     .reportHeaderBottom()
                     .background(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: 20)
                             .fill(Color.white)
-                            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
+                            .shadow(color: .black.opacity(0.05), radius: 18, x: 0, y: 6)
+                            .shadow(color: Color.brandDarkBlue.opacity(0.07), radius: 6, x: 0, y: 2)
                     )
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
@@ -281,9 +282,10 @@ struct JourneyMapView: View {
                             }
                             .padding()
                             .background(
-                                RoundedRectangle(cornerRadius: 16)
+                                RoundedRectangle(cornerRadius: 24)
                                     .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
+                                    .shadow(color: .black.opacity(0.06), radius: 24, x: 0, y: 10)
+                                    .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 3)
                             )
                             .padding(.top, 140)
                         }
@@ -330,9 +332,10 @@ struct JourneyMapView: View {
                             }
                             .padding()
                             .background(
-                                RoundedRectangle(cornerRadius: 16)
+                                RoundedRectangle(cornerRadius: 24)
                                     .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
+                                    .shadow(color: .black.opacity(0.06), radius: 24, x: 0, y: 10)
+                                    .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 3)
                             )
                             .padding(.top, 140)
                         }
@@ -375,9 +378,10 @@ struct JourneyMapView: View {
                             }
                             .padding()
                             .background(
-                                RoundedRectangle(cornerRadius: 16)
+                                RoundedRectangle(cornerRadius: 24)
                                     .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
+                                    .shadow(color: .black.opacity(0.06), radius: 24, x: 0, y: 10)
+                                    .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 3)
                             )
                             .padding(.top, 140)
                         }

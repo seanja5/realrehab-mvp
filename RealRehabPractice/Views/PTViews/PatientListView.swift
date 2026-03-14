@@ -190,9 +190,10 @@ struct PatientListView: View {
             .padding(24)
             .frame(maxWidth: 340)
             .background(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(Color.white)
-                    .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
+                    .shadow(color: .black.opacity(0.08), radius: 28, x: 0, y: 12)
+                    .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 3)
             )
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
@@ -285,8 +286,15 @@ private struct PatientCard: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
-                        .background(Color.brandDarkBlue)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .background(
+                            LinearGradient(
+                                colors: [Color.brandDarkBlue, Color(red: 0.18, green: 0.36, blue: 0.78)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .clipShape(Capsule())
+                        .shadow(color: Color.brandDarkBlue.opacity(0.30), radius: 6, x: 0, y: 2)
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 12)
@@ -295,9 +303,10 @@ private struct PatientCard: View {
         }
         .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 20)
                 .fill(.white)
-                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                .shadow(color: .black.opacity(0.05), radius: 18, x: 0, y: 6)
+                .shadow(color: Color.brandDarkBlue.opacity(0.07), radius: 6, x: 0, y: 2)
         )
         .contentShape(Rectangle())
         .onTapGesture { onTap?() }

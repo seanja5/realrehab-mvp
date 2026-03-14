@@ -14,9 +14,10 @@ struct PTDetailView: View {
                     if vm.isLoading && vm.name.isEmpty {
                         skeletonContent
                     } else {
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 20)
                         .fill(.white)
-                        .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                        .shadow(color: .black.opacity(0.05), radius: 18, x: 0, y: 6)
+                        .shadow(color: Color.brandDarkBlue.opacity(0.07), radius: 6, x: 0, y: 2)
                         .overlay(
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(vm.name.isEmpty ? "My Physical Therapist" : vm.name)
@@ -57,7 +58,7 @@ struct PTDetailView: View {
                                         Image("aclrehab")
                                             .resizable()
                                             .scaledToFill()
-                                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                                            .clipShape(RoundedRectangle(cornerRadius: 20))
                                     )
                             }
                             .buttonStyle(.plain)

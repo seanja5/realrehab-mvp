@@ -10,10 +10,14 @@ import Combine
 
 // MARK: - Brand Colors (shared)
 extension Color {
-    static let brandLightBlue = Color(red: 0.2, green: 0.4, blue: 0.8)
-    static let brandDarkBlue  = Color(red: 0.1, green: 0.2, blue: 0.6)
+    static let brandLightBlue  = Color(red: 0.22, green: 0.42, blue: 0.82)
+    static let brandDarkBlue   = Color(red: 0.10, green: 0.20, blue: 0.60)
     /// Darker blue for lesson bubble underside (solid, hides connector line).
-    static let brandDarkerBlue = Color(red: 0.05, green: 0.1, blue: 0.42)
+    static let brandDarkerBlue = Color(red: 0.05, green: 0.10, blue: 0.42)
+    /// Bright electric accent — active states, highlights.
+    static let brandElectric   = Color(red: 0.28, green: 0.52, blue: 0.96)
+    /// Deep navy — dark surfaces, welcome screen background.
+    static let brandDeepNavy   = Color(red: 0.04, green: 0.08, blue: 0.28)
 }
 
 // MARK: - Primary (Filled) Button
@@ -27,12 +31,24 @@ struct PrimaryButton: View {
         Button(action: action) {
             Text(title)
                 .font(useLargeFont ? .rrTitle : .rrBody)
+                .fontWeight(.semibold)
+                .tracking(0.2)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 32)
-                .padding(.vertical, 16)
-                .background(isDisabled ? Color.gray : .brandDarkBlue)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .padding(.vertical, 17)
+                .background(
+                    LinearGradient(
+                        colors: isDisabled
+                            ? [Color.gray.opacity(0.45), Color.gray.opacity(0.35)]
+                            : [Color.brandDarkBlue, Color(red: 0.18, green: 0.36, blue: 0.78)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(Capsule())
+                .shadow(color: isDisabled ? .clear : Color.brandDarkBlue.opacity(0.38), radius: 10, x: 0, y: 4)
+                .shadow(color: isDisabled ? .clear : Color.brandDarkBlue.opacity(0.15), radius: 2, x: 0, y: 1)
         }
         .buttonStyle(ScaleButtonStyle())
         .disabled(isDisabled)
@@ -69,15 +85,21 @@ struct SecondaryButton: View {
         Button(action: action) {
             Text(title)
                 .font(.rrBody)
+                .fontWeight(.semibold)
+                .tracking(0.2)
                 .foregroundStyle(isDisabled ? Color.gray : .brandDarkBlue)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 32)
-                .padding(.vertical, 16)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(isDisabled ? Color.gray : .brandDarkBlue, lineWidth: 2)
+                .padding(.vertical, 17)
+                .background(
+                    Capsule()
+                        .fill(isDisabled ? Color.clear : Color.brandDarkBlue.opacity(0.06))
                 )
-                .contentShape(Rectangle())
+                .overlay(
+                    Capsule()
+                        .stroke(isDisabled ? Color.gray.opacity(0.4) : Color.brandDarkBlue.opacity(0.55), lineWidth: 1.5)
+                )
+                .contentShape(Capsule())
         }
         .buttonStyle(ScaleButtonStyle())
         .disabled(isDisabled)
@@ -324,7 +346,8 @@ struct SearchBar: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.secondary.opacity(0.7))
 
             TextField(placeholder, text: $text)
                 .textInputAutocapitalization(.never)
@@ -332,15 +355,16 @@ struct SearchBar: View {
                 .font(.rrBody)
         }
         .padding(.horizontal, 14)
-        .frame(height: 44)
+        .frame(height: 46)
         .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(.systemGray6))
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.black.opacity(0.07), lineWidth: 1)
         )
+        .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Search")
     }
@@ -1415,9 +1439,10 @@ struct CardContainer<Content: View>: View {
         .padding(padding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 20)
                 .fill(Color.white)
-                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                .shadow(color: .black.opacity(0.05), radius: 18, x: 0, y: 6)
+                .shadow(color: Color.brandDarkBlue.opacity(0.07), radius: 6, x: 0, y: 2)
         )
     }
 }
@@ -1430,9 +1455,12 @@ struct SettingsSection<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(title)
-                .font(.rrHeadline)
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title.uppercased())
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(1.0)
+                .foregroundStyle(Color(red: 0.50, green: 0.53, blue: 0.62))
+                .padding(.leading, 4)
             CardContainer(padding: innerSpacing) {
                 VStack(alignment: .leading, spacing: innerSpacing) {
                     content()
@@ -1471,13 +1499,19 @@ struct DestructiveButton: View {
         Button(action: action) {
             Text(title)
                 .font(.rrBody)
-                .foregroundStyle(.red)
+                .fontWeight(.semibold)
+                .tracking(0.2)
+                .foregroundStyle(Color(red: 0.82, green: 0.18, blue: 0.18))
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 32)
-                .padding(.vertical, 16)
+                .padding(.vertical, 17)
+                .background(
+                    Capsule()
+                        .fill(Color.red.opacity(0.06))
+                )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.red, lineWidth: 1)
+                    Capsule()
+                        .stroke(Color(red: 0.82, green: 0.18, blue: 0.18).opacity(0.55), lineWidth: 1.5)
                 )
         }
         .buttonStyle(ScaleButtonStyle())
@@ -1533,14 +1567,20 @@ struct FormTextField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.rrCaption)
-                .foregroundStyle(.secondary)
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.8)
+                .foregroundStyle(Color.secondary.opacity(0.75))
             TextField(placeholder, text: $text)
                 .font(.rrBody)
-                .padding(14)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
                 .background(Color(uiColor: .secondarySystemFill))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                )
         }
     }
 }
@@ -1554,9 +1594,10 @@ struct FormMenuField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.rrCaption)
-                .foregroundStyle(.secondary)
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.8)
+                .foregroundStyle(Color.secondary.opacity(0.75))
             Menu {
                 ForEach(options, id: \.self) { option in
                     Button(option) { selection = option }
@@ -1574,9 +1615,14 @@ struct FormMenuField: View {
                         .font(.rrCaption)
                         .foregroundStyle(.secondary)
                 }
-                .padding(14)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
                 .background(Color(uiColor: .secondarySystemFill))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                )
             }
         }
     }

@@ -108,12 +108,12 @@ struct PatientSettingsView: View {
                     .frame(height: 100)
                     .shimmer()
             }
-            VStack(alignment: .leading, spacing: 16) {
-                SkeletonBlock(width: 70, height: 22)
-                RoundedRectangle(cornerRadius: 16)
+            VStack(alignment: .leading, spacing: 10) {
+                SkeletonBlock(width: 70, height: 14)
+                RoundedRectangle(cornerRadius: 28)
                     .fill(Color(white: 0.88))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(height: 54)
                     .shimmer()
             }
         }
@@ -211,19 +211,25 @@ struct PatientSettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Access Code")
-                        .font(.rrCaption)
-                        .foregroundStyle(.secondary)
-                    
+                    Text("ACCESS CODE")
+                        .font(.system(size: 10, weight: .semibold))
+                        .tracking(0.8)
+                        .foregroundStyle(Color.secondary.opacity(0.75))
+
                     TextField("Enter 8-digit code", text: $accessCode)
                         .font(.rrBody)
-                        .padding(14)
-                        .background(Color(uiColor: .secondarySystemFill))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
                         .focused($isAccessCodeFocused)
                         .keyboardType(.numberPad)
                         .onChange(of: accessCode) { oldValue, newValue in
-                            // Limit to 8 digits and only allow numbers
                             let filtered = newValue.filter { $0.isNumber }
                             if filtered.count <= 8 {
                                 accessCode = filtered
@@ -247,7 +253,12 @@ struct PatientSettingsView: View {
     }
     
     private var dangerZoneSection: some View {
-        SettingsSection(title: "Sign out") {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("SIGN OUT")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(1.0)
+                .foregroundStyle(Color(red: 0.50, green: 0.53, blue: 0.62))
+                .padding(.leading, 4)
             DestructiveButton(title: "Sign out") {
                 Task {
                     try? await AuthService.signOut()

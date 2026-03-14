@@ -1575,12 +1575,13 @@ struct FormTextField: View {
                 .font(.rrBody)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
-                .background(Color(uiColor: .secondarySystemFill))
+                .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                        .stroke(Color.black.opacity(0.08), lineWidth: 1)
                 )
+                .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
         }
     }
 }
@@ -1617,12 +1618,13 @@ struct FormMenuField: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
-                .background(Color(uiColor: .secondarySystemFill))
+                .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                        .stroke(Color.black.opacity(0.08), lineWidth: 1)
                 )
+                .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
             }
         }
     }

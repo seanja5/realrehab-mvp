@@ -13,29 +13,23 @@ struct WelcomeView: View {
 
     var body: some View {
         ZStack {
-            // MARK: - Background: deep navy gradient with ambient glows
+            // MARK: - Background: off-white top fading to deep navy
             LinearGradient(
                 stops: [
-                    .init(color: Color(red: 0.040, green: 0.078, blue: 0.275), location: 0.0),
-                    .init(color: Color(red: 0.055, green: 0.112, blue: 0.360), location: 0.55),
-                    .init(color: Color(red: 0.075, green: 0.160, blue: 0.460), location: 1.0)
+                    .init(color: Color(red: 0.966, green: 0.966, blue: 0.992), location: 0.00),
+                    .init(color: Color(red: 0.840, green: 0.848, blue: 0.938), location: 0.27),
+                    .init(color: Color(red: 0.050, green: 0.100, blue: 0.310), location: 0.44),
+                    .init(color: Color(red: 0.075, green: 0.160, blue: 0.460), location: 1.00)
                 ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                startPoint: .top,
+                endPoint: .bottom
             )
             .ignoresSafeArea()
 
+            // Ambient glow in the dark lower portion only
             RadialGradient(
-                colors: [Color.brandElectric.opacity(0.20), Color.clear],
-                center: UnitPoint(x: 0.15, y: 0.1),
-                startRadius: 0,
-                endRadius: 360
-            )
-            .ignoresSafeArea()
-
-            RadialGradient(
-                colors: [Color(red: 0.28, green: 0.52, blue: 0.96).opacity(0.12), Color.clear],
-                center: UnitPoint(x: 0.88, y: 0.85),
+                colors: [Color(red: 0.28, green: 0.52, blue: 0.96).opacity(0.14), Color.clear],
+                center: UnitPoint(x: 0.85, y: 0.82),
                 startRadius: 0,
                 endRadius: 300
             )
@@ -47,7 +41,7 @@ struct WelcomeView: View {
                 Image("LaunchLogo")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 200)
+                    .frame(width: 300)
                     .scaleEffect(logoVisible ? 1.0 : 0.85)
                     .opacity(logoVisible ? 1.0 : 0.0)
                     .offset(y: -20)

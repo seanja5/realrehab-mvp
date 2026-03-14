@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-private let fieldFill = Color(uiColor: .secondarySystemFill)
+private let fieldFill = Color.white
 
 enum AccountType: String, CaseIterable {
     case patient = "Patient"
@@ -65,9 +65,10 @@ struct CreateAccountView: View {
                         VStack(spacing: 16) {
                             // Type of Account dropdown - always visible, required first
                             VStack(alignment: .leading, spacing: 6) {
-                                Text("Type of Account")
-                                    .font(.rrCaption)
-                                    .foregroundStyle(.secondary)
+                                Text("TYPE OF ACCOUNT")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .tracking(0.8)
+                                    .foregroundStyle(Color.secondary.opacity(0.75))
                                 CreateAccountMenuField(
                                     selection: $accountTypeSelection,
                                     options: AccountType.allCases.map(\.rawValue),
@@ -452,18 +453,21 @@ private struct CreateAccountFormField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.rrCaption)
-                .foregroundStyle(.secondary)
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.8)
+                .foregroundStyle(Color.secondary.opacity(0.75))
             TextField(placeholder, text: $text)
                 .font(.rrBody)
-                .padding(14)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
                 .background(fieldFill)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(hasError ? Color.red : Color.clear, lineWidth: 2)
+                        .stroke(hasError ? Color.red.opacity(0.7) : Color.black.opacity(0.08), lineWidth: hasError ? 1.5 : 1)
                 )
+                .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
         }
     }
 }
@@ -476,18 +480,21 @@ private struct CreateAccountSecureField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.rrCaption)
-                .foregroundStyle(.secondary)
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.8)
+                .foregroundStyle(Color.secondary.opacity(0.75))
             SecureField(placeholder, text: $text)
                 .font(.rrBody)
-                .padding(14)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
                 .background(fieldFill)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(hasError ? Color.red : Color.clear, lineWidth: 2)
+                        .stroke(hasError ? Color.red.opacity(0.7) : Color.black.opacity(0.08), lineWidth: hasError ? 1.5 : 1)
                 )
+                .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
         }
     }
 }
@@ -499,9 +506,10 @@ private struct CreateAccountDateField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.rrCaption)
-                .foregroundStyle(.secondary)
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.8)
+                .foregroundStyle(Color.secondary.opacity(0.75))
             HStack {
                 DatePicker("", selection: $date, displayedComponents: .date)
                     .datePickerStyle(.compact)
@@ -511,13 +519,15 @@ private struct CreateAccountDateField: View {
                     .font(.rrCaption)
                     .foregroundStyle(.secondary)
             }
-            .padding(14)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
             .background(fieldFill)
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(hasError ? Color.red : Color.clear, lineWidth: 2)
+                    .stroke(hasError ? Color.red.opacity(0.7) : Color.black.opacity(0.08), lineWidth: hasError ? 1.5 : 1)
             )
+            .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
         }
     }
 }
@@ -551,9 +561,10 @@ private struct CreateAccountMenuField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let title {
-                Text(title)
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
+                Text(title.uppercased())
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.8)
+                    .foregroundStyle(Color.secondary.opacity(0.75))
             }
             Menu {
                 ForEach(options, id: \.self) { option in
@@ -578,13 +589,15 @@ private struct CreateAccountMenuField: View {
                         .font(.rrCaption)
                         .foregroundStyle(.secondary)
                 }
-                .padding(14)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
                 .background(fieldFill)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(hasError ? Color.red : Color.clear, lineWidth: 2)
+                        .stroke(hasError ? Color.red.opacity(0.7) : Color.black.opacity(0.08), lineWidth: hasError ? 1.5 : 1)
                 )
+                .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
             }
         }
     }

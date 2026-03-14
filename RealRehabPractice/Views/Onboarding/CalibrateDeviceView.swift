@@ -5,14 +5,21 @@ struct CalibrateDeviceView: View {
     let reps: Int?
     let restSec: Int?
     let lessonId: UUID?
+    let lessonTitle: String?
     let fromUnpause: Bool
     let onFinish: (() -> Void)?
     @EnvironmentObject var router: Router
-    
-    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, fromUnpause: Bool = false, onFinish: (() -> Void)? = nil) {
+
+    /// 45 for Short Arc Quad, 90 for all other exercises.
+    private var startingAngleDeg: Int {
+        (lessonTitle?.lowercased().contains("short arc") == true) ? 45 : 90
+    }
+
+    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, fromUnpause: Bool = false, onFinish: (() -> Void)? = nil) {
         self.reps = reps
         self.restSec = restSec
         self.lessonId = lessonId
+        self.lessonTitle = lessonTitle
         self.fromUnpause = fromUnpause
         self.onFinish = onFinish
     }
@@ -100,7 +107,7 @@ struct CalibrateDeviceView: View {
                             .cornerRadius(8)
                         }
                         
-                        Text("Relax your leg until your knee is bent at roughly a 90-degree angle. When you're ready, tap Set Starting Position.")
+                        Text("Relax your leg until your knee is bent at roughly a \(startingAngleDeg)-degree angle. When you're ready, tap Set Starting Position.")
                             .font(.rrBody)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.leading)
@@ -185,7 +192,7 @@ struct CalibrateDeviceView: View {
                         if fromUnpause, let finish = onFinish {
                             finish()
                         } else if lessonId != nil {
-                            router.go(.directionsView1(reps: reps, restSec: restSec, lessonId: lessonId))
+                            router.go(.directionsView1(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle))
                         } else {
                             router.go(.journeyMap)
                         }

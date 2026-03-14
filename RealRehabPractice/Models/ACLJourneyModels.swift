@@ -63,11 +63,13 @@ public enum ACLPhase: Int, CaseIterable {
         switch self {
         case .one:
             return [
+                "Quad Sets",
+                "Quad Sets — Extended Holds",
+                "Short Arc Quad",
+                "Short Arc Quad — Control Focus",
+                "Heel Slides",
                 "Seated Knee Extensions",
-                "Quad Sets (Isometric)",
-                "Heel Slides (Towel Slide)",
-                "Ankle Pumps",
-                "Calf Stretch (Seated Towel Stretch)"
+                "Seated Knee Extensions — Strength"
             ]
         case .two:
             return [
@@ -208,6 +210,7 @@ extension ACLJourneyModels {
         if t.isEmpty { return "square.and.pencil" }
         if t.contains("knee extension") { return "arrow.up.and.down" }
         if t.contains("quad set") { return "bolt.fill" }
+        if t.contains("short arc") { return "arrow.up.right" }
         if t.contains("heel slide") { return "figure.walk" }
         if t.contains("ankle pump") { return "waveform" }
         if t.contains("calf stretch") { return "arrow.down.to.line" }
@@ -239,8 +242,15 @@ extension ACLJourneyModels {
     }
 
     private static let lessonDescriptions: [String: String] = [
-        // Phase 1
+        // Phase 1 — new exercise titles
+        "Quad Sets": "Tighten your thigh muscle while keeping your leg flat, holding the contraction for the full duration shown.",
+        "Quad Sets — Extended Holds": "Hold a thigh contraction for an extended duration to build isometric endurance in the quadriceps.",
+        "Short Arc Quad": "Starting at 45°, extend your knee to straight and hold briefly to strengthen the terminal range of the quad.",
+        "Short Arc Quad — Control Focus": "Extend from 45° to full extension with slow, precise control to improve motor accuracy at end-range.",
+        "Heel Slides": "Slide your heel toward your body while lying down to gently bend the knee and improve range of motion.",
         "Seated Knee Extensions": "Slowly straighten your knee while seated, focusing on fully extending the leg and engaging your thigh muscle.",
+        "Seated Knee Extensions — Strength": "Extend your knee fully and hold at the top to challenge both quad strength and isometric endurance.",
+        // Phase 1 — legacy titles (kept for backward compatibility)
         "Quad Sets (Isometric)": "Tighten your thigh muscle while keeping your leg straight, holding the contraction without moving the knee.",
         "Heel Slides (Towel Slide)": "Slide your heel toward your body while lying down to gently bend the knee and improve range of motion.",
         "Ankle Pumps": "Move your foot up and down to promote circulation and reduce swelling in the lower leg.",

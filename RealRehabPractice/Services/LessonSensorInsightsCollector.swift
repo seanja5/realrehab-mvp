@@ -17,6 +17,10 @@ enum LessonSensorEventType: String, Codable {
     case driftLeft = "drift_left"
     case driftRight = "drift_right"
     case shake = "shake"
+    // Isometric hold: angle dropped below threshold mid-hold
+    case holdBroken = "hold_broken"
+    // Heel slides / flexion: didn't reach flexion target
+    case rangeNotReached = "range_not_reached"
 }
 
 // MARK: - Event model (stored event)

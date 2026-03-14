@@ -15,6 +15,7 @@ struct LessonView: View {
     let reps: Int?
     let restSec: Int?
     let lessonId: UUID?
+    let lessonTitle: String?
     
     @StateObject private var engine: LessonEngine
     @StateObject private var ble = BluetoothManager.shared
@@ -132,17 +133,21 @@ struct LessonView: View {
         return CGFloat(clampedPosition)
     }
     
-    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil) {
+    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil) {
         self.reps = reps
         self.restSec = restSec
         self.lessonId = lessonId
-        // Initialize engine with parameters if provided (for Knee Extension only)
+        self.lessonTitle = lessonTitle
+        let exerciseType = ExerciseType.from(lessonTitle: lessonTitle)
+        var targets = LessonTargets.defaults(for: exerciseType, lessonTitle: lessonTitle)
         if let reps = reps, let restSec = restSec {
-            // Convert restSec (Int seconds) to TimeInterval
-            let engine = LessonEngine(repTarget: reps, restDuration: TimeInterval(restSec))
+            let engine = LessonEngine(repTarget: reps, restDuration: TimeInterval(restSec), exerciseType: exerciseType)
+            engine.targets = targets
             _engine = StateObject(wrappedValue: engine)
         } else {
-            _engine = StateObject(wrappedValue: LessonEngine())
+            let engine = LessonEngine(exerciseType: exerciseType)
+            engine.targets = targets
+            _engine = StateObject(wrappedValue: engine)
         }
     }
     
@@ -187,12 +192,22 @@ struct LessonView: View {
         // Normal phase-based messages
         switch engine.phase {
         case .idle:
-            // Only show "Waiting…" if lesson hasn't started yet
             return hasStarted ? "You've Got It!" : "Waiting…"
         case .incorrectHold:
             return "Not Quite!"
-        case .upstroke, .downstroke:
-            return "You've Got It!"
+        case .holding:
+            return "Hold It! \(engine.holdSecondsRemaining)s"
+        case .upstroke:
+            switch engine.exerciseType {
+            case .kneeFlex: return "Slide Your Heel!"
+            case .isometricHold: return "Extend Your Leg!"
+            default: return "Extend Your Leg!"
+            }
+        case .downstroke:
+            switch engine.exerciseType {
+            case .kneeFlex: return "Return to Start"
+            default: return "Lower Slowly"
+            }
         }
     }
     
@@ -235,13 +250,16 @@ struct LessonView: View {
         if engine.phase == .idle {
             return Color.gray.opacity(0.3)
         }
+        if engine.phase == .holding {
+            return Color.green.opacity(0.25)
+        }
         return Color.green.opacity(0.25)
     }
 
     var body: some View {
         VStack(alignment: .center, spacing: 0) {
             // Title
-            Text("Knee Extension")
+            Text(lessonTitle ?? "Lesson")
                 .font(.rrHeadline)
                 .padding(.top, 8)
             
@@ -274,12 +292,17 @@ struct LessonView: View {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(backgroundColor())
                 
-                // Green fill overlay during strokes or when completed (hidden when user paused)
-                if !isUserPaused && (engine.phase == .upstroke || engine.phase == .downstroke || engine.repCount >= engine.repTarget) {
+                // Green fill overlay during strokes/hold or when completed (hidden when user paused)
+                if !isUserPaused && (engine.phase == .upstroke || engine.phase == .downstroke || engine.phase == .holding || engine.repCount >= engine.repTarget) {
                     GeometryReader { geo in
                         let h = geo.size.height
-                        // Bottom-anchored fill whose height animates with engine.fill
-                        // When completed, fill stays at 1.0 (fully green)
+                        // For kneeFlex, fill rises = more flexion (invert visual so bottom = straight, top = bent)
+                        let displayFill: Double = {
+                            if case .kneeFlex = engine.exerciseType {
+                                return engine.fill
+                            }
+                            return engine.fill
+                        }()
                         VStack {
                             Spacer()
                             LinearGradient(
@@ -287,7 +310,7 @@ struct LessonView: View {
                                 startPoint: .bottom,
                                 endPoint: .top
                             )
-                            .frame(height: max(0, h * max(0.1, engine.fill))) // start at ~10%
+                            .frame(height: max(0, h * max(0.1, displayFill)))
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
                     }
@@ -580,10 +603,24 @@ struct LessonView: View {
             }
         }
         .onChange(of: engine.fill) { oldValue, newValue in
-            // Check when box reaches full for max validation
+            // Check when box reaches full for max/flexion validation
             if newValue >= 0.99 && oldValue < 0.99 && engine.phase == .upstroke {
-                if let currentDegrees = currentDegreeValue, let maxDegrees = maxCalibrationValue {
-                    validateMaxReached(currentDegrees: currentDegrees, maxDegrees: maxDegrees)
+                if case .kneeFlex = engine.exerciseType {
+                    // Heel slides: validate flexion target was reached
+                    if let currentDegrees = currentDegreeValue {
+                        let target = engine.targets.flexionTargetDeg
+                        if Double(currentDegrees) > target {
+                            recordSensorEvent(type: .rangeNotReached, repAttempt: engine.repCount + errorCount, timeSec: Double(currentElapsedSeconds()))
+                            errorCount += 1
+                            lastRepWasValid = false
+                        } else {
+                            lastRepWasValid = true
+                        }
+                    }
+                } else {
+                    if let currentDegrees = currentDegreeValue, let maxDegrees = maxCalibrationValue {
+                        validateMaxReached(currentDegrees: currentDegrees, maxDegrees: maxDegrees)
+                    }
                 }
             }
         }
@@ -836,6 +873,18 @@ struct LessonView: View {
             validateIMU()
         }
         
+        // Validate isometric hold: check angle stays above threshold during .holding phase
+        if hasStarted, !engine.isPaused, engine.phase == .holding,
+           let currentDegrees = currentDegreeValue {
+            if case .isometricHold(let holdThreshold, _) = engine.exerciseType {
+                if Double(currentDegrees) < holdThreshold {
+                    recordSensorEvent(type: .holdBroken, repAttempt: engine.repCount + errorCount, timeSec: Double(currentElapsedSeconds()))
+                    errorCount += 1
+                    engine.startOrRestartFromBottom()
+                }
+            }
+        }
+
         // Only validate flex sensor movement if lesson is running and not paused
         guard hasStarted,
               !engine.isPaused,
@@ -846,9 +895,9 @@ struct LessonView: View {
               (engine.phase == .upstroke || engine.phase == .downstroke) else {
             return
         }
-        
+
         let expectedDegrees = expectedDegreesForFill(engine.fill)
-        
+
         // Validate movement speed only if we have previous data
         if let expected = expectedDegrees, let previous = previousDegreeValue, let prevTime = previousTimestamp {
             let timeElapsed = Date().timeIntervalSince(prevTime)

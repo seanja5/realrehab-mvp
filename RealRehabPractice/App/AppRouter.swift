@@ -6,14 +6,14 @@ enum Route: Hashable {
     case createAccount
     case ptCreateAccount
     case pairDevice
-    case calibrateDevice(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil)
+    case calibrateDevice(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil)
     case ptDetail
     case rehabOverview
     case journeyMap
     case patientSettings
-    case directionsView1(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil)
-    case directionsView2(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil)
-    case lesson(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil)
+    case directionsView1(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil)
+    case directionsView2(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil)
+    case lesson(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil)
     case assessment(lessonId: UUID?)
     case completion(lessonId: UUID?)
     case ptSettings

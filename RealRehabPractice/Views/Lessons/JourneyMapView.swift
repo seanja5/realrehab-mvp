@@ -318,7 +318,7 @@ struct JourneyMapView: View {
                                         return
                                     }
                                     let node = vm.nodes[idx]
-                                    router.go(.calibrateDevice(reps: node.title.lowercased().contains("knee extension") ? node.reps : nil, restSec: node.title.lowercased().contains("knee extension") ? node.restSec : nil, lessonId: node.id))
+                                    router.go(.calibrateDevice(reps: node.reps, restSec: node.restSec, lessonId: node.id, lessonTitle: node.title))
                                     showCallout = false
                                     selectedNodeIndex = nil
                                 }

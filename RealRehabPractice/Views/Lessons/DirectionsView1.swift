@@ -2,8 +2,6 @@
 //  DirectionsView1.swift
 //  RealRehabPractice
 //
-//  Created by Sean Andrews on 12/7/25.
-//
 
 import SwiftUI
 
@@ -12,32 +10,51 @@ struct DirectionsView1: View {
     let reps: Int?
     let restSec: Int?
     let lessonId: UUID?
-    
-    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil) {
+    let lessonTitle: String?
+
+    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil) {
         self.reps = reps
         self.restSec = restSec
         self.lessonId = lessonId
+        self.lessonTitle = lessonTitle
     }
-    
+
+    private var instructionText: String {
+        let t = lessonTitle?.lowercased() ?? ""
+        if t.contains("quad set") {
+            return "Sit comfortably with your brace on and your leg straight out in front of you, resting on a flat surface."
+        }
+        if t.contains("short arc") {
+            return "Sit or lie with your brace on, with your knee bent at about 45°. Place a rolled towel or bolster under your knee to support it."
+        }
+        if t.contains("heel slide") {
+            return "Lie flat on your back with your brace on and both legs extended. Keep your heel on the surface throughout the exercise."
+        }
+        // Default: knee extensions
+        return "With your brace on, sit comfortably, and place your leg in its resting position."
+    }
+
+    private var navTitle: String {
+        lessonTitle ?? "Lesson"
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            
-            // Main instruction text
-            Text("With your brace on, sit comfortably, and place your leg in its resting position.")
+
+            Text(instructionText)
                 .font(.rrHeadline)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.primary)
                 .padding(.horizontal, 24)
-            
+
             Spacer()
-            
-            // Next button
+
             PrimaryButton(
                 title: "Next",
                 useLargeFont: true
             ) {
-                router.go(.directionsView2(reps: reps, restSec: restSec, lessonId: lessonId))
+                router.go(.directionsView2(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle))
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
@@ -47,7 +64,7 @@ struct DirectionsView1: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .swipeToGoBack()
-        .navigationTitle("Knee Extensions")
+        .navigationTitle(navTitle)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton()
@@ -58,4 +75,3 @@ struct DirectionsView1: View {
         }
     }
 }
-

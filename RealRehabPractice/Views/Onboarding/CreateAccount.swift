@@ -101,7 +101,6 @@ struct CreateAccountView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 24)
 
                         PrimaryButton(
                             title: (auth.isLoading || ptIsLoadingState) ? "Creating..." : "Create Account!",
@@ -109,8 +108,8 @@ struct CreateAccountView: View {
                             useLargeFont: true,
                             action: { Task { await handleCreateAccount(proxy: proxy) } }
                         )
-                        .padding(.horizontal, 24)
                     }
+                    .padding(.horizontal, 24)
                     .padding(.bottom, 40)
                 }
                 .scrollDismissesKeyboard(.interactively)

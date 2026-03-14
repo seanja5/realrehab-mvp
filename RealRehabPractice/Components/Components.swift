@@ -274,9 +274,11 @@ struct BackButton: View {
                         .font(.rrBody)
                 }
             }
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
         }
-        .foregroundColor(Color.brandDarkBlue) // ✅ FIXED: explicitly declare Color
-        .buttonStyle(ScaleButtonStyle())
+        .foregroundColor(Color.brandDarkBlue)
+        .buttonStyle(.plain)
         .accessibilityLabel(title ?? "Back")
     }
 }

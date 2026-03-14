@@ -104,7 +104,7 @@ struct PTJourneyMapView: View {
                     Spacer()
                     Button {
                         guard !showingPhaseGoals, !showingEditor, !showingCompletedLessonPopover else { return }
-                        showingAddPopover = true
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) { showingAddPopover = true }
                         addPhaseSelection = activePhaseId
                         addSelection = 0
                         customLessonName = ""
@@ -134,17 +134,45 @@ struct PTJourneyMapView: View {
         }
         .overlay {
             ZStack {
+                // ── Shared dim: pure opacity fade, independent of card animation ──
+                if showingPhaseGoals || showingEditor || showingAddPopover || showingCompletedLessonPopover {
+                    Color.black.opacity(0.28)
+                        .ignoresSafeArea()
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.22), value: showingPhaseGoals || showingEditor || showingAddPopover || showingCompletedLessonPopover)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                                if showingPhaseGoals { showingPhaseGoals = false }
+                                if showingAddPopover { showingAddPopover = false }
+                                if showingCompletedLessonPopover { showingCompletedLessonPopover = false; completedLessonNode = nil }
+                                if showingEditor { showingEditor = false; selectedNodeID = nil; pressedIndex = nil }
+                            }
+                        }
+                }
+                // ── Phase Goals card: slides down from below header ───────
                 if showingPhaseGoals {
-                    phaseGoalsOverlay
+                    phaseGoalsCard
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showingPhaseGoals)
                 }
-                if showingEditor {
-                    editorPopover
-                }
+                // ── Add Lesson card: slides up from bottom ────────────────
                 if showingAddPopover {
-                    addLessonPopover
+                    addLessonCard
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showingAddPopover)
                 }
+                // ── Editor card: scales in from center ────────────────────
+                if showingEditor {
+                    editorCard
+                        .transition(.scale(scale: 0.97, anchor: .center).combined(with: .opacity))
+                        .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showingEditor)
+                }
+                // ── Completed Lesson card: slides up from bottom ──────────
                 if showingCompletedLessonPopover, let node = completedLessonNode {
-                    completedLessonPopover(node: node)
+                    completedLessonCard(node: node)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showingCompletedLessonPopover)
                 }
             }
             .zIndex(1000)
@@ -353,7 +381,7 @@ struct PTJourneyMapView: View {
                                         // Completed lesson: show analytics pop-up instead of editor
                                         if node.nodeType == .lesson, lessonProgress[node.id]?.isCompleted == true {
                                             completedLessonNode = node
-                                            withAnimation(.spring()) {
+                                            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                                                 showingCompletedLessonPopover = true
                                             }
                                             return
@@ -538,7 +566,7 @@ struct PTJourneyMapView: View {
             
             Button {
                 guard !showingEditor, !showingAddPopover else { return }
-                showingPhaseGoals.toggle()
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) { showingPhaseGoals.toggle() }
             } label: {
                 Image(systemName: "ellipsis.circle.fill")
                     .font(.system(size: 24))
@@ -551,61 +579,50 @@ struct PTJourneyMapView: View {
     /// Approximate height from top of safe area to bottom of title card + "+" button (padding 8 + card ~80 + gap 12 + button 56 + gap 8).
     private static let titleCardBottomOffset: CGFloat = 8 + 80 + 12 + 56 + 8
 
-    // MARK: - Phase Goals Overlay (positioned directly underneath the title card)
-    private var phaseGoalsOverlay: some View {
-        Color.black.opacity(0.3)
-            .ignoresSafeArea()
-            .onTapGesture { showingPhaseGoals = false }
-            .overlay(alignment: .top) {
-                GeometryReader { geo in
-                    let topY = headerBottomGlobal > 0
-                        ? headerBottomGlobal + 8
-                        : (geo.safeAreaInsets.top + Self.titleCardBottomOffset)
-                    VStack(spacing: 0) {
-                        Spacer().frame(height: topY)
-                        PhaseGoalsPopover(
-                            phase: activePhase,
-                            onDismiss: { showingPhaseGoals = false }
-                        )
-                        .frame(maxWidth: 340)
-                        Spacer(minLength: 0)
+    // MARK: - Phase Goals Card (card only, no dim — slides down from below header)
+    private var phaseGoalsCard: some View {
+        GeometryReader { geo in
+            let topY = headerBottomGlobal > 0
+                ? headerBottomGlobal + 6
+                : (geo.safeAreaInsets.top + Self.titleCardBottomOffset)
+            VStack(spacing: 0) {
+                Spacer().frame(height: topY)
+                PhaseGoalsPopover(
+                    phase: activePhase,
+                    onDismiss: {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) { showingPhaseGoals = false }
                     }
-                    .frame(maxWidth: .infinity)
-                }
+                )
+                .padding(.horizontal, 16)
+                Spacer(minLength: 0)
             }
+            .frame(maxWidth: .infinity)
+        }
+        .ignoresSafeArea()
     }
     
-    // MARK: - Add Lesson Popover (upper portion, fixed height; shifts up when keyboard appears)
+    // MARK: - Add Lesson Card (card only, no dim)
     private static let addLessonCardHeight: CGFloat = 520
-    
-    private var addLessonPopover: some View {
-        Color.black.opacity(0.25)
-            .ignoresSafeArea()
-            .ignoresSafeArea(.keyboard)
-            .onTapGesture {
-                withAnimation(.spring()) {
-                    showingAddPopover = false
+
+    private var addLessonCard: some View {
+        GeometryReader { geo in
+            let cardY = keyboardHeight > 0
+                ? (geo.size.height - keyboardHeight) / 2
+                : (geo.size.height * Self.popupCenterYRatio)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    addLessonContent(scrollProxy: proxy)
                 }
+                .frame(width: min(340, geo.size.width - 32), height: Self.addLessonCardHeight)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
+                )
+                .position(x: geo.size.width / 2, y: cardY)
             }
-            .overlay {
-                GeometryReader { geo in
-                    let cardY = keyboardHeight > 0
-                        ? (geo.size.height - keyboardHeight) / 2
-                        : (geo.size.height * Self.popupCenterYRatio)
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            addLessonContent(scrollProxy: proxy)
-                        }
-                        .frame(width: min(340, geo.size.width - 32), height: Self.addLessonCardHeight)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
-                        )
-                        .position(x: geo.size.width / 2, y: cardY)
-                    }
-                }
-            }
+        }
+        .ignoresSafeArea(.keyboard)
     }
     
     private func addLessonContent(scrollProxy: ScrollViewProxy) -> some View {
@@ -728,13 +745,13 @@ struct PTJourneyMapView: View {
                     enableKneeBendAngle: enableKneeBendAngle,
                     enableTimeHoldingPosition: enableTimeHoldingPosition
                 )
-                withAnimation(.spring()) {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                     showingAddPopover = false
                 }
             }
             
             SecondaryButton(title: "Close") {
-                withAnimation(.spring()) {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                     showingAddPopover = false
                 }
             }
@@ -756,85 +773,71 @@ struct PTJourneyMapView: View {
         }
     }
     
-    // MARK: - Editor Popover (positioned in upper portion of screen)
-    private var editorPopover: some View {
-        Color.black.opacity(0.25)
-            .ignoresSafeArea()
-            .onTapGesture {
-                withAnimation(.spring()) {
-                    showingEditor = false
-                    selectedNodeID = nil
-                    pressedIndex = nil
-                }
-            }
-            .overlay {
-                GeometryReader { geo in
-                    let centerY = geo.size.height * Self.popupCenterYRatio
-                    let enabledParamCount = enabledParameterCount
-                    let needsScrolling = enabledParamCount >= 4
-                    
-                    Group {
-                        if needsScrolling {
-                            ScrollView {
-                                editorContent
-                            }
-                            .frame(maxWidth: 340, maxHeight: min(600, geo.size.height - 120))
-                        } else {
-                            editorContent
-                                .frame(maxWidth: 340)
-                        }
+    // MARK: - Editor Card (card only, no dim)
+    private var editorCard: some View {
+        GeometryReader { geo in
+            let centerY = geo.size.height * Self.popupCenterYRatio
+            let enabledParamCount = enabledParameterCount
+            let needsScrolling = enabledParamCount >= 4
+
+            Group {
+                if needsScrolling {
+                    ScrollView {
+                        editorContent
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
-                    )
-                    .position(x: geo.size.width / 2, y: centerY)
+                    .frame(maxWidth: 340, maxHeight: min(600, geo.size.height - 120))
+                } else {
+                    editorContent
+                        .frame(maxWidth: 340)
                 }
             }
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
+            )
+            .position(x: geo.size.width / 2, y: centerY)
+        }
     }
     
-    // MARK: - Completed Lesson Popover (View Analytics / Close)
-    private func completedLessonPopover(node: LessonNode) -> some View {
-        Color.black.opacity(0.3)
-            .ignoresSafeArea()
-            .onTapGesture {
-                withAnimation(.spring()) {
-                    showingCompletedLessonPopover = false
-                    completedLessonNode = nil
+    // MARK: - Completed Lesson Card (card only, no dim — centered)
+    private func completedLessonCard(node: LessonNode) -> some View {
+        VStack {
+            Spacer()
+            VStack(spacing: 16) {
+                Text("Completed")
+                    .font(.rrCaption)
+                    .foregroundStyle(Color.brandDarkBlue)
+                    .textCase(.uppercase)
+                    .tracking(0.8)
+                Text(node.title.isEmpty ? "Lesson" : node.title)
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.center)
+                PrimaryButton(title: "View Analytics") {
+                    router.go(.ptLessonAnalytics(lessonTitle: node.title, lessonId: node.id, patientProfileId: patientProfileId))
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        showingCompletedLessonPopover = false
+                        completedLessonNode = nil
+                    }
+                }
+                SecondaryButton(title: "Close") {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        showingCompletedLessonPopover = false
+                        completedLessonNode = nil
+                    }
                 }
             }
-            .overlay(alignment: .top) {
-                VStack(spacing: 16) {
-                    Text("\(node.title) Complete")
-                        .font(.rrTitle)
-                        .foregroundStyle(.primary)
-                    
-                    PrimaryButton(title: "View Analytics") {
-                        router.go(.ptLessonAnalytics(lessonTitle: node.title, lessonId: node.id, patientProfileId: patientProfileId))
-                        withAnimation(.spring()) {
-                            showingCompletedLessonPopover = false
-                            completedLessonNode = nil
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    
-                    SecondaryButton(title: "Close") {
-                        withAnimation(.spring()) {
-                            showingCompletedLessonPopover = false
-                            completedLessonNode = nil
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.white)
-                        .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
-                )
-                .padding(.top, 140)
-            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 28)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .shadow(color: .black.opacity(0.08), radius: 32, x: 0, y: 12)
+            .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 4)
+            .padding(.horizontal, 24)
+            Spacer()
+        }
+        .ignoresSafeArea()
     }
     
     // Computed property to count enabled parameters
@@ -1001,7 +1004,7 @@ struct PTJourneyMapView: View {
         tempKneeBendAngle = node.kneeBendAngle ?? 120
         tempTimeHoldingPosition = node.timeHoldingPosition ?? 30
         selectedNodeID = node.id
-        withAnimation(.spring()) {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
             showingEditor = true
         }
     }
@@ -1019,7 +1022,7 @@ struct PTJourneyMapView: View {
                 if nodes[idx].enableTimeHoldingPosition { nodes[idx].timeHoldingPosition = tempTimeHoldingPosition }
             }
         }
-        withAnimation(.spring()) {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
             showingEditor = false
             selectedNodeID = nil
             pressedIndex = nil
@@ -1029,7 +1032,7 @@ struct PTJourneyMapView: View {
     private func removeSelectedNode() {
         if let id = selectedNodeID,
            let idx = nodeIndex(for: id) {
-            withAnimation(.spring()) {
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                 nodes.remove(at: idx)
                 ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
                 showingEditor = false

@@ -111,13 +111,15 @@ struct JourneyMapView: View {
                                     let safeX = isValid(nodeX) ? nodeX : (geometry.size.width / 2)
                                     let safeY = isValid(posY) ? posY : 40
                                     Button {
-                                        selectedNodeIndex = index
-                                        if node.isLocked {
-                                            showLockedPopup = true
-                                        } else if vm.lessonProgress[node.id]?.isCompleted == true {
-                                            showCompletedLessonPopover = true
-                                        } else {
-                                            showCallout = true
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                                            selectedNodeIndex = index
+                                            if node.isLocked {
+                                                showLockedPopup = true
+                                            } else if vm.lessonProgress[node.id]?.isCompleted == true {
+                                                showCompletedLessonPopover = true
+                                            } else {
+                                                showCallout = true
+                                            }
                                         }
                                     } label: {
                                         NodeView(node: node, isPressed: pressedNodeIndex == index, progress: vm.lessonProgress[node.id])
@@ -226,166 +228,207 @@ struct JourneyMapView: View {
             }
         }
         .overlay {
-                if showPhaseGoals {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                        .onTapGesture { showPhaseGoals = false }
-                        .overlay(alignment: .topTrailing) {
-                            VStack {
-                                Spacer().frame(height: 100)
-                                HStack {
-                                    Spacer()
-                                    PhaseGoalsPopover(phase: activePhase, onDismiss: { showPhaseGoals = false })
-                                        .padding(.trailing, 16)
-                                }
-                                Spacer()
-                            }
-                        }
+            // ── Phase Goals (3-dot menu) — slides down from header ────────
+            if showPhaseGoals {
+                Color.black.opacity(0.28)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.22), value: showPhaseGoals)
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) { showPhaseGoals = false }
+                    }
+            }
+            if showPhaseGoals {
+                VStack(spacing: 0) {
+                    Spacer().frame(height: headerBottomGlobal > 0 ? headerBottomGlobal + 6 : 100)
+                    PhaseGoalsPopover(phase: activePhase, onDismiss: {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) { showPhaseGoals = false }
+                    })
+                    .padding(.horizontal, 16)
+                    Spacer(minLength: 0)
                 }
-                if showCompletedLessonPopover, let idx = selectedNodeIndex, idx < vm.nodes.count {
-                    let node = vm.nodes[idx]
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                        .onTapGesture {
+                .ignoresSafeArea()
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showPhaseGoals)
+            }
+
+            // ── Completed Lesson — centered card ─────────────────────────
+            if showCompletedLessonPopover {
+                Color.black.opacity(0.28)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.22), value: showCompletedLessonPopover)
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                             showCompletedLessonPopover = false
                             selectedNodeIndex = nil
                         }
-                        .overlay(alignment: .top) {
-                            VStack(spacing: 16) {
-                                Text("Completed \(node.title.isEmpty ? "Lesson" : node.title)")
-                                    .font(.rrTitle)
-                                    .foregroundStyle(.primary)
-                                
-                                if let desc = ACLJourneyModels.lessonDescription(for: node.title) {
-                                    Text(desc)
-                                        .font(.rrBody)
-                                        .foregroundStyle(.secondary)
-                                        .multilineTextAlignment(.center)
-                                }
-                                
-                                Text("\(node.reps) reps, \(node.restSec) sec rest")
-                                    .font(.rrCaption)
-                                    .foregroundStyle(.secondary)
-                                
-                                PrimaryButton(title: "View Results") {
-                                    router.go(.completion(lessonId: node.id))
-                                    showCompletedLessonPopover = false
-                                    selectedNodeIndex = nil
-                                }
-                                .padding(.horizontal, 24)
-                                
-                                SecondaryButton(title: "Close") {
-                                    showCompletedLessonPopover = false
-                                    selectedNodeIndex = nil
-                                }
-                                .padding(.horizontal, 24)
-                            }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 24)
-                                    .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.06), radius: 24, x: 0, y: 10)
-                                    .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 3)
-                            )
-                            .padding(.top, 140)
+                    }
+            }
+            if showCompletedLessonPopover, let idx = selectedNodeIndex, idx < vm.nodes.count {
+                let node = vm.nodes[idx]
+                VStack {
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Text("Completed")
+                            .font(.rrCaption)
+                            .foregroundStyle(Color.brandDarkBlue)
+                            .textCase(.uppercase)
+                            .tracking(0.8)
+                        Text(node.title.isEmpty ? "Lesson" : node.title)
+                            .font(.rrTitle)
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.center)
+                        if let desc = ACLJourneyModels.lessonDescription(for: node.title) {
+                            Text(desc)
+                                .font(.rrBody)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
                         }
+                        Text("\(node.reps) reps · \(node.restSec)s rest")
+                            .font(.rrCaption)
+                            .foregroundStyle(.tertiary)
+                        PrimaryButton(title: "View Results") {
+                            router.go(.completion(lessonId: node.id))
+                            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                                showCompletedLessonPopover = false
+                                selectedNodeIndex = nil
+                            }
+                        }
+                        SecondaryButton(title: "Close") {
+                            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                                showCompletedLessonPopover = false
+                                selectedNodeIndex = nil
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 28)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                    .shadow(color: .black.opacity(0.08), radius: 32, x: 0, y: 12)
+                    .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 4)
+                    .padding(.horizontal, 24)
+                    Spacer()
                 }
-                
-                if showCallout {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                        .onTapGesture { 
+                .ignoresSafeArea()
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showCompletedLessonPopover)
+            }
+
+            // ── Callout (Go!) — centered card ────────────────────────────
+            if showCallout {
+                Color.black.opacity(0.28)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.22), value: showCallout)
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                             showCallout = false
                             selectedNodeIndex = nil
                         }
-                        .overlay(alignment: .top) {
-                            VStack(spacing: 16) {
-                                Text(selectedNodeTitle)
-                                    .font(.rrTitle)
-                                    .foregroundStyle(.primary)
-                                
-                                if let desc = selectedNodeDescription {
-                                    Text(desc)
-                                        .font(.rrBody)
-                                        .foregroundStyle(.secondary)
-                                        .multilineTextAlignment(.center)
-                                }
-                                
-                                PrimaryButton(title: "Go!") {
-                                    guard let idx = selectedNodeIndex, idx < vm.nodes.count else {
-                                        showCallout = false
-                                        selectedNodeIndex = nil
-                                        return
-                                    }
-                                    let node = vm.nodes[idx]
-                                    router.go(.calibrateDevice(reps: node.reps, restSec: node.restSec, lessonId: node.id, lessonTitle: node.title))
-                                    showCallout = false
-                                    selectedNodeIndex = nil
-                                }
-                                .padding(.horizontal, 24)
-                                
-                                SecondaryButton(title: "Close") {
-                                    showCallout = false
-                                    selectedNodeIndex = nil
-                                }
-                                .padding(.horizontal, 24)
-                            }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 24)
-                                    .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.06), radius: 24, x: 0, y: 10)
-                                    .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 3)
-                            )
-                            .padding(.top, 140)
+                    }
+            }
+            if showCallout, let idx = selectedNodeIndex, idx < vm.nodes.count {
+                let node = vm.nodes[idx]
+                VStack {
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Image(systemName: ACLJourneyModels.lessonIconSystemName(for: node.title))
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundStyle(Color.brandDarkBlue)
+                        Text(node.title.isEmpty ? "Lesson" : node.title)
+                            .font(.rrTitle)
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.center)
+                        if let desc = ACLJourneyModels.lessonDescription(for: node.title) {
+                            Text(desc)
+                                .font(.rrBody)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
                         }
+                        PrimaryButton(title: "Go!") {
+                            router.go(.calibrateDevice(reps: node.reps, restSec: node.restSec, lessonId: node.id, lessonTitle: node.title))
+                            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                                showCallout = false
+                                selectedNodeIndex = nil
+                            }
+                        }
+                        SecondaryButton(title: "Close") {
+                            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                                showCallout = false
+                                selectedNodeIndex = nil
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 28)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                    .shadow(color: .black.opacity(0.08), radius: 32, x: 0, y: 12)
+                    .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 4)
+                    .padding(.horizontal, 24)
+                    Spacer()
                 }
-                
-                if showLockedPopup {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                        .onTapGesture { 
+                .ignoresSafeArea()
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showCallout)
+            }
+
+            // ── Locked — centered card ────────────────────────────────────
+            if showLockedPopup {
+                Color.black.opacity(0.28)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.22), value: showLockedPopup)
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                             showLockedPopup = false
                             selectedNodeIndex = nil
                         }
-                        .overlay(alignment: .top) {
-                            VStack(spacing: 16) {
-                                Text(selectedNodeTitle)
-                                    .font(.rrTitle)
-                                    .foregroundStyle(.primary)
-                                
-                                if let desc = selectedNodeDescription {
-                                    Text(desc)
-                                        .font(.rrBody)
-                                        .foregroundStyle(.secondary)
-                                        .multilineTextAlignment(.center)
-                                }
-                                
-                                Text("Locked")
-                                    .font(.rrBody)
-                                    .foregroundStyle(.secondary)
-                                
-                                Text("You haven't yet reached this level")
-                                    .font(.rrCaption)
-                                    .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.center)
-                                
-                                SecondaryButton(title: "Close") {
-                                    showLockedPopup = false
-                                    selectedNodeIndex = nil
-                                }
-                                .padding(.horizontal, 24)
+                    }
+            }
+            if showLockedPopup, let idx = selectedNodeIndex, idx < vm.nodes.count {
+                let node = vm.nodes[idx]
+                VStack {
+                    Spacer()
+                    VStack(spacing: 14) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 26))
+                            .foregroundStyle(Color.secondary)
+                        Text(node.title.isEmpty ? "Lesson" : node.title)
+                            .font(.rrTitle)
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.center)
+                        if let desc = ACLJourneyModels.lessonDescription(for: node.title) {
+                            Text(desc)
+                                .font(.rrBody)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        Text("Complete earlier lessons to unlock this one.")
+                            .font(.rrCaption)
+                            .foregroundStyle(.tertiary)
+                            .multilineTextAlignment(.center)
+                        SecondaryButton(title: "Close") {
+                            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                                showLockedPopup = false
+                                selectedNodeIndex = nil
                             }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 24)
-                                    .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.06), radius: 24, x: 0, y: 10)
-                                    .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 3)
-                            )
-                            .padding(.top, 140)
                         }
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 28)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                    .shadow(color: .black.opacity(0.08), radius: 32, x: 0, y: 12)
+                    .padding(.horizontal, 24)
+                    Spacer()
+                }
+                .ignoresSafeArea()
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showLockedPopup)
+            }
         }
         .task {
             await vm.load(forceRefresh: false)
@@ -419,7 +462,7 @@ struct JourneyMapView: View {
             }
             Spacer()
             Button {
-                showPhaseGoals.toggle()
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) { showPhaseGoals.toggle() }
             } label: {
                 Image(systemName: "ellipsis.circle.fill")
                     .font(.system(size: 24))

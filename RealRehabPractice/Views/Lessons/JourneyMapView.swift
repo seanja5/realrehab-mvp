@@ -162,7 +162,7 @@ struct JourneyMapView: View {
             if vm.isLoading {
                 ProgressView("Loading plan...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(red: 0.95, green: 0.95, blue: 0.95))
+                    .background(Color(red: 0.96, green: 0.97, blue: 0.99))
             } else if vm.nodes.isEmpty {
                 VStack {
                     Spacer()
@@ -202,7 +202,7 @@ struct JourneyMapView: View {
                 )
             }
         }
-        .rrPageBackground()
+        .rrJourneyBackground()
         .safeAreaInset(edge: .top) {
             if vm.isLinkedToPT == true && !vm.isLoading && !vm.nodes.isEmpty {
                 headerCard

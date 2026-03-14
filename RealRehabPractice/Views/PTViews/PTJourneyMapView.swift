@@ -66,7 +66,7 @@ struct PTJourneyMapView: View {
             if nodes.isEmpty && isLoading {
                 ProgressView("Loading plan...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(red: 0.95, green: 0.95, blue: 0.95))
+                    .background(Color(red: 0.96, green: 0.97, blue: 0.99))
             }
             
             // Confirm Journey button fixed at bottom
@@ -128,7 +128,7 @@ struct PTJourneyMapView: View {
             }
             }
         }
-        .rrPageBackground()
+        .rrJourneyBackground()
         .onPreferenceChange(StickyHeaderBottomPreferenceKey.self) { value in
             headerBottomGlobal = value
         }
@@ -344,7 +344,7 @@ struct PTJourneyMapView: View {
                             .contentShape(Rectangle()) // Ensure full hit area
                             
                             // 1) TAP: enlarge, open editor, then shrink when editor closes
-                            .highPriorityGesture(
+                            .gesture(
                                 TapGesture()
                                     .onEnded {
                                         // Ignore taps during active drag or when another overlay is showing
@@ -449,7 +449,7 @@ struct PTJourneyMapView: View {
             }
         }
         .scrollDisabled(isDragging) // Disable scrolling while dragging
-        .rrPageBackground()
+        .rrJourneyBackground()
         .navigationTitle("Journey Map")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)

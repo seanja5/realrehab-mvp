@@ -77,6 +77,7 @@ struct SecondaryButton: View {
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(isDisabled ? Color.gray : .brandDarkBlue, lineWidth: 2)
                 )
+                .contentShape(Rectangle())
         }
         .buttonStyle(ScaleButtonStyle())
         .disabled(isDisabled)

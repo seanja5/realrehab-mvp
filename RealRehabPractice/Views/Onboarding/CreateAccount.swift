@@ -347,7 +347,7 @@ struct CreateAccountView: View {
     private func handleCreateAccount(proxy: ScrollViewProxy) async {
         guard let type = accountType else {
             showValidationErrors = true
-            withAnimation {
+            withAnimation(RRAnimation.state) {
                 proxy.scrollTo("accountTypeField", anchor: .center)
             }
             return
@@ -359,7 +359,7 @@ struct CreateAccountView: View {
                 showValidationErrors = true
                 if let id = firstInvalidPatientField() {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        withAnimation {
+                        withAnimation(RRAnimation.state) {
                             proxy.scrollTo(id, anchor: .center)
                         }
                     }
@@ -391,7 +391,7 @@ struct CreateAccountView: View {
                 showValidationErrors = true
                 if let id = firstInvalidPTField() {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        withAnimation {
+                        withAnimation(RRAnimation.state) {
                             proxy.scrollTo(id, anchor: .center)
                         }
                     }

@@ -125,49 +125,27 @@ struct PTSettingsView: View {
     }
 
     private var accountSection: some View {
-        settingsCard(title: "Account") {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Name")
+        SettingsSection(title: "Account", innerSpacing: 8) {
+            LabeledValueRow(label: "Name", value: displayName)
+            Divider()
+            LabeledValueRow(label: "Email", value: ptProfile?.email ?? "—")
+            Divider()
+            LabeledValueRow(label: "Phone", value: ptProfile?.phone ?? "—")
+            Divider()
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Verification")
                     .font(.rrCaption)
                     .foregroundStyle(.secondary)
-                Text(displayName)
+                Text(verificationStatusText)
                     .font(.rrBody)
-
-                Divider()
-
-                Text("Email")
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
-                Text(ptProfile?.email ?? "—")
-                    .font(.rrBody)
-
-                Divider()
-
-                Text("Phone")
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
-                Text(ptProfile?.phone ?? "—")
-                    .font(.rrBody)
-
-                Divider()
-
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Verification")
-                            .font(.rrCaption)
-                            .foregroundStyle(.secondary)
-                        Text(verificationStatusText)
-                            .font(.rrBody)
-                            .foregroundStyle(verificationStatusColor)
-                    }
-                    Spacer()
-                }
+                    .foregroundStyle(verificationStatusColor)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     private var notificationsSection: some View {
-        settingsCard(title: "Notifications") {
+        SettingsSection(title: "Notifications") {
             Toggle(isOn: $notifySessionComplete) {
                 Text("Patient session completed")
                     .font(.rrBody)
@@ -194,84 +172,32 @@ struct PTSettingsView: View {
     }
 
     private var practiceSection: some View {
-        settingsCard(title: "Practice") {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Practice/Clinic Name")
-                        .font(.rrCaption)
-                        .foregroundStyle(.secondary)
-                    Text(ptProfile?.practice_name ?? "—")
-                        .font(.rrBody)
-                }
-
-                Divider()
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Practice Address")
-                        .font(.rrCaption)
-                        .foregroundStyle(.secondary)
-                    Text(ptProfile?.practice_address ?? "—")
-                        .font(.rrBody)
-                }
-
-                Divider()
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Specialization")
-                        .font(.rrCaption)
-                        .foregroundStyle(.secondary)
-                    Text(ptProfile?.specialization ?? "—")
-                        .font(.rrBody)
-                }
-
-                Divider()
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("License Number")
-                        .font(.rrCaption)
-                        .foregroundStyle(.secondary)
-                    Text(ptProfile?.license_number ?? "—")
-                        .font(.rrBody)
-                }
-
-                Divider()
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("NPI Number")
-                        .font(.rrCaption)
-                        .foregroundStyle(.secondary)
-                    Text(ptProfile?.npi_number ?? "—")
-                        .font(.rrBody)
-                }
-            }
+        SettingsSection(title: "Practice", innerSpacing: 8) {
+            LabeledValueRow(label: "Practice/Clinic Name", value: ptProfile?.practice_name ?? "—")
+            Divider()
+            LabeledValueRow(label: "Practice Address", value: ptProfile?.practice_address ?? "—")
+            Divider()
+            LabeledValueRow(label: "Specialization", value: ptProfile?.specialization ?? "—")
+            Divider()
+            LabeledValueRow(label: "License Number", value: ptProfile?.license_number ?? "—")
+            Divider()
+            LabeledValueRow(label: "NPI Number", value: ptProfile?.npi_number ?? "—")
         }
     }
 
     private var dangerZoneSection: some View {
-        settingsCard(title: "Sign out") {
-            Button {
+        SettingsSection(title: "Sign out") {
+            DestructiveButton(title: "Sign out") {
                 Task {
                     try? await AuthService.signOut()
                     router.reset(to: .welcome)
                 }
-            } label: {
-                Text("Sign out")
-                    .font(.rrBody)
-                    .foregroundStyle(.red)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 16)
-                    .background(Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.red, lineWidth: 1)
-                    )
             }
         }
     }
-    
+
     private var testAnalyticsSection: some View {
-        settingsCard(title: "Testing") {
+        SettingsSection(title: "Testing") {
             Button {
                 router.go(.ptLessonAnalytics(lessonTitle: "Knee Extension", lessonId: nil, patientProfileId: nil))
             } label: {
@@ -314,25 +240,6 @@ struct PTSettingsView: View {
         }
     }
 
-    @ViewBuilder
-    private func settingsCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(title)
-                .font(.rrHeadline)
-
-            VStack(alignment: .leading, spacing: 16) {
-                content()
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
-            )
-        }
-    }
-    
     private func loadProfile(forceRefresh: Bool = false) async {
         guard session.ptProfileId != nil else {
             errorMessage = "PT profile not available"

@@ -75,7 +75,7 @@ struct MessagingView: View {
             if isFromMe { Spacer(minLength: 60) }
             VStack(alignment: isFromMe ? .trailing : .leading, spacing: 4) {
                 Text(msg.body)
-                    .font(.body)
+                    .font(.rrBody)
                     .foregroundStyle(isFromMe ? .white : .primary)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)

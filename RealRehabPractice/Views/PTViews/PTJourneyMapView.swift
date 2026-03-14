@@ -967,19 +967,8 @@ struct PTJourneyMapView: View {
                 commitEdit()
             }
             
-            Button {
+            DestructiveButton(title: "Remove Lesson") {
                 removeSelectedNode()
-            } label: {
-                Text("Remove Lesson")
-                    .font(.rrBody)
-                    .foregroundStyle(.red)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color.red, lineWidth: 1)
-                    )
             }
         }
         .padding(20)

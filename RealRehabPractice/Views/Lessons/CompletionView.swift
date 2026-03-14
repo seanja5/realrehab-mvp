@@ -72,6 +72,7 @@ struct CompletionView: View {
                             .font(.rrHeadline)
                     }
                 }
+                .animation(RRAnimation.micro, value: isScreenLoading)
                 .padding(.top, RRSpace.pageTop)
                 .frame(minHeight: 56)
 
@@ -114,6 +115,8 @@ struct CompletionView: View {
         }
         .sheet(isPresented: $showScoreExplanation) {
             scoreExplanationSheet
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .rrPageBackground()
         .navigationTitle("Complete")

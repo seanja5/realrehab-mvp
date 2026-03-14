@@ -45,22 +45,14 @@ struct PatientListView: View {
                     if vm.isLoading && vm.patients.isEmpty {
                         skeletonContent
                     } else if vm.patients.isEmpty {
-                        VStack(spacing: 20) {
-                            Spacer()
-                                .frame(height: 100)
-                            
-                            Text("You don't have any patients added yet")
-                                .font(.rrBody)
-                                .foregroundStyle(.secondary)
-                            
-                            SecondaryButton(title: "Add Patient") {
-                                vm.showAddOverlay = true
-                            }
-                            .padding(.horizontal, 24)
-                            
-                            Spacer()
-                        }
-                        .frame(maxWidth: .infinity)
+                        EmptyState(
+                            icon: "person.2",
+                            title: "No patients yet",
+                            description: "Add your first patient to get started.",
+                            actionLabel: "Add Patient",
+                            action: { vm.showAddOverlay = true }
+                        )
+                        .padding(.top, 60)
                     } else {
                         LazyVStack(spacing: 24) {
                             ForEach(vm.patients) { patient in
@@ -111,6 +103,7 @@ struct PatientListView: View {
             // Add Patient Overlay
             if vm.showAddOverlay {
                 addPatientOverlay
+                    .zIndex(1)
             }
         }
         .rrPageBackground()
@@ -147,64 +140,63 @@ struct PatientListView: View {
     }
     
     private var addPatientOverlay: some View {
-        Color.black.opacity(0.4)
-            .ignoresSafeArea()
-            .onTapGesture {
-                vm.showAddOverlay = false
-            }
-            .overlay {
-                VStack(spacing: 20) {
-                    Text("Add Patient")
-                        .font(.rrTitle)
-                        .foregroundStyle(.primary)
-                    
-                    FormTextField(title: "First Name", placeholder: "First Name", text: $vm.firstName)
-                        .textContentType(.givenName)
-                        .autocapitalization(.words)
-                    
-                    FormTextField(title: "Last Name", placeholder: "Last Name", text: $vm.lastName)
-                        .textContentType(.familyName)
-                        .autocapitalization(.words)
-                    
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Date of Birth")
-                            .font(.rrCaption)
-                            .foregroundStyle(.secondary)
-                        
-                        DatePicker("", selection: $vm.dateOfBirth, displayedComponents: .date)
-                            .datePickerStyle(.compact)
-                            .padding(14)
-                            .background(Color(uiColor: .secondarySystemFill))
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                    }
-                    
-                    FormMenuField(title: "Gender", selection: $vm.gender, options: ["Male", "Female", "Non-binary", "Prefer not to say"])
-                    
-                    HStack(spacing: 12) {
-                        SecondaryButton(title: "Cancel") {
-                            vm.showAddOverlay = false
-                        }
-                        .frame(maxWidth: .infinity)
-                        
-                        PrimaryButton(
-                            title: vm.isLoading ? "Adding..." : "Add",
-                            isDisabled: vm.isLoading || vm.firstName.trimmingCharacters(in: .whitespaces).isEmpty || vm.lastName.trimmingCharacters(in: .whitespaces).isEmpty
-                        ) {
-                            Task {
-                                await vm.addPatient()
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
+        ZStack {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .onTapGesture { withAnimation(RRAnimation.state) { vm.showAddOverlay = false } }
+
+            VStack(spacing: 20) {
+                Text("Add Patient")
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+
+                FormTextField(title: "First Name", placeholder: "First Name", text: $vm.firstName)
+                    .textContentType(.givenName)
+                    .autocapitalization(.words)
+
+                FormTextField(title: "Last Name", placeholder: "Last Name", text: $vm.lastName)
+                    .textContentType(.familyName)
+                    .autocapitalization(.words)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Date of Birth")
+                        .font(.rrCaption)
+                        .foregroundStyle(.secondary)
+
+                    DatePicker("", selection: $vm.dateOfBirth, displayedComponents: .date)
+                        .datePickerStyle(.compact)
+                        .padding(14)
+                        .background(Color(uiColor: .secondarySystemFill))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                .padding(24)
-                .frame(maxWidth: 340)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color.white)
-                        .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
-                )
+
+                FormMenuField(title: "Gender", selection: $vm.gender, options: ["Male", "Female", "Non-binary", "Prefer not to say"])
+
+                HStack(spacing: 12) {
+                    SecondaryButton(title: "Cancel") {
+                        withAnimation(RRAnimation.state) { vm.showAddOverlay = false }
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    PrimaryButton(
+                        title: vm.isLoading ? "Adding..." : "Add",
+                        isDisabled: vm.isLoading || vm.firstName.trimmingCharacters(in: .whitespaces).isEmpty || vm.lastName.trimmingCharacters(in: .whitespaces).isEmpty
+                    ) {
+                        Task { await vm.addPatient() }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
             }
+            .padding(24)
+            .frame(maxWidth: 340)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+        .transition(.opacity)
     }
 
     private var skeletonContent: some View {
@@ -312,46 +304,3 @@ private struct PatientCard: View {
     }
 }
 
-// MARK: - Form Field Helpers
-private func FormTextField(title: String, placeholder: String, text: Binding<String>) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-        Text(title)
-            .font(.rrCaption)
-            .foregroundStyle(.secondary)
-        
-        TextField(placeholder, text: text)
-            .font(.rrBody)
-            .padding(14)
-            .background(Color(uiColor: .secondarySystemFill))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-}
-
-private func FormMenuField(title: String, selection: Binding<String>, options: [String]) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-        Text(title)
-            .font(.rrCaption)
-            .foregroundStyle(.secondary)
-        
-        Menu {
-            ForEach(options, id: \.self) { option in
-                Button(option) {
-                    selection.wrappedValue = option
-                }
-            }
-        } label: {
-            HStack {
-                Text(selection.wrappedValue.isEmpty ? "Select" : selection.wrappedValue)
-                    .font(.rrBody)
-                    .foregroundStyle(selection.wrappedValue.isEmpty ? Color.secondary : Color.primary)
-                Spacer()
-                Image(systemName: "chevron.down")
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(14)
-            .background(Color(uiColor: .secondarySystemFill))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-        }
-    }
-}

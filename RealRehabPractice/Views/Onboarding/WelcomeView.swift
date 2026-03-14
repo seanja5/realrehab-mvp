@@ -4,7 +4,8 @@ struct WelcomeView: View {
     @EnvironmentObject var router: Router
     @EnvironmentObject private var session: SessionContext
     @StateObject private var auth = AuthViewModel()
-    
+    @State private var logoVisible = false
+
     private let fieldFill = Color(uiColor: .secondarySystemFill)
     
     private var isFormValid: Bool {
@@ -19,9 +20,15 @@ struct WelcomeView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 200)
-                    .scaleEffect(1.3)
+                    .scaleEffect(logoVisible ? 1.0 : 0.85)
+                    .opacity(logoVisible ? 1.0 : 0.0)
                     .offset(y: -20)
                     .safeAreaPadding(.top)
+                    .task {
+                        withAnimation(RRAnimation.state) {
+                            logoVisible = true
+                        }
+                    }
                 
                 // Spacing between logo and login content
                 Spacer()

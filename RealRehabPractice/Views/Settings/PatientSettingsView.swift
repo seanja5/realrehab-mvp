@@ -123,25 +123,23 @@ struct PatientSettingsView: View {
     }
 
     private var accountSection: some View {
-        settingsCard(title: "Account") {
-            VStack(alignment: .leading, spacing: 8) {
-                labeledValue(label: "Name", value: displayName)
+        SettingsSection(title: "Account", innerSpacing: 8) {
+            LabeledValueRow(label: "Name", value: displayName)
+            Divider()
+            LabeledValueRow(label: "Email", value: email ?? "—")
+            Divider()
+            LabeledValueRow(label: "Phone", value: patientProfile?.phone ?? "—")
+            Divider()
+            LabeledValueRow(label: "Date of Birth", value: formattedDate(patientProfile?.date_of_birth))
+            Divider()
+            LabeledValueRow(label: "Gender", value: patientProfile?.gender ?? "—")
+            if let surgeryDate = patientProfile?.surgery_date, !surgeryDate.isEmpty {
                 Divider()
-                labeledValue(label: "Email", value: email ?? "—")
+                LabeledValueRow(label: "Date of Surgery", value: formattedDate(surgeryDate))
+            }
+            if let lastVisit = patientProfile?.last_pt_visit, !lastVisit.isEmpty {
                 Divider()
-                labeledValue(label: "Phone", value: patientProfile?.phone ?? "—")
-                Divider()
-                labeledValue(label: "Date of Birth", value: formattedDate(patientProfile?.date_of_birth))
-                Divider()
-                labeledValue(label: "Gender", value: patientProfile?.gender ?? "—")
-                if let surgeryDate = patientProfile?.surgery_date, !surgeryDate.isEmpty {
-                    Divider()
-                    labeledValue(label: "Date of Surgery", value: formattedDate(surgeryDate))
-                }
-                if let lastVisit = patientProfile?.last_pt_visit, !lastVisit.isEmpty {
-                    Divider()
-                    labeledValue(label: "Last PT Visit", value: formattedDate(lastVisit))
-                }
+                LabeledValueRow(label: "Last PT Visit", value: formattedDate(lastVisit))
             }
         }
     }
@@ -173,18 +171,18 @@ struct PatientSettingsView: View {
     }
 
     private var notificationsSection: some View {
-        settingsCard(title: "Notifications") {
+        SettingsSection(title: "Notifications") {
             Toggle(isOn: $allowReminders) {
                 Text("Allow reminders")
                     .font(.rrBody)
             }
             .onChange(of: allowReminders) { _, enabled in
-                guard hasLoadedInitial else { return }  // Skip when loading from cache (prevents offline error)
+                guard hasLoadedInitial else { return }
                 Task { await saveRemindersPreference(enabled: enabled) }
             }
-            
+
             Divider()
-            
+
             Toggle(isOn: $allowCamera) {
                 Text("Allow camera")
                     .font(.rrBody)
@@ -205,7 +203,7 @@ struct PatientSettingsView: View {
     }
 
     private var connectPTSection: some View {
-        settingsCard(title: "Connect with your PT") {
+        SettingsSection(title: "Connect with your PT") {
             VStack(alignment: .leading, spacing: 12) {
                 Text("If your Physical Therapist provided you with an 8-digit access code, enter it here to link your account.")
                     .font(.rrCaption)
@@ -249,54 +247,13 @@ struct PatientSettingsView: View {
     }
     
     private var dangerZoneSection: some View {
-        settingsCard(title: "Sign out") {
-            Button {
+        SettingsSection(title: "Sign out") {
+            DestructiveButton(title: "Sign out") {
                 Task {
                     try? await AuthService.signOut()
                     router.reset(to: .welcome)
                 }
-            } label: {
-                Text("Sign out")
-                    .font(.rrBody)
-                    .foregroundStyle(.red)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 16)
-                    .background(Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.red, lineWidth: 1)
-                    )
             }
-        }
-    }
-
-    @ViewBuilder
-    private func settingsCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(title)
-                .font(.rrHeadline)
-
-            VStack(alignment: .leading, spacing: 16) {
-                content()
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
-            )
-        }
-    }
-
-    private func labeledValue(label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.rrCaption)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.rrBody)
         }
     }
 

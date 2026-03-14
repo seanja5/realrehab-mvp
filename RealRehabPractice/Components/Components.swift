@@ -34,6 +34,7 @@ struct PrimaryButton: View {
                 .background(isDisabled ? Color.gray : .brandDarkBlue)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
         }
+        .buttonStyle(ScaleButtonStyle())
         .disabled(isDisabled)
         .accessibilityLabel(title)
         .accessibilityAddTraits(.isButton)
@@ -77,6 +78,7 @@ struct SecondaryButton: View {
                         .stroke(isDisabled ? Color.gray : .brandDarkBlue, lineWidth: 2)
                 )
         }
+        .buttonStyle(ScaleButtonStyle())
         .disabled(isDisabled)
         .accessibilityLabel(title)
         .accessibilityAddTraits(.isButton)
@@ -251,6 +253,7 @@ struct BackButton: View {
             }
         }
         .foregroundColor(Color.brandDarkBlue) // ✅ FIXED: explicitly declare Color
+        .buttonStyle(ScaleButtonStyle())
         .accessibilityLabel(title ?? "Back")
     }
 }
@@ -1394,6 +1397,186 @@ struct ActivityConsistencyCard: View {
                     .padding(20)
                 }
                 .padding(.horizontal, 16)
+        }
+    }
+}
+
+// MARK: - Card Container
+/// White card with consistent shadow and corner radius — use wherever a raised surface is needed.
+struct CardContainer<Content: View>: View {
+    var padding: CGFloat = 16
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            content()
+        }
+        .padding(padding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+        )
+    }
+}
+
+// MARK: - Settings Section
+/// Titled section containing a card — replaces per-file `settingsCard` pattern.
+struct SettingsSection<Content: View>: View {
+    let title: String
+    var innerSpacing: CGFloat = 16
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title)
+                .font(.rrHeadline)
+            CardContainer(padding: innerSpacing) {
+                VStack(alignment: .leading, spacing: innerSpacing) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Labeled Value Row
+/// Caption label above a body value — replaces per-file `labeledValue` pattern.
+struct LabeledValueRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.rrCaption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.rrBody)
+                .foregroundStyle(.primary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - Destructive Button
+/// Red-outlined button for sign-out, delete, and danger-zone actions.
+struct DestructiveButton: View {
+    let title: String
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.rrBody)
+                .foregroundStyle(.red)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 16)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.red, lineWidth: 1)
+                )
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
+// MARK: - Empty State
+/// Centred icon + title + optional description + optional CTA for empty list/screen states.
+struct EmptyState: View {
+    let icon: String
+    let title: String
+    var description: String? = nil
+    var actionLabel: String? = nil
+    var action: (() -> Void)? = nil
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: icon)
+                .font(.system(size: 44, weight: .light))
+                .foregroundStyle(Color.brandDarkBlue.opacity(0.35))
+
+            VStack(spacing: 8) {
+                Text(title)
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.center)
+
+                if let description {
+                    Text(description)
+                        .font(.rrBody)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+
+            if let actionLabel, let action {
+                SecondaryButton(title: actionLabel, action: action)
+                    .padding(.horizontal, 24)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+        .padding(.horizontal, 24)
+    }
+}
+
+// MARK: - Shared Form Fields
+/// Labelled text field — shared across PatientListView overlay, and usable anywhere.
+struct FormTextField: View {
+    let title: String
+    let placeholder: String
+    @Binding var text: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.rrCaption)
+                .foregroundStyle(.secondary)
+            TextField(placeholder, text: $text)
+                .font(.rrBody)
+                .padding(14)
+                .background(Color(uiColor: .secondarySystemFill))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+    }
+}
+
+/// Labelled menu/dropdown field — shared across PatientListView overlay and anywhere a picker is needed.
+struct FormMenuField: View {
+    let title: String
+    @Binding var selection: String
+    let options: [String]
+    var showClear: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.rrCaption)
+                .foregroundStyle(.secondary)
+            Menu {
+                ForEach(options, id: \.self) { option in
+                    Button(option) { selection = option }
+                }
+                if showClear {
+                    Button("Clear") { selection = "" }
+                }
+            } label: {
+                HStack {
+                    Text(selection.isEmpty ? "Select" : selection)
+                        .font(.rrBody)
+                        .foregroundStyle(selection.isEmpty ? Color.secondary : Color.primary)
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.rrCaption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(14)
+                .background(Color(uiColor: .secondarySystemFill))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
         }
     }
 }

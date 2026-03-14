@@ -76,9 +76,7 @@ struct PatientDetailView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 10)
                     
-                    Rectangle()
-                        .fill(Color.black.opacity(0.12))
-                        .frame(height: 1)
+                    Divider()
                         .padding(.horizontal, 16)
                     
                     VStack(alignment: .leading, spacing: RRSpace.stack) {
@@ -135,9 +133,7 @@ struct PatientDetailView: View {
                             .padding(.top, 8)
                     }
                     
-                    Rectangle()
-                        .fill(Color.black.opacity(0.12))
-                        .frame(height: 1)
+                    Divider()
                         .padding(.horizontal, 16)
                     
                     VStack(alignment: .leading, spacing: RRSpace.stack) {
@@ -167,9 +163,7 @@ struct PatientDetailView: View {
                     }
                     .padding(.horizontal, 16)
                     
-                    Rectangle()
-                        .fill(Color.black.opacity(0.12))
-                        .frame(height: 1)
+                    Divider()
                         .padding(.horizontal, 16)
                     
                     // Access Code Section
@@ -218,20 +212,9 @@ struct PatientDetailView: View {
                         Text("Remove")
                             .font(.rrTitle)
                             .foregroundStyle(.red)
-                        
-                        Button {
+
+                        DestructiveButton(title: "Remove Patient") {
                             showDeleteConfirmation = true
-                        } label: {
-                            Text("Remove Patient")
-                                .font(.rrBody)
-                                .foregroundStyle(.red)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .stroke(Color.red, lineWidth: 1)
-                                )
                         }
                     }
                     .padding(.horizontal, 16)

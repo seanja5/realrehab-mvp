@@ -118,7 +118,7 @@ struct PTCreateAccountView: View {
 
                             FormTextField(title: "Practice Address", placeholder: "Practice Address", text: $practiceAddress)
 
-                            FormMenuField(title: "Specialization", selection: $specialization, options: specializationOptions)
+                            FormMenuField(title: "Specialization", selection: $specialization, options: specializationOptions, showClear: true)
                         }
                     }
                     .padding(.horizontal, 20)
@@ -212,20 +212,6 @@ struct PTCreateAccountView: View {
 
 // MARK: - Helpers
 
-private func FormTextField(title: String, placeholder: String, text: Binding<String>) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-        Text(title)
-            .font(.rrCaption)
-            .foregroundStyle(.secondary)
-
-        TextField(placeholder, text: text)
-            .font(.rrBody)
-            .padding(14)
-            .background(Color(uiColor: .secondarySystemFill))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-}
-
 private func FormSecureField(title: String, placeholder: String, text: Binding<String>) -> some View {
     VStack(alignment: .leading, spacing: 6) {
         Text(title)
@@ -237,38 +223,6 @@ private func FormSecureField(title: String, placeholder: String, text: Binding<S
             .padding(14)
             .background(Color(uiColor: .secondarySystemFill))
             .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-}
-
-private func FormMenuField(title: String, selection: Binding<String>, options: [String]) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-        Text(title)
-            .font(.rrCaption)
-            .foregroundStyle(.secondary)
-
-        Menu {
-            ForEach(options, id: \.self) { option in
-                Button(option) {
-                    selection.wrappedValue = option
-                }
-            }
-            Button("Clear") {
-                selection.wrappedValue = ""
-            }
-        } label: {
-            HStack {
-                Text(selection.wrappedValue.isEmpty ? "Select" : selection.wrappedValue)
-                    .font(.rrBody)
-                    .foregroundStyle(selection.wrappedValue.isEmpty ? Color.secondary : Color.primary)
-                Spacer()
-                Image(systemName: "chevron.down")
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(14)
-            .background(Color(uiColor: .secondarySystemFill))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-        }
     }
 }
 

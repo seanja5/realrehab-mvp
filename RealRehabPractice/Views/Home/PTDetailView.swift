@@ -37,9 +37,7 @@ struct PTDetailView: View {
                         .padding(.horizontal, 16)
                         .padding(.top, RRSpace.pageTop)
                     
-                    Rectangle()
-                        .fill(Color.black.opacity(0.12))
-                        .frame(height: 1)
+                    Divider()
                         .padding(.horizontal, 16)
                     
                     VStack(alignment: .leading, spacing: RRSpace.stack) {

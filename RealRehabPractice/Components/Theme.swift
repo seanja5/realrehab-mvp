@@ -34,6 +34,16 @@ extension View {
         }
     }
 }
+// MARK: - Animation Constants
+enum RRAnimation {
+    /// Fast micro-interactions: button press, icon scale
+    static let micro = Animation.easeOut(duration: 0.15)
+    /// State transitions: show/hide panels, expand cards
+    static let state = Animation.spring(response: 0.3, dampingFraction: 0.7)
+    /// Snappy spring: matches lesson bubble timing
+    static let snappy = Animation.interactiveSpring(response: 0.2, dampingFraction: 0.7)
+}
+
 // MARK: - Back-compat shim so Components can use Theme.*
 enum Theme {
     static let headline = Font.rrHeadline

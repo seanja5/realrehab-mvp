@@ -595,6 +595,7 @@ struct LessonView: View {
                 }
             }
             .environmentObject(router)
+            .transition(.opacity)
         }
         .bluetoothPopupOverlay()
     }

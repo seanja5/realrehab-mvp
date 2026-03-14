@@ -168,6 +168,8 @@ This rehabilitation journey will take you through a series of lessons and benchm
 
         .sheet(isPresented: $showTimePicker) {
             timePickerSheet
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
         }
         .onChange(of: showTimePicker) { _, isShowing in
             if isShowing, let day = timePickerDay {

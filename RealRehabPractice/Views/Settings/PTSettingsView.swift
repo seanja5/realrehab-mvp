@@ -28,7 +28,6 @@ struct PTSettingsView: View {
                         practiceSection
                         notificationsSection
                         dangerZoneSection
-                        testAnalyticsSection
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
@@ -201,30 +200,6 @@ struct PTSettingsView: View {
         }
     }
 
-    private var testAnalyticsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("TESTING")
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(1.0)
-                .foregroundStyle(Color(red: 0.50, green: 0.53, blue: 0.62))
-                .padding(.leading, 4)
-            Button {
-                router.go(.ptLessonAnalytics(lessonTitle: "Knee Extension", lessonId: nil, patientProfileId: nil))
-            } label: {
-                Text("Test Analytics")
-                    .font(.rrBody)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 17)
-                    .background(LinearGradient(colors: [Color(red: 0.18, green: 0.62, blue: 0.30), Color(red: 0.12, green: 0.52, blue: 0.22)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .clipShape(Capsule())
-            }
-            .buttonStyle(ScaleButtonStyle())
-        }
-    }
-    
     private var displayName: String {
         guard let profile = ptProfile else { return "—" }
         let first = profile.first_name ?? ""

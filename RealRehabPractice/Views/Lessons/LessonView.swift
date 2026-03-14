@@ -9,6 +9,9 @@ import SwiftUI
 import Combine
 import CoreBluetooth
 
+// ⚠️ TEST MODE — set to false to restore real BLE behaviour before release
+private let testMode = true
+
 struct LessonView: View {
     @EnvironmentObject var router: Router
     @Environment(\.scenePhase) private var scenePhase
@@ -154,6 +157,7 @@ struct LessonView: View {
     // Set up rep counting callback when engine is available
     private func setupRepCountingCallback() {
         engine.shouldCountRepCallback = {
+            if testMode { return true }
             // Only count if: max was reached and no speed errors occurred during this rep
             return self.lastRepWasValid && !self.hasSpeedError
         }
@@ -590,10 +594,8 @@ struct LessonView: View {
             }
         }
         .onChange(of: ble.currentFlexSensorValue) { oldValue, newValue in
-            if let value = newValue {
-                let degrees = convertToDegrees(value)
-                currentDegreeValue = degrees
-            }
+            guard !testMode, let value = newValue else { return }
+            currentDegreeValue = convertToDegrees(value)
         }
         .onChange(of: engine.phase) { oldPhase, newPhase in
             // Reset validation flags at start of new upstroke
@@ -813,6 +815,11 @@ struct LessonView: View {
     // MARK: - Calibration Loading
     
     private func loadCalibrationData() {
+        if testMode {
+            restCalibrationValue = 90
+            maxCalibrationValue = 180
+            return
+        }
         guard let peripheral = ble.connectedPeripheral else {
             calibrationError = "No device connected. Please pair a device first."
             return
@@ -859,7 +866,12 @@ struct LessonView: View {
     
     private func validateMovement() {
         // Stop validation if all reps are completed
-        guard engine.repCount < engine.repTarget else {
+        guard engine.repCount < engine.repTarget else { return }
+
+        // TEST MODE: simulate the sensor line tracking the fill; skip all error checks
+        if testMode {
+            currentDegreeValue = expectedDegreesForFill(engine.fill) ?? currentDegreeValue
+            lastRepWasValid = true
             return
         }
         

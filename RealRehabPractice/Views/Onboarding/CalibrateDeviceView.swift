@@ -1,6 +1,9 @@
 import SwiftUI
 import CoreBluetooth
 
+// ⚠️ TEST MODE — set to false to restore real BLE calibration before release
+private let testMode = true
+
 struct CalibrateDeviceView: View {
     let reps: Int?
     let restSec: Int?
@@ -23,6 +26,7 @@ struct CalibrateDeviceView: View {
         self.fromUnpause = fromUnpause
         self.onFinish = onFinish
     }
+
     @StateObject private var ble = BluetoothManager.shared
     @State private var startSet = false
     @State private var maxSet = false
@@ -31,27 +35,18 @@ struct CalibrateDeviceView: View {
     @State private var isSavingStarting = false
     @State private var isSavingMaximum = false
     @State private var errorMessage: String? = nil
-    
+
     // Calibration constants for degree conversion
-    private let minSensorValue: Int = 185  // 90 degrees (midpoint of 180-190 range)
-    private let maxSensorValue: Int = 300  // 180 degrees
+    private let minSensorValue: Int = 185
+    private let sensorRange: Int = 115
     private let minDegrees: Double = 90.0
-    private let maxDegrees: Double = 180.0
-    private let sensorRange: Int = 115  // 300 - 185 = 115
-    private let degreeRange: Double = 90.0  // 180 - 90 = 90
-    
-    // Convert raw flex sensor value to degrees
-    // Allows extrapolation beyond calibrated range (below 90° and above 180°)
+    private let degreeRange: Double = 90.0
+
     private func convertToDegrees(_ sensorValue: Int) -> Int {
-        // Convert: degrees = 90 + ((value - 185) / 115) * 90
-        // This formula works for any input value, allowing values below 90° and above 180°
         let degrees = minDegrees + (Double(sensorValue - minSensorValue) / Double(sensorRange)) * degreeRange
-        
-        // Round to nearest integer degree
         return Int(degrees.rounded())
     }
-    
-    // Computed property for current degree value
+
     private var currentDegrees: Int? {
         guard let flexValue = ble.currentFlexSensorValue else { return nil }
         return convertToDegrees(flexValue)
@@ -63,7 +58,19 @@ struct CalibrateDeviceView: View {
                 VStack(spacing: RRSpace.section) {
                     Text("Calibrate Device")
                         .font(.rrHeadline)
-                    if fromUnpause {
+
+                    if testMode {
+                        HStack(spacing: 8) {
+                            Image(systemName: "testtube.2")
+                            Text("Test Mode — Auto-Calibrated")
+                                .font(.rrCallout)
+                        }
+                        .foregroundStyle(Color.brandDarkBlue)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.brandDarkBlue.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    } else if fromUnpause {
                         Text("Since you paused the lesson, we need to recalibrate your brace so it collects accurate information on your movement.")
                             .font(.rrCallout)
                             .foregroundStyle(.secondary)
@@ -75,63 +82,61 @@ struct CalibrateDeviceView: View {
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                     }
-                    Divider()
-                        .padding(.vertical, 4)
+
+                    Divider().padding(.vertical, 4)
 
                     VStack(alignment: .leading, spacing: RRSpace.stack) {
-                        // Live knee bend angle display
-                        if let degrees = currentDegrees {
-                            HStack {
-                                Text("Current Knee Bend Angle (Degrees):")
-                                    .font(.rrBody)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Text("\(degrees)")
-                                    .font(.rrTitle)
-                                    .foregroundStyle(.primary)
+                        if !testMode {
+                            if let degrees = currentDegrees {
+                                HStack {
+                                    Text("Current Knee Bend Angle (Degrees):")
+                                        .font(.rrBody)
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text("\(degrees)")
+                                        .font(.rrTitle)
+                                        .foregroundStyle(.primary)
+                                }
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 16)
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(8)
+                            } else {
+                                HStack {
+                                    Text("Waiting for flex sensor data...")
+                                        .font(.rrBody)
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                }
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 16)
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(8)
                             }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 16)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
-                        } else {
-                            HStack {
-                                Text("Waiting for flex sensor data...")
-                                    .font(.rrBody)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                            }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 16)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
                         }
-                        
+
                         Text("Relax your leg until your knee is bent at roughly a \(startingAngleDeg)-degree angle. When you're ready, tap Set Starting Position.")
                             .font(.rrBody)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.leading)
 
                         SecondaryButton(title: startSet ? "Starting Position ✓" : "Set Starting Position") {
-                            if let currentValue = ble.currentFlexSensorValue {
+                            if testMode {
+                                startingPositionValue = startingAngleDeg
+                                startSet = true
+                            } else if let currentValue = ble.currentFlexSensorValue {
                                 let degrees = convertToDegrees(currentValue)
                                 startingPositionValue = degrees
                                 startSet = true
-                                debugLog("✅ CalibrateDeviceView: Set Starting Position button clicked - Saved flex sensor value: \(currentValue) → \(degrees) degrees")
-                                
-                                // Save to database (save degrees, not raw value)
-                                Task {
-                                    await saveCalibration(stage: "starting_position", flexValue: degrees)
-                                }
+                                Task { await saveCalibration(stage: "starting_position", flexValue: degrees) }
                             } else {
-                                debugLog("⚠️ CalibrateDeviceView: Set Starting Position button clicked - No flex sensor value available")
                                 errorMessage = "No flex sensor value available. Please ensure your device is connected."
                             }
                         }
                         .disabled(isSavingStarting)
-                        
-                        if let startingValue = startingPositionValue {
-                            Text("Starting position: \(startingValue)")
+
+                        if let v = startingPositionValue {
+                            Text("Starting position: \(v)°")
                                 .font(.rrBody)
                                 .foregroundStyle(.primary)
                                 .padding(.leading, 16)
@@ -143,31 +148,27 @@ struct CalibrateDeviceView: View {
                             .multilineTextAlignment(.leading)
 
                         SecondaryButton(title: maxSet ? "Maximum Position ✓" : "Set Maximum Position") {
-                            if let currentValue = ble.currentFlexSensorValue {
+                            if testMode {
+                                maximumPositionValue = 180
+                                maxSet = true
+                            } else if let currentValue = ble.currentFlexSensorValue {
                                 let degrees = convertToDegrees(currentValue)
                                 maximumPositionValue = degrees
                                 maxSet = true
-                                debugLog("✅ CalibrateDeviceView: Set Maximum Position button clicked - Saved flex sensor value: \(currentValue) → \(degrees) degrees")
-                                
-                                // Save to database (save degrees, not raw value)
-                                Task {
-                                    await saveCalibration(stage: "maximum_position", flexValue: degrees)
-                                }
+                                Task { await saveCalibration(stage: "maximum_position", flexValue: degrees) }
                             } else {
-                                debugLog("⚠️ CalibrateDeviceView: Set Maximum Position button clicked - No flex sensor value available")
                                 errorMessage = "No flex sensor value available. Please ensure your device is connected."
                             }
                         }
                         .disabled(isSavingMaximum)
-                        
-                        if let maximumValue = maximumPositionValue {
-                            Text("Maximum position: \(maximumValue)")
+
+                        if let v = maximumPositionValue {
+                            Text("Maximum position: \(v)°")
                                 .font(.rrBody)
                                 .foregroundStyle(.primary)
                                 .padding(.leading, 16)
                         }
-                        
-                        // Error message display
+
                         if let error = errorMessage {
                             Text(error)
                                 .font(.rrCaption)
@@ -175,8 +176,8 @@ struct CalibrateDeviceView: View {
                                 .padding(.top, 8)
                         }
                     }
-                    Spacer()
-                        .frame(minHeight: 40)
+
+                    Spacer().frame(minHeight: 40)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, RRSpace.pageTop)
@@ -209,87 +210,47 @@ struct CalibrateDeviceView: View {
         .navigationBarBackButtonHidden(true)
         .swipeToGoBack()
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                BackButton()
-            }
+            ToolbarItem(placement: .topBarLeading) { BackButton() }
         }
         .onAppear {
-            debugLog("📱 CalibrateDeviceView: View appeared")
-            if let peripheral = ble.connectedPeripheral {
-                debugLog("✅ CalibrateDeviceView: Device is connected: \(peripheral.name ?? "Unknown")")
-            } else {
-                debugLog("⚠️ CalibrateDeviceView: No device connected")
-            }
-            if let flexValue = ble.currentFlexSensorValue {
-                let degrees = convertToDegrees(flexValue)
-                debugLog("📊 CalibrateDeviceView: Current flex sensor value: \(flexValue) → \(degrees)°")
-            } else {
-                debugLog("⚠️ CalibrateDeviceView: No flex sensor value available yet")
+            if testMode {
+                // Auto-complete calibration — no BLE needed
+                startingPositionValue = startingAngleDeg
+                startSet = true
+                maximumPositionValue = 180
+                maxSet = true
             }
         }
-        .onChange(of: ble.currentFlexSensorValue) { oldValue, newValue in
-            if let value = newValue {
-                let degrees = convertToDegrees(value)
-                debugLog("📊 CalibrateDeviceView: Flex sensor value updated: \(value) → \(degrees)°")
-            }
+        .onChange(of: ble.currentFlexSensorValue) { _, newValue in
+            guard !testMode, let value = newValue else { return }
+            debugLog("📊 CalibrateDeviceView: Flex sensor value updated: \(value) → \(convertToDegrees(value))°")
         }
         .alert("Error", isPresented: .constant(errorMessage != nil)) {
-            Button("OK") {
-                errorMessage = nil
-            }
+            Button("OK") { errorMessage = nil }
         } message: {
-            if let error = errorMessage {
-                Text(error)
-            }
+            if let error = errorMessage { Text(error) }
         }
     }
-    
-    // Save calibration to database
+
     private func saveCalibration(stage: String, flexValue: Int) async {
-        // Get Bluetooth peripheral identifier
         guard let peripheral = ble.connectedPeripheral else {
-            await MainActor.run {
-                errorMessage = "No device connected. Please pair a device first."
-            }
+            await MainActor.run { errorMessage = "No device connected. Please pair a device first." }
             return
         }
-        
         let bluetoothIdentifier = peripheral.identifier.uuidString
-        
-        // Set saving state
         await MainActor.run {
-            if stage == "starting_position" {
-                isSavingStarting = true
-            } else {
-                isSavingMaximum = true
-            }
+            if stage == "starting_position" { isSavingStarting = true } else { isSavingMaximum = true }
             errorMessage = nil
         }
-        
         do {
-            try await TelemetryService.saveCalibration(
-                bluetoothIdentifier: bluetoothIdentifier,
-                stage: stage,
-                flexValue: flexValue
-            )
-            
+            try await TelemetryService.saveCalibration(bluetoothIdentifier: bluetoothIdentifier, stage: stage, flexValue: flexValue)
             await MainActor.run {
-                if stage == "starting_position" {
-                    isSavingStarting = false
-                } else {
-                    isSavingMaximum = false
-                }
-                debugLog("✅ CalibrateDeviceView: Successfully saved \(stage) calibration with flex_value: \(flexValue)")
+                if stage == "starting_position" { isSavingStarting = false } else { isSavingMaximum = false }
             }
         } catch {
             await MainActor.run {
-                if stage == "starting_position" {
-                    isSavingStarting = false
-                } else {
-                    isSavingMaximum = false
-                }
+                if stage == "starting_position" { isSavingStarting = false } else { isSavingMaximum = false }
                 errorMessage = "Failed to save calibration: \(error.localizedDescription)"
-                debugLog("❌ CalibrateDeviceView: Failed to save \(stage) calibration: \(error)")
             }
         }
     }

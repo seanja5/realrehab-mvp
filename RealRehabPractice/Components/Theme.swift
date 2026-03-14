@@ -16,14 +16,43 @@ enum RRSpace {
     static let stack: CGFloat   = 12
 }
 
-// MARK: - Brand Background helper
+// MARK: - Brand Background helpers
 extension View {
+    /// Standard page background — flat light gray used on settings, forms, detail views.
     func rrPageBackground() -> some View {
         self
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(
                 Color(red: 0.95, green: 0.95, blue: 0.95)
                     .ignoresSafeArea()
+            )
+    }
+
+    /// Journey map background — subtle cool gradient with a faint brand-blue glow.
+    /// More premium than the flat page background; keeps lesson bubbles clearly readable.
+    func rrJourneyBackground() -> some View {
+        self
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(
+                ZStack {
+                    // Base: very slightly blue-tinted off-white at top fading to cool gray
+                    LinearGradient(
+                        stops: [
+                            .init(color: Color(red: 0.96, green: 0.97, blue: 0.99), location: 0),
+                            .init(color: Color(red: 0.91, green: 0.92, blue: 0.95), location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    // Subtle ambient glow anchored top-right using brand blue at very low opacity
+                    RadialGradient(
+                        colors: [Color(red: 0.2, green: 0.4, blue: 0.8).opacity(0.07), Color.clear],
+                        center: .topTrailing,
+                        startRadius: 0,
+                        endRadius: 420
+                    )
+                }
+                .ignoresSafeArea()
             )
     }
     

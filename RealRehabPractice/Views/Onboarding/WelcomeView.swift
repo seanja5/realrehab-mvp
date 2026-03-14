@@ -13,11 +13,11 @@ struct WelcomeView: View {
 
     var body: some View {
         ZStack {
-            // MARK: - Background: off-white top fading to deep navy
+            // MARK: - Background: pure white top fading to deep navy
             LinearGradient(
                 stops: [
-                    .init(color: Color(red: 0.966, green: 0.966, blue: 0.992), location: 0.00),
-                    .init(color: Color(red: 0.840, green: 0.848, blue: 0.938), location: 0.27),
+                    .init(color: Color(red: 1.00, green: 1.00, blue: 1.00), location: 0.00),
+                    .init(color: Color(red: 0.88, green: 0.88, blue: 0.90), location: 0.28),
                     .init(color: Color(red: 0.050, green: 0.100, blue: 0.310), location: 0.44),
                     .init(color: Color(red: 0.075, green: 0.160, blue: 0.460), location: 1.00)
                 ],

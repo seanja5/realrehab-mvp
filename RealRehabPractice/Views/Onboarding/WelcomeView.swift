@@ -13,25 +13,17 @@ struct WelcomeView: View {
 
     var body: some View {
         ZStack {
-            // MARK: - Background: pure white top fading to deep navy
+            // MARK: - Background: page-background color fading to a very soft blue at bottom
             LinearGradient(
                 stops: [
-                    .init(color: Color(red: 1.00, green: 1.00, blue: 1.00), location: 0.00),
-                    .init(color: Color(red: 0.88, green: 0.88, blue: 0.90), location: 0.28),
-                    .init(color: Color(red: 0.050, green: 0.100, blue: 0.310), location: 0.44),
-                    .init(color: Color(red: 0.075, green: 0.160, blue: 0.460), location: 1.00)
+                    .init(color: Color(red: 0.978, green: 0.978, blue: 0.996), location: 0.00),
+                    .init(color: Color(red: 0.966, green: 0.967, blue: 0.990), location: 0.25),
+                    .init(color: Color(red: 0.945, green: 0.948, blue: 0.982), location: 0.50),
+                    .init(color: Color(red: 0.920, green: 0.926, blue: 0.972), location: 0.75),
+                    .init(color: Color(red: 0.898, green: 0.908, blue: 0.964), location: 1.00)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
-            )
-            .ignoresSafeArea()
-
-            // Ambient glow in the dark lower portion only
-            RadialGradient(
-                colors: [Color(red: 0.28, green: 0.52, blue: 0.96).opacity(0.14), Color.clear],
-                center: UnitPoint(x: 0.85, y: 0.82),
-                startRadius: 0,
-                endRadius: 300
             )
             .ignoresSafeArea()
 
@@ -56,43 +48,43 @@ struct WelcomeView: View {
                         }
                     }
 
-                Spacer().frame(height: 40)
+                Spacer().frame(height: 32)
 
-                // Login card
+                // Login form
                 VStack(spacing: 24) {
-                    VStack(spacing: 6) {
+                    VStack(spacing: 4) {
                         Text("Welcome Back")
                             .font(.rrHeadline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                         Text("Sign in to continue your recovery")
                             .font(.rrCallout)
-                            .foregroundStyle(.white.opacity(0.55))
+                            .foregroundStyle(.secondary)
                     }
 
                     // Input fields
                     VStack(spacing: 14) {
-                        DarkFormTextField(
+                        WelcomeFormField(
                             placeholder: "Email address",
-                            text: Binding(get: { auth.email }, set: { auth.email = $0 }),
-                            icon: "envelope"
+                            icon: "envelope",
+                            text: Binding(get: { auth.email }, set: { auth.email = $0 })
                         )
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .textContentType(.emailAddress)
                         .autocorrectionDisabled()
 
-                        DarkFormSecureField(
+                        WelcomeSecureField(
                             placeholder: "Password",
-                            text: Binding(get: { auth.password }, set: { auth.password = $0 }),
-                            icon: "lock"
+                            icon: "lock",
+                            text: Binding(get: { auth.password }, set: { auth.password = $0 })
                         )
                         .textContentType(.password)
                     }
                     .padding(.horizontal, 24)
 
                     // Buttons
-                    VStack(spacing: 12) {
-                        // Login — white pill outline on dark
+                    VStack(spacing: 10) {
+                        // Sign In — primary gradient pill
                         Button(action: {
                             Task {
                                 await auth.signIn()
@@ -123,17 +115,20 @@ struct WelcomeView: View {
                                 .font(.rrBody)
                                 .fontWeight(.semibold)
                                 .tracking(0.2)
-                                .foregroundStyle((!isFormValid || auth.isLoading) ? Color.white.opacity(0.4) : Color.white)
+                                .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 17)
                                 .background(
-                                    Capsule()
-                                        .fill(Color.white.opacity((!isFormValid || auth.isLoading) ? 0.06 : 0.12))
+                                    LinearGradient(
+                                        colors: (!isFormValid || auth.isLoading)
+                                            ? [Color.gray.opacity(0.45), Color.gray.opacity(0.35)]
+                                            : [Color.brandDarkBlue, Color(red: 0.18, green: 0.36, blue: 0.78)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
                                 )
-                                .overlay(
-                                    Capsule()
-                                        .stroke(Color.white.opacity((!isFormValid || auth.isLoading) ? 0.18 : 0.35), lineWidth: 1.5)
-                                )
+                                .clipShape(Capsule())
+                                .shadow(color: (!isFormValid || auth.isLoading) ? .clear : Color.brandDarkBlue.opacity(0.35), radius: 10, x: 0, y: 4)
                         }
                         .buttonStyle(ScaleButtonStyle())
                         .disabled(!isFormValid || auth.isLoading)
@@ -141,33 +136,32 @@ struct WelcomeView: View {
 
                         // Divider
                         HStack {
-                            Rectangle().fill(Color.white.opacity(0.15)).frame(height: 1)
+                            Rectangle().fill(Color.black.opacity(0.08)).frame(height: 1)
                             Text("or")
                                 .font(.rrCaption)
-                                .foregroundStyle(.white.opacity(0.35))
+                                .foregroundStyle(.secondary)
                                 .padding(.horizontal, 12)
-                            Rectangle().fill(Color.white.opacity(0.15)).frame(height: 1)
+                            Rectangle().fill(Color.black.opacity(0.08)).frame(height: 1)
                         }
                         .padding(.horizontal, 32)
 
-                        // Get Started — electric blue gradient pill
+                        // Create Account — outline secondary pill
                         Button(action: { router.go(.createAccount) }) {
                             Text("Create Account")
                                 .font(.rrBody)
                                 .fontWeight(.semibold)
                                 .tracking(0.2)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Color.brandDarkBlue)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 17)
                                 .background(
-                                    LinearGradient(
-                                        colors: [Color.brandDarkBlue, Color(red: 0.18, green: 0.36, blue: 0.78)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
+                                    Capsule()
+                                        .fill(Color.brandDarkBlue.opacity(0.06))
                                 )
-                                .clipShape(Capsule())
-                                .shadow(color: Color.brandDarkBlue.opacity(0.5), radius: 12, x: 0, y: 5)
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Color.brandDarkBlue.opacity(0.55), lineWidth: 1.5)
+                                )
                         }
                         .buttonStyle(ScaleButtonStyle())
                         .padding(.horizontal, 24)
@@ -200,74 +194,55 @@ struct WelcomeView: View {
     }
 }
 
-// MARK: - Dark-themed form field (icon + text, glass background)
-private struct DarkFormTextField: View {
+// MARK: - Light-themed form fields (match CreateAccount style)
+private struct WelcomeFormField: View {
     let placeholder: String
+    let icon: String
     @Binding var text: String
-    var icon: String
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.white.opacity(0.5))
-                .frame(width: 20)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.secondary.opacity(0.6))
+                .frame(width: 18)
             TextField(placeholder, text: $text)
                 .font(.rrBody)
-                .foregroundStyle(.white)
-                .tint(.white)
-                .placeholder(when: text.isEmpty) {
-                    Text(placeholder).foregroundStyle(.white.opacity(0.35))
-                }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 15)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.10))
-        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.black.opacity(0.08), lineWidth: 1)
         )
+        .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
     }
 }
 
-private struct DarkFormSecureField: View {
+private struct WelcomeSecureField: View {
     let placeholder: String
+    let icon: String
     @Binding var text: String
-    var icon: String
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.white.opacity(0.5))
-                .frame(width: 20)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.secondary.opacity(0.6))
+                .frame(width: 18)
             SecureField(placeholder, text: $text)
                 .font(.rrBody)
-                .foregroundStyle(.white)
-                .tint(.white)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 15)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.10))
-        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.black.opacity(0.08), lineWidth: 1)
         )
-    }
-}
-
-// MARK: - Placeholder helper
-private extension View {
-    func placeholder<Content: View>(when shouldShow: Bool, @ViewBuilder placeholder: () -> Content) -> some View {
-        ZStack(alignment: .leading) {
-            if shouldShow { placeholder() }
-            self
-        }
+        .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
     }
 }

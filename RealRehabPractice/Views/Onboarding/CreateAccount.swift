@@ -167,11 +167,13 @@ struct CreateAccountView: View {
                 .textInputAutocapitalization(.never)
                 .textContentType(.emailAddress)
                 .autocorrectionDisabled()
+                .frame(maxWidth: .infinity)
                 .onChange(of: email) { _, v in auth.email = v }
                 .id("patient_email")
             CreateAccountFormField(title: "Phone Number", placeholder: "Phone Number", text: $phoneNumber, hasError: err && phoneNumber.isEmpty)
                 .keyboardType(.phonePad)
                 .textContentType(.telephoneNumber)
+                .frame(maxWidth: .infinity)
                 .id("patient_phone")
 
             Divider()
@@ -181,10 +183,12 @@ struct CreateAccountView: View {
                     .foregroundStyle(.primary)
                 CreateAccountSecureField(title: "Password", placeholder: "Password", text: $password, hasError: err && password.isEmpty)
                     .textContentType(.newPassword)
+                    .frame(maxWidth: .infinity)
                     .onChange(of: password) { _, v in auth.password = v }
                     .id("patient_password")
                 CreateAccountSecureField(title: "Confirm Password", placeholder: "Confirm Password", text: $confirmPassword, hasError: err && (confirmPassword.isEmpty || password != confirmPassword))
                     .textContentType(.newPassword)
+                    .frame(maxWidth: .infinity)
                     .id("patient_confirmPassword")
             }
             Divider()
@@ -217,6 +221,7 @@ struct CreateAccountView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 CreateAccountFormField(title: "Access Code", placeholder: "Enter 8-digit code", text: $accessCode, hasError: false)
                     .keyboardType(.numberPad)
+                    .frame(maxWidth: .infinity)
                     .onChange(of: accessCode) { _, newValue in
                         let filtered = newValue.filter { $0.isNumber }
                         accessCode = String(filtered.prefix(8))
@@ -248,10 +253,12 @@ struct CreateAccountView: View {
                 .textInputAutocapitalization(.never)
                 .textContentType(.emailAddress)
                 .autocorrectionDisabled()
+                .frame(maxWidth: .infinity)
                 .id("pt_email")
             CreateAccountFormField(title: "Phone Number", placeholder: "Phone Number", text: $phoneNumber, hasError: err && phoneNumber.trimmingCharacters(in: .whitespaces).isEmpty)
                 .keyboardType(.phonePad)
                 .textContentType(.telephoneNumber)
+                .frame(maxWidth: .infinity)
                 .id("pt_phone")
             Divider()
             VStack(alignment: .leading, spacing: 16) {
@@ -260,9 +267,11 @@ struct CreateAccountView: View {
                     .foregroundStyle(.primary)
                 CreateAccountSecureField(title: "Password", placeholder: "Password", text: $password, hasError: err && password.isEmpty)
                     .textContentType(.newPassword)
+                    .frame(maxWidth: .infinity)
                     .id("pt_password")
                 CreateAccountSecureField(title: "Confirm Password", placeholder: "Confirm Password", text: $confirmPassword, hasError: err && (confirmPassword.isEmpty || password != confirmPassword))
                     .textContentType(.newPassword)
+                    .frame(maxWidth: .infinity)
                     .id("pt_confirmPassword")
             }
             Divider()
@@ -271,9 +280,11 @@ struct CreateAccountView: View {
                     .font(.rrTitle)
                     .foregroundStyle(.primary)
                 CreateAccountFormField(title: "License Number", placeholder: "License Number", text: $licenseNumber, hasError: err && licenseNumber.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .frame(maxWidth: .infinity)
                     .id("pt_license")
                 CreateAccountFormField(title: "NPI Number", placeholder: "NPI Number", text: $npiNumber, hasError: err && npiNumber.trimmingCharacters(in: .whitespaces).isEmpty)
                     .keyboardType(.numberPad)
+                    .frame(maxWidth: .infinity)
                     .id("pt_npi")
             }
             Divider()
@@ -282,8 +293,11 @@ struct CreateAccountView: View {
                     .font(.rrTitle)
                     .foregroundStyle(.primary)
                 CreateAccountFormField(title: "Practice Name", placeholder: "Practice Name", text: $practiceName, hasError: false)
+                    .frame(maxWidth: .infinity)
                 CreateAccountFormField(title: "Practice Address", placeholder: "Practice Address", text: $practiceAddress, hasError: false)
+                    .frame(maxWidth: .infinity)
                 CreateAccountMenuField(title: "Specialization", selection: $specialization, options: specializationOptions, hasError: false) { specialization = $0 }
+                    .frame(maxWidth: .infinity)
             }
         }
     }

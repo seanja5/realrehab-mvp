@@ -30,6 +30,12 @@ struct DirectionsView2: View {
         if t.contains("heel slide") {
             return "Match the animation: slide your heel toward your body as the bar fills, then slowly straighten back out as it empties.\n\nKeep your heel on the surface and move at a steady, controlled pace."
         }
+        if t.contains("straight leg raise") {
+            return "As the bar fills, slowly lift your straight leg about 12–18 inches off the ground. Lower it with control as the bar empties.\n\nKeep your knee completely straight the entire time — do not let it bend at any point."
+        }
+        if t.contains("ankle pump") {
+            return "Pump your foot upward toward your shin, then back down in a steady rhythm — one pump per cycle of the bar.\n\nMake each movement full and deliberate. These pumps promote circulation and help reduce swelling in your knee."
+        }
         // Default: knee extensions
         return "Match the animation: extend your leg as the box fills, and rest as it empties.\n\nKeep your thigh centered, avoid hip rotation, and keep your foot off the ground for the entire lesson."
     }

@@ -68,15 +68,24 @@ enum RehabService {
       let nodeType: JourneyNodeType = (dto.nodeType == "benchmark") ? .benchmark : .lesson
       let phase = max(1, min(4, dto.phase ?? 1))
       var node = LessonNode(id: nodeId, title: dto.title, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
-      if node.nodeType == .lesson && node.title.lowercased().contains("wall sit") {
-        node.enableReps = false
-        node.enableRestBetweenReps = false
-        node.enableSets = false
-        node.enableRestBetweenSets = false
-        node.enableKneeBendAngle = true
-        node.enableTimeHoldingPosition = true
-        node.kneeBendAngle = 120
-        node.timeHoldingPosition = 30
+      if node.nodeType == .lesson {
+        let t = node.title.lowercased()
+        if t.contains("wall sit") {
+          node.enableReps = false
+          node.enableRestBetweenReps = false
+          node.enableSets = false
+          node.enableRestBetweenSets = false
+          node.enableKneeBendAngle = true
+          node.enableTimeHoldingPosition = true
+          node.kneeBendAngle = 120
+          node.timeHoldingPosition = 30
+        } else if t.contains("quad set") {
+          node.enableRestBetweenReps = false
+          node.enableTimeHoldingPosition = true
+          node.timeHoldingPosition = node.restSec
+        } else if t.contains("ankle pump") {
+          node.enableRestBetweenReps = false
+        }
       }
       return node
     }

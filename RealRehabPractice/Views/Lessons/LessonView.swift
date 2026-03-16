@@ -203,18 +203,32 @@ struct LessonView: View {
             return "Hold It! \(engine.holdSecondsRemaining)s"
         case .upstroke:
             switch engine.exerciseType {
-            case .kneeFlex: return "Slide Your Heel!"
-            case .isometricHold: return "Extend Your Leg!"
-            default: return "Extend Your Leg!"
+            case .kneeFlex:         return "Slide Your Heel!"
+            case .isometricHold:    return "Extend Your Leg!"
+            case .straightLegRaise: return "Lift Your Leg!"
+            case .anklePumps:       return "Pump Up!"
+            default:                return "Extend Your Leg!"
             }
         case .downstroke:
             switch engine.exerciseType {
-            case .kneeFlex: return "Return to Start"
-            default: return "Lower Slowly"
+            case .kneeFlex:         return "Return to Start"
+            case .anklePumps:       return "Pump Down!"
+            default:                return "Lower Slowly"
             }
         }
     }
     
+    // Exercise motion verb shown in the card header banner
+    private func exerciseVerb() -> String {
+        switch engine.exerciseType {
+        case .isometricHold:    return "TIGHTEN"
+        case .kneeFlex:         return "SLIDE"
+        case .straightLegRaise: return "LIFT"
+        case .anklePumps:       return "PUMP"
+        default:                return "EXTEND"
+        }
+    }
+
     // Helper function to determine text color
     private func textColor() -> Color {
         if errorMessage != nil {
@@ -231,33 +245,27 @@ struct LessonView: View {
     
     // Helper function to determine background color
     private func backgroundColor() -> Color {
-        // If all reps are completed, show full green
+        // All reps completed — soft brand tint
         if engine.repCount >= engine.repTarget {
-            return Color.green.opacity(0.25)
+            return Color.brandLightBlue.opacity(0.18)
         }
-        
-        // User paused - gray
+        // User paused - neutral gray
         if isUserPaused {
-            return Color.gray.opacity(0.3)
+            return Color.gray.opacity(0.12)
         }
-        
-        // Show red if there's an error (IMU error or any other error)
+        // Error states — red
         if hasIMUError || errorMessage != nil {
             return Color.red
-        }
-        if isCountingDown {
-            return Color.gray.opacity(0.3)
         }
         if engine.phase == .incorrectHold {
             return Color.red
         }
-        if engine.phase == .idle {
-            return Color.gray.opacity(0.3)
+        // Countdown / idle — neutral
+        if isCountingDown || engine.phase == .idle {
+            return Color.gray.opacity(0.12)
         }
-        if engine.phase == .holding {
-            return Color.green.opacity(0.25)
-        }
-        return Color.green.opacity(0.25)
+        // Active phases — subtle brand tint (gradient overlay will appear on top)
+        return Color.brandDarkBlue.opacity(0.05)
     }
 
     var body: some View {
@@ -268,73 +276,77 @@ struct LessonView: View {
                 .padding(.top, 8)
             
             // Progress (non-interactive)
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 ProgressView(value: min(Double(engine.repCount) / Double(engine.repTarget), 1.0))
                     .progressViewStyle(.linear)
                     .tint(Color.brandDarkBlue)
                     .padding(.horizontal, 16)
-                
-                VStack(spacing: 4) {
-                    Text("Repetitions: \(engine.repCount)/\(engine.repTarget)")
-                        .font(.rrCallout)
+
+                HStack(spacing: 0) {
+                    HStack(spacing: 4) {
+                        Text("\(engine.repCount)")
+                            .font(.rrBody.bold())
+                            .foregroundStyle(Color.brandDarkBlue)
+                        Text("/ \(engine.repTarget)")
+                            .font(.rrBody)
+                            .foregroundStyle(.secondary)
+                        Text("reps")
+                            .font(.rrCaption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
                     if hasStarted && elapsedDisplaySeconds > 0 {
                         Text(formatElapsed(elapsedDisplaySeconds))
                             .font(.rrCaption)
                             .foregroundStyle(.secondary)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 20)
                 .padding(.vertical, 6)
-                .background(Color.gray.opacity(0.25))
+                .background(Color.gray.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .padding(.horizontal, 16)
             }
             .padding(.top, 8)
             
-            // Feedback card (no play icon)
+            // Feedback card
             ZStack {
                 // Base rounded panel
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 20)
                     .fill(backgroundColor())
-                
-                // Green fill overlay during strokes/hold or when completed (hidden when user paused)
+
+                // Brand gradient fill during strokes/hold or when completed (hidden when paused)
                 if !isUserPaused && (engine.phase == .upstroke || engine.phase == .downstroke || engine.phase == .holding || engine.repCount >= engine.repTarget) {
                     GeometryReader { geo in
                         let h = geo.size.height
-                        // For kneeFlex, fill rises = more flexion (invert visual so bottom = straight, top = bent)
-                        let displayFill: Double = {
-                            if case .kneeFlex = engine.exerciseType {
-                                return engine.fill
-                            }
-                            return engine.fill
-                        }()
                         VStack {
                             Spacer()
                             LinearGradient(
-                                colors: [Color.green.opacity(0.25), Color.green],
+                                colors: [
+                                    Color.brandLightBlue.opacity(0.35),
+                                    Color.brandDarkBlue.opacity(0.55)
+                                ],
                                 startPoint: .bottom,
                                 endPoint: .top
                             )
-                            .frame(height: max(0, h * max(0.1, displayFill)))
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .frame(height: max(0, h * max(0.08, engine.fill)))
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
                         }
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
                     .allowsHitTesting(false)
                 }
-                
+
                 // Horizontal blue line indicator showing user's current position (always visible)
                 if let linePosition = userLinePosition() {
                     GeometryReader { geo in
                         let boxHeight = geo.size.height
-                        let yPosition = boxHeight * (1.0 - linePosition) // Flip Y axis (0 = bottom)
-                        
+                        let yPosition = boxHeight * (1.0 - linePosition)
                         Rectangle()
                             .fill(Color.brandDarkBlue)
-                            .frame(width: geo.size.width * 0.9) // 90% of box width
-                            .frame(height: 3) // 3 point thick line
+                            .frame(width: geo.size.width * 0.9)
+                            .frame(height: 3)
                             .position(x: geo.size.width / 2, y: yPosition)
-                        
-                        // IMU circle indicator on the horizontal line
                         if let circlePosition = imuCirclePosition() {
                             let xPosition = geo.size.width * 0.05 + (geo.size.width * 0.9 * circlePosition)
                             Circle()
@@ -345,11 +357,8 @@ struct LessonView: View {
                     }
                     .allowsHitTesting(false)
                 } else {
-                    // Show IMU circle even when no flex sensor line is visible (default to center)
                     GeometryReader { geo in
-                        let boxHeight = geo.size.height
-                        let yPosition = boxHeight * 0.5 // Center vertically
-                        
+                        let yPosition = geo.size.height * 0.5
                         if let circlePosition = imuCirclePosition() {
                             let xPosition = geo.size.width * 0.05 + (geo.size.width * 0.9 * circlePosition)
                             Circle()
@@ -360,57 +369,105 @@ struct LessonView: View {
                     }
                     .allowsHitTesting(false)
                 }
-                
-                // Center text - show countdown, error messages, "Go!", or default text
-                Text(displayText())
-                    .font(.rrTitle)
-                    .foregroundStyle(textColor())
+
+                // Isometric hold: circular countdown ring overlay (replaces plain text for holding phase)
+                if engine.phase == .holding, case .isometricHold(_, let holdDur) = engine.exerciseType {
+                    let total = max(1, Int(holdDur.rounded()))
+                    let progress = Double(engine.holdSecondsRemaining) / Double(total)
+                    ZStack {
+                        Circle()
+                            .stroke(Color.brandDarkBlue.opacity(0.15), lineWidth: 8)
+                            .frame(width: 88, height: 88)
+                        Circle()
+                            .trim(from: 0, to: CGFloat(progress))
+                            .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                            .frame(width: 88, height: 88)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.linear(duration: 0.9), value: engine.holdSecondsRemaining)
+                        VStack(spacing: 1) {
+                            Text("\(engine.holdSecondsRemaining)")
+                                .font(.rrTitle.bold())
+                                .foregroundStyle(Color.brandDarkBlue)
+                            Text("sec")
+                                .font(.rrCaption)
+                                .foregroundStyle(Color.brandDarkBlue.opacity(0.7))
+                        }
+                    }
+                    .allowsHitTesting(false)
+                } else {
+                    // Center text — countdown, error, phase cues
+                    Text(displayText())
+                        .font(.rrTitle)
+                        .foregroundStyle(textColor())
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                }
+
+                // Exercise identity banner — top of card
+                VStack {
+                    HStack(spacing: 6) {
+                        Image(systemName: ACLJourneyModels.lessonIconSystemName(for: lessonTitle ?? ""))
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(exerciseVerb())
+                            .font(.rrCaption.bold())
+                            .tracking(1.5)
+                    }
+                    .foregroundStyle(Color.brandDarkBlue.opacity(errorMessage != nil ? 0.0 : 0.65))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.brandDarkBlue.opacity(errorMessage != nil ? 0.0 : 0.07))
+                    .clipShape(Capsule())
+                    .padding(.top, 14)
+                    Spacer()
+                }
+                .allowsHitTesting(false)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 260)
+            .frame(height: 270)
             .padding(.horizontal, 20)
-            .padding(.top, 20)
+            .padding(.top, 16)
+            .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
             
             Spacer(minLength: 16)
             
             // Bottom section with calibration reference and live data
-            HStack(alignment: .bottom, spacing: 12) {
-                // Left: Calibration reference box
+            HStack(alignment: .center, spacing: 10) {
+                // Left: Calibration range pill
                 if let maxCal = maxCalibrationValue, let restCal = restCalibrationValue {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Max(degrees): \(maxCal)")
-                            .font(.rrCaption)
-                            .foregroundStyle(.secondary)
-                        Text("Rest(degrees): \(restCal)")
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.and.down")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.brandDarkBlue.opacity(0.6))
+                        Text("Range: \(restCal)°–\(maxCal)°")
                             .font(.rrCaption)
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.gray.opacity(0.1))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(Color.brandDarkBlue.opacity(0.06))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
-                
+
                 Spacer()
-                
-                // Right: Live sensor data box (always visible when values are available)
+
+                // Right: Live position pill
                 if let degrees = currentDegrees {
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("Current Knee Bend Angle")
+                    HStack(spacing: 4) {
+                        Image(systemName: "scope")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.brandDarkBlue.opacity(0.6))
+                        Text("Position: \(degrees)°")
                             .font(.rrCaption)
                             .foregroundStyle(.secondary)
-                        Text("\(degrees)")
-                            .font(.rrBody)
-                            .foregroundStyle(.primary)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.gray.opacity(0.1))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(Color.brandDarkBlue.opacity(0.06))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.bottom, 12)
+            .padding(.bottom, 10)
             
             // Pause/Resume and Restart buttons (only when lesson has started)
             if hasStarted {

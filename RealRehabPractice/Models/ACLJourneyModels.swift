@@ -30,10 +30,11 @@ public enum ACLPhase: Int, CaseIterable {
         switch self {
         case .one:
             return [
-                "Quad activation",
-                "Restore extension",
-                "Minimize swelling",
-                "Build early confidence"
+                "Restore full knee extension",
+                "Activate your quadriceps",
+                "Regain gentle knee flexion",
+                "Improve circulation and reduce swelling",
+                "Build early confidence in your movement"
             ]
         case .two:
             return [
@@ -64,12 +65,10 @@ public enum ACLPhase: Int, CaseIterable {
         case .one:
             return [
                 "Quad Sets",
-                "Quad Sets — Extended Holds",
                 "Short Arc Quad",
-                "Short Arc Quad — Control Focus",
                 "Heel Slides",
-                "Seated Knee Extensions",
-                "Seated Knee Extensions — Strength"
+                "Straight Leg Raise",
+                "Ankle Pumps"
             ]
         case .two:
             return [
@@ -100,7 +99,7 @@ public enum ACLPhase: Int, CaseIterable {
     
     public var midBenchmarkTitle: String {
         switch self {
-        case .one: return "Straight Leg Raise Control (no knee lag)"
+        case .one: return "Extension Control"
         case .two: return "Quad Confidence ≥ 7/10"
         case .three: return "Step-Down Control (no knee collapse)"
         case .four: return "Fatigue Control (form maintained full set)"
@@ -109,7 +108,7 @@ public enum ACLPhase: Int, CaseIterable {
     
     public var endBenchmarkTitle: String {
         switch self {
-        case .one: return "Full Extension (0° or matches other side)"
+        case .one: return "Straight Leg Raise Control"
         case .two: return "Wall Sit 10s (no shaking or pain)"
         case .three: return "Strength Symmetry ≥ 70%"
         case .four: return "Confidence Check (no hesitation/fear self-report)"
@@ -184,7 +183,8 @@ struct LessonNode: Identifiable {
     
     static func lesson(title: String, isLocked: Bool = false, reps: Int = 12, restSec: Int = 3, phase: Int) -> LessonNode {
         var node = LessonNode(title: title, isLocked: isLocked, reps: reps, restSec: restSec, nodeType: .lesson, phase: phase)
-        if node.title.lowercased().contains("wall sit") {
+        let t = node.title.lowercased()
+        if t.contains("wall sit") {
             node.enableReps = false
             node.enableRestBetweenReps = false
             node.enableSets = false
@@ -193,6 +193,14 @@ struct LessonNode: Identifiable {
             node.enableTimeHoldingPosition = true
             node.kneeBendAngle = 120
             node.timeHoldingPosition = 30
+        } else if t.contains("quad set") {
+            // restSec IS the isometric hold duration — surface it as "time holding position"
+            node.enableRestBetweenReps = false
+            node.enableTimeHoldingPosition = true
+            node.timeHoldingPosition = node.restSec
+        } else if t.contains("ankle pump") {
+            // Ankle pumps: reps only, rest is not meaningful
+            node.enableRestBetweenReps = false
         }
         return node
     }
@@ -211,6 +219,7 @@ extension ACLJourneyModels {
         if t.contains("knee extension") { return "arrow.up.and.down" }
         if t.contains("quad set") { return "bolt.fill" }
         if t.contains("short arc") { return "arrow.up.right" }
+        if t.contains("straight leg") { return "figure.strengthtraining.traditional" }
         if t.contains("heel slide") { return "figure.walk" }
         if t.contains("ankle pump") { return "waveform" }
         if t.contains("calf stretch") { return "arrow.down.to.line" }
@@ -242,7 +251,10 @@ extension ACLJourneyModels {
     }
 
     private static let lessonDescriptions: [String: String] = [
-        // Phase 1 — new exercise titles
+        // Phase 1 — benchmarks
+        "Extension Control": "Straighten your leg completely and hold the position. Pass criteria: hold full extension for 8 seconds without movement — a key gate before Phase 2.",
+        "Straight Leg Raise Control": "Lift your straight leg and hold it steady for 5 seconds. Pass criteria: knee stays fully straight throughout the hold — confirms your quad can stabilize independently.",
+        // Phase 1 — exercises
         "Quad Sets": "Tighten your thigh muscle while keeping your leg flat, holding the contraction for the full duration shown.",
         "Quad Sets — Extended Holds": "Hold a thigh contraction for an extended duration to build isometric endurance in the quadriceps.",
         "Short Arc Quad": "Starting at 45°, extend your knee to straight and hold briefly to strengthen the terminal range of the quad.",
@@ -254,6 +266,7 @@ extension ACLJourneyModels {
         "Quad Sets (Isometric)": "Tighten your thigh muscle while keeping your leg straight, holding the contraction without moving the knee.",
         "Heel Slides (Towel Slide)": "Slide your heel toward your body while lying down to gently bend the knee and improve range of motion.",
         "Ankle Pumps": "Move your foot up and down to promote circulation and reduce swelling in the lower leg.",
+        "Straight Leg Raise": "Keep your knee straight and lift your leg off the ground to strengthen the quad without bending the joint.",
         "Calf Stretch (Seated Towel Stretch)": "Use a towel to gently pull your foot toward you, stretching the calf while keeping the knee straight.",
         // Phase 2
         "Terminal Knee Extensions": "Straighten your knee from a slightly bent position to strengthen the quadriceps and improve knee control.",
@@ -293,9 +306,19 @@ enum ACLJourneyModels {
         allExerciseNames + ["Custom"]
     }
     
+    /// Per-exercise default reps and restSec for Phase 1 exercises.
+    /// restSec for Quad Sets is the isometric hold duration (not rest between reps).
+    private static let phase1Defaults: [String: (reps: Int, restSec: Int)] = [
+        "Quad Sets":         (reps: 10, restSec: 5),
+        "Short Arc Quad":    (reps: 10, restSec: 3),
+        "Heel Slides":       (reps: 10, restSec: 3),
+        "Straight Leg Raise":(reps: 10, restSec: 3),
+        "Ankle Pumps":       (reps: 20, restSec: 3),
+    ]
+
     static func defaultACLPlanNodes() -> [LessonNode] {
         var nodes: [LessonNode] = []
-        
+
         for phaseCase in ACLPhase.allCases {
             let phase = phaseCase.rawValue
             let exercises = phaseCase.exercises
@@ -306,10 +329,10 @@ enum ACLJourneyModels {
             case .three: lessonCount = 60 // 5 × 12
             case .four: lessonCount = 80 // 5 × 16
             }
-            
+
             let midIndex = lessonCount / 2
             var lessonIndex = 0
-            
+
             for i in 0..<(lessonCount + 2) {
                 if i == midIndex {
                     nodes.append(.benchmark(title: phaseCase.midBenchmarkTitle, phase: phase))
@@ -317,12 +340,16 @@ enum ACLJourneyModels {
                     nodes.append(.benchmark(title: phaseCase.endBenchmarkTitle, phase: phase))
                 } else {
                     let ex = exercises[lessonIndex % exercises.count]
-                    nodes.append(.lesson(title: ex, phase: phase))
+                    if phase == 1, let defaults = phase1Defaults[ex] {
+                        nodes.append(.lesson(title: ex, reps: defaults.reps, restSec: defaults.restSec, phase: phase))
+                    } else {
+                        nodes.append(.lesson(title: ex, phase: phase))
+                    }
                     lessonIndex += 1
                 }
             }
         }
-        
+
         layoutNodesZigZag(nodes: &nodes)
         return nodes
     }

@@ -18,6 +18,17 @@ struct CalibrateDeviceView: View {
         (lessonTitle?.lowercased().contains("short arc") == true) ? 45 : 90
     }
 
+    /// Brief context line shown below the test mode banner.
+    private var exerciseContextLine: String? {
+        guard let t = lessonTitle?.lowercased() else { return nil }
+        if t.contains("quad set")          { return "Isometric hold — thigh contraction exercise" }
+        if t.contains("short arc")         { return "End-range extension — knee straightening exercise" }
+        if t.contains("heel slide")        { return "Flexion recovery — knee bending exercise" }
+        if t.contains("straight leg raise") { return "Straight leg lift — quad strengthening exercise" }
+        if t.contains("ankle pump")        { return "Circulation exercise — ankle movement" }
+        return nil
+    }
+
     init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, fromUnpause: Bool = false, onFinish: (() -> Void)? = nil) {
         self.reps = reps
         self.restSec = restSec
@@ -60,16 +71,23 @@ struct CalibrateDeviceView: View {
                         .font(.rrHeadline)
 
                     if testMode {
-                        HStack(spacing: 8) {
-                            Image(systemName: "testtube.2")
-                            Text("Test Mode — Auto-Calibrated")
-                                .font(.rrCallout)
+                        VStack(spacing: 6) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "testtube.2")
+                                Text("Test Mode — Auto-Calibrated")
+                                    .font(.rrCallout)
+                            }
+                            .foregroundStyle(Color.brandDarkBlue)
+                            if let context = exerciseContextLine {
+                                Text(context)
+                                    .font(.rrCaption)
+                                    .foregroundStyle(Color.brandDarkBlue.opacity(0.65))
+                            }
                         }
-                        .foregroundStyle(Color.brandDarkBlue)
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, 12)
                         .background(Color.brandDarkBlue.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     } else if fromUnpause {
                         Text("Since you paused the lesson, we need to recalibrate your brace so it collects accurate information on your movement.")
                             .font(.rrCallout)
@@ -136,10 +154,15 @@ struct CalibrateDeviceView: View {
                         .disabled(isSavingStarting)
 
                         if let v = startingPositionValue {
-                            Text("Starting position: \(v)°")
-                                .font(.rrBody)
-                                .foregroundStyle(.primary)
-                                .padding(.leading, 16)
+                            HStack(spacing: 8) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(Color.brandDarkBlue)
+                                    .font(.system(size: 16))
+                                Text("Starting: **\(v)°**")
+                                    .font(.rrBody)
+                                    .foregroundStyle(.primary)
+                            }
+                            .padding(.leading, 4)
                         }
 
                         Text("Now slowly extend your leg as far as you comfortably can, then tap Set Maximum Position.")
@@ -163,10 +186,15 @@ struct CalibrateDeviceView: View {
                         .disabled(isSavingMaximum)
 
                         if let v = maximumPositionValue {
-                            Text("Maximum position: \(v)°")
-                                .font(.rrBody)
-                                .foregroundStyle(.primary)
-                                .padding(.leading, 16)
+                            HStack(spacing: 8) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(Color.brandDarkBlue)
+                                    .font(.system(size: 16))
+                                Text("Maximum: **\(v)°**")
+                                    .font(.rrBody)
+                                    .foregroundStyle(.primary)
+                            }
+                            .padding(.leading, 4)
                         }
 
                         if let error = errorMessage {

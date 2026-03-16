@@ -16,6 +16,11 @@ enum ExerciseType {
     /// Heel Slides: fill rises = more flexion (engine fills normally; view inverts display).
     /// Rep counted when fill reaches peak (flexion target validated externally in LessonView).
     case kneeFlex
+    /// Straight Leg Raise: same timing/rep logic as kneeExtension; brace stays near full extension
+    /// while the whole leg lifts. Different targets and cue text.
+    case straightLegRaise
+    /// Ankle Pumps: fast dorsiflexion/plantarflexion; short 1.6 s cycle, permissive targets.
+    case anklePumps
 }
 
 /// Derive ExerciseType from a lesson title string.
@@ -28,6 +33,12 @@ extension ExerciseType {
         }
         if t.contains("heel slide") {
             return .kneeFlex
+        }
+        if t.contains("straight leg raise") {
+            return .straightLegRaise
+        }
+        if t.contains("ankle pump") {
+            return .anklePumps
         }
         // Short Arc Quad, Seated Knee Extensions, and any unknown → extension engine
         return .kneeExtension
@@ -79,6 +90,20 @@ extension LessonTargets {
             targets.flexionTargetDeg = 130
             targets.flexionResetDeg  = 155
             targets.maxHipDriftDeg   = 8
+            return targets
+        case .straightLegRaise:
+            // Leg stays near full extension while lifting; same targets as standard kneeExtension
+            var targets = LessonTargets()
+            targets.kneeTargetDeg  = 160
+            targets.kneeResetDeg   = 130
+            targets.maxHipDriftDeg = 8
+            return targets
+        case .anklePumps:
+            // Brace angle doesn't change meaningfully for ankle pumps; use permissive thresholds
+            var targets = LessonTargets()
+            targets.kneeTargetDeg  = 150
+            targets.kneeResetDeg   = 120
+            targets.maxHipDriftDeg = 10
             return targets
         }
     }
@@ -197,24 +222,26 @@ final class LessonEngine: ObservableObject {
     /// Duration of the upstroke animation.
     private var upstrokeDuration: TimeInterval {
         switch exerciseType {
-        case .isometricHold: return 1.5
-        case .kneeExtension, .kneeFlex: return restDuration / 2.0
+        case .isometricHold:    return 1.5
+        case .anklePumps:       return 0.8   // fast 1.6 s total cycle
+        case .kneeExtension, .kneeFlex, .straightLegRaise: return restDuration / 2.0
         }
     }
 
     /// Duration of the downstroke animation.
     private var downstrokeDuration: TimeInterval {
         switch exerciseType {
-        case .isometricHold: return 2.0
-        case .kneeExtension, .kneeFlex: return restDuration / 2.0
+        case .isometricHold:    return 2.0
+        case .anklePumps:       return 0.8
+        case .kneeExtension, .kneeFlex, .straightLegRaise: return restDuration / 2.0
         }
     }
 
     /// Hold duration for isometricHold type. Uses `restDuration` (set from PT's restSec param).
     private var holdDuration: TimeInterval {
         switch exerciseType {
-        case .isometricHold: return restDuration  // PT's restSec = hold seconds
-        default: return 0
+        case .isometricHold:    return restDuration  // PT's restSec = hold seconds
+        case .kneeExtension, .kneeFlex, .straightLegRaise, .anklePumps: return 0
         }
     }
 
@@ -321,7 +348,7 @@ final class LessonEngine: ObservableObject {
         case .isometricHold:
             // Transition to hold phase; rep counted after hold
             runHold(token: token)
-        case .kneeExtension, .kneeFlex:
+        case .kneeExtension, .kneeFlex, .straightLegRaise, .anklePumps:
             // Count rep immediately (callback validates sensor)
             let shouldCount = shouldCountRepCallback?() ?? true
             if shouldCount { repCount += 1 }
@@ -492,17 +519,21 @@ final class LessonEngine: ObservableObject {
 
     private var upstrokeStatusText: String {
         switch exerciseType {
-        case .kneeExtension: return "Keep it Coming!"
-        case .isometricHold: return "Extend Your Leg!"
-        case .kneeFlex:      return "Slide Your Heel!"
+        case .kneeExtension:    return "Keep it Coming!"
+        case .isometricHold:    return "Extend Your Leg!"
+        case .kneeFlex:         return "Slide Your Heel!"
+        case .straightLegRaise: return "Lift Your Leg!"
+        case .anklePumps:       return "Pump Up!"
         }
     }
 
     private var downstrokeStatusText: String {
         switch exerciseType {
-        case .kneeExtension: return "Keep it Coming!"
-        case .isometricHold: return "Lower Slowly"
-        case .kneeFlex:      return "Return to Start"
+        case .kneeExtension:    return "Keep it Coming!"
+        case .isometricHold:    return "Lower Slowly"
+        case .kneeFlex:         return "Return to Start"
+        case .straightLegRaise: return "Lower Slowly"
+        case .anklePumps:       return "Pump Down!"
         }
     }
 

@@ -30,6 +30,12 @@ struct DirectionsView1: View {
         if t.contains("heel slide") {
             return "Lie flat on your back with your brace on and both legs extended. Keep your heel on the surface throughout the exercise."
         }
+        if t.contains("straight leg raise") {
+            return "Lie flat on your back with your brace on. Keep your surgical leg completely straight and let your foot relax naturally."
+        }
+        if t.contains("ankle pump") {
+            return "Sit or lie comfortably with your brace on. Your foot should be free to move up and down without restriction."
+        }
         // Default: knee extensions
         return "With your brace on, sit comfortably, and place your leg in its resting position."
     }

@@ -35,47 +35,52 @@ struct PatientDetailView: View {
                         skeletonContent
                     } else {
                     VStack(alignment: .leading, spacing: RRSpace.section) {
-                    // Status banner (only for non-neutral patients)
-                    if patientStatus != .neutral {
-                        ZStack {
-                            // Soft glow — blurred ellipse for natural light-bleed look
-                            Ellipse()
-                                .fill(patientStatus.color.opacity(0.35))
-                                .frame(width: 320, height: 48)
-                                .blur(radius: 28)
-                                .allowsHitTesting(false)
-
-                            Text(patientStatus.label)
-                                .font(.rrHeadline)
-                                .foregroundStyle(patientStatus.color)
+                    // Title card — matches PatientListView card style (gradient + status chip)
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(patientName)
+                                .font(.rrTitle)
+                                .foregroundStyle(.primary)
+                            Text("Phone: \((patient?.phone ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "--" : (patient?.phone ?? "--"))")
+                                .font(.rrBody)
+                                .foregroundStyle(.secondary)
+                            Text("Email: \((patient?.email ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "--" : (patient?.email ?? "--"))")
+                                .font(.rrBody)
+                                .foregroundStyle(.secondary)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 4)
-                        .padding(.horizontal, 16)
-                    }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(16)
 
-                    // Title card: same style as PTDetailView (name, phone, email)
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(.white)
-                        .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
-                        .overlay(
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(patientName)
-                                    .font(.rrTitle)
-                                    .foregroundStyle(.primary)
-                                Text("Phone: \((patient?.phone ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "--" : (patient?.phone ?? "--"))")
-                                    .font(.rrBody)
-                                    .foregroundStyle(.secondary)
-                                Text("Email: \((patient?.email ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "--" : (patient?.email ?? "--"))")
-                                    .font(.rrBody)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(16)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        )
-                        .frame(minHeight: 110)
-                        .padding(.horizontal, 16)
-                        .padding(.top, patientStatus == .neutral ? RRSpace.pageTop : 0)
+                        if patientStatus != .neutral {
+                            Text(patientStatus.label)
+                                .font(.rrCaption.bold())
+                                .foregroundStyle(patientStatus.color)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(patientStatus.color.opacity(0.10))
+                                .clipShape(Capsule())
+                                .padding(.top, 12)
+                                .padding(.trailing, 12)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(.white)
+                            .overlay(
+                                LinearGradient(
+                                    colors: [.clear, patientStatus.color.opacity(patientStatus == .neutral ? 0 : 0.10)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 20))
+                                .allowsHitTesting(false)
+                            )
+                            .shadow(color: .black.opacity(0.05), radius: 18, x: 0, y: 6)
+                            .shadow(color: Color.brandDarkBlue.opacity(0.07), radius: 6, x: 0, y: 2)
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, RRSpace.pageTop)
                     
                     // Below card: DOB & Gender left (gray), Last PT Visit & Date of Surgery right (gray)
                     HStack(alignment: .top, spacing: 12) {

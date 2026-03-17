@@ -231,50 +231,39 @@ struct LessonView: View {
 
     // Helper function to determine text color
     private func textColor() -> Color {
-        if errorMessage != nil {
-            return .white
-        }
-        if isCountingDown {
-            return .primary
-        }
-        if engine.phase == .incorrectHold {
-            return .white
-        }
-        return .primary
+        if isUserPaused { return .primary }
+        if isCountingDown { return .primary }
+        if engine.phase == .idle && !showGoMessage { return .primary }
+        return .white
     }
     
     // Helper function to determine background color
     private func backgroundColor() -> Color {
-        // All reps completed — soft brand tint
+        // All reps completed — subtle green tint
         if engine.repCount >= engine.repTarget {
-            return Color.brandLightBlue.opacity(0.18)
+            return Color.green.opacity(0.05)
         }
         // User paused - neutral gray
         if isUserPaused {
             return Color.gray.opacity(0.12)
         }
-        // Error states — red
+        // Error states — very light red base (gradient overlay provides color)
         if hasIMUError || errorMessage != nil {
-            return Color.red
+            return Color.red.opacity(0.04)
         }
         if engine.phase == .incorrectHold {
-            return Color.red
+            return Color.red.opacity(0.04)
         }
         // Countdown / idle — neutral
         if isCountingDown || engine.phase == .idle {
             return Color.gray.opacity(0.12)
         }
-        // Active phases — subtle brand tint (gradient overlay will appear on top)
+        // Active phases — subtle base (gradient overlay will appear on top)
         return Color.brandDarkBlue.opacity(0.05)
     }
 
     var body: some View {
         VStack(alignment: .center, spacing: 0) {
-            // Title
-            Text(lessonTitle ?? "Lesson")
-                .font(.rrHeadline)
-                .padding(.top, 8)
-            
             // Progress (non-interactive)
             VStack(spacing: 6) {
                 ProgressView(value: min(Double(engine.repCount) / Double(engine.repTarget), 1.0))
@@ -307,16 +296,38 @@ struct LessonView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .padding(.horizontal, 16)
             }
-            .padding(.top, 8)
-            
+            .padding(.top, 4)
+
             // Feedback card
             ZStack {
                 // Base rounded panel
                 RoundedRectangle(cornerRadius: 20)
                     .fill(backgroundColor())
 
-                // Brand gradient fill during strokes/hold or when completed (hidden when paused)
-                if !isUserPaused && (engine.phase == .upstroke || engine.phase == .downstroke || engine.phase == .holding || engine.repCount >= engine.repTarget) {
+                // Green gradient — correct active phases (upstroke, downstroke, completed)
+                if !isUserPaused && (engine.phase == .upstroke || engine.phase == .downstroke || engine.repCount >= engine.repTarget) {
+                    GeometryReader { geo in
+                        let h = geo.size.height
+                        VStack {
+                            Spacer()
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.2, green: 0.75, blue: 0.35).opacity(0.38),
+                                    Color(red: 0.05, green: 0.45, blue: 0.22).opacity(0.60)
+                                ],
+                                startPoint: .bottom,
+                                endPoint: .top
+                            )
+                            .frame(height: max(0, h * max(0.08, engine.fill)))
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .allowsHitTesting(false)
+                }
+
+                // Blue gradient — holding phase
+                if !isUserPaused && engine.phase == .holding {
                     GeometryReader { geo in
                         let h = geo.size.height
                         VStack {
@@ -333,6 +344,20 @@ struct LessonView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 20))
                         }
                     }
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .allowsHitTesting(false)
+                }
+
+                // Light-red gradient — error / incorrect states
+                if !isUserPaused && (hasIMUError || errorMessage != nil || engine.phase == .incorrectHold) {
+                    LinearGradient(
+                        colors: [
+                            Color(red: 1.0, green: 0.25, blue: 0.25).opacity(0.35),
+                            Color(red: 0.75, green: 0.08, blue: 0.08).opacity(0.55)
+                        ],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .allowsHitTesting(false)
                 }
@@ -376,28 +401,28 @@ struct LessonView: View {
                     let progress = Double(engine.holdSecondsRemaining) / Double(total)
                     ZStack {
                         Circle()
-                            .stroke(Color.brandDarkBlue.opacity(0.15), lineWidth: 8)
+                            .stroke(Color.white.opacity(0.25), lineWidth: 8)
                             .frame(width: 88, height: 88)
                         Circle()
                             .trim(from: 0, to: CGFloat(progress))
-                            .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                            .stroke(Color.white, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                             .frame(width: 88, height: 88)
                             .rotationEffect(.degrees(-90))
-                            .animation(.linear(duration: 0.9), value: engine.holdSecondsRemaining)
+                            .animation(.linear(duration: 1.0), value: engine.holdSecondsRemaining)
                         VStack(spacing: 1) {
                             Text("\(engine.holdSecondsRemaining)")
                                 .font(.rrTitle.bold())
-                                .foregroundStyle(Color.brandDarkBlue)
+                                .foregroundStyle(Color.white)
                             Text("sec")
                                 .font(.rrCaption)
-                                .foregroundStyle(Color.brandDarkBlue.opacity(0.7))
+                                .foregroundStyle(Color.white.opacity(0.7))
                         }
                     }
                     .allowsHitTesting(false)
                 } else {
                     // Center text — countdown, error, phase cues
                     Text(displayText())
-                        .font(.rrTitle)
+                        .font(.rrHeadline)
                         .foregroundStyle(textColor())
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
@@ -422,16 +447,13 @@ struct LessonView: View {
                 }
                 .allowsHitTesting(false)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 270)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(.horizontal, 20)
-            .padding(.top, 16)
+            .padding(.top, 8)
             .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
-            
-            Spacer(minLength: 16)
-            
-            // Bottom section with calibration reference and live data
-            HStack(alignment: .center, spacing: 10) {
+
+            // Bottom controls row: Range pill (left) + Pause/Restart buttons (right)
+            HStack(alignment: .center, spacing: 12) {
                 // Left: Calibration range pill
                 if let maxCal = maxCalibrationValue, let restCal = restCalibrationValue {
                     HStack(spacing: 4) {
@@ -450,109 +472,80 @@ struct LessonView: View {
 
                 Spacer()
 
-                // Right: Live position pill
-                if let degrees = currentDegrees {
-                    HStack(spacing: 4) {
-                        Image(systemName: "scope")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(Color.brandDarkBlue.opacity(0.6))
-                        Text("Position: \(degrees)°")
-                            .font(.rrCaption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(Color.brandDarkBlue.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 10)
-            
-            // Pause/Resume and Restart buttons (only when lesson has started)
-            if hasStarted {
-                HStack(spacing: 12) {
-                    Button {
-                        if isUserPaused {
-                            resumeLesson()  // Shows recalibration sheet
-                        } else {
-                            pauseLesson()
+                // Right: Pause/Restart buttons (only when lesson has started)
+                if hasStarted {
+                    HStack(spacing: 10) {
+                        Button {
+                            if isUserPaused {
+                                resumeLesson()
+                            } else {
+                                pauseLesson()
+                            }
+                        } label: {
+                            Image(systemName: isUserPaused ? "play.fill" : "pause.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(isUserPaused ? .white : Color.brandDarkBlue)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    Circle()
+                                        .fill(isUserPaused ? Color.brandDarkBlue : Color.clear)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.brandDarkBlue, lineWidth: 2)
+                                        )
+                                )
                         }
-                    } label: {
-                        Image(systemName: isUserPaused ? "play.fill" : "pause.fill")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(isUserPaused ? .white : Color.brandDarkBlue)
-                            .frame(width: 44, height: 44)
-                            .background(
-                                Circle()
-                                    .fill(isUserPaused ? Color.brandDarkBlue : Color.clear)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.brandDarkBlue, lineWidth: 2)
-                                    )
-                            )
+                        .buttonStyle(.plain)
+
+                        Button {
+                            showRestartConfirmation = true
+                        } label: {
+                            Image(systemName: "arrow.counterclockwise")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(Color.brandDarkBlue)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    Circle()
+                                        .fill(Color.clear)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.brandDarkBlue, lineWidth: 2)
+                                        )
+                                )
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
-                    
-                    Button {
-                        showRestartConfirmation = true
-                    } label: {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(Color.brandDarkBlue)
-                            .frame(width: 44, height: 44)
-                            .background(
-                                Circle()
-                                    .fill(Color.clear)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.brandDarkBlue, lineWidth: 2)
-                                    )
-                            )
-                    }
-                    .buttonStyle(.plain)
                 }
-                .padding(.bottom, 8)
             }
-            
-            // Controls row (secondary begin button)
-            HStack {
-                SecondaryButton(
-                    title: hasStarted ? "Lesson Running…" : "Begin Lesson",
-                    isDisabled: hasStarted
-                ) {
-                    guard !hasStarted else { return }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+
+            // Single primary action button
+            PrimaryButton(
+                title: !hasStarted ? "Begin Lesson" : (engine.repCount >= engine.repTarget ? "Complete Session!" : "Lesson Running"),
+                isDisabled: hasStarted && engine.repCount < engine.repTarget,
+                useLargeFont: true
+            ) {
+                if !hasStarted {
                     hasStarted = true
                     elapsedBaseSeconds = 0
                     elapsedReferenceTime = Date()
                     startElapsedTimer()
-                    // Zero IMU value when lesson begins
                     ble.zeroIMUValue()
                     engine.reset()
                     setupRepCountingCallback()
                     startSensorValidation()
-                    // Start countdown immediately (initial countdown)
                     startCountdown(isInitial: true)
-                    // Sync "started" (0 reps) so PT sees progress immediately
                     if let lessonId = lessonId {
                         LocalLessonProgressStore.shared.saveDraft(lessonId: lessonId, repsCompleted: 0, repsTarget: engine.repTarget, elapsedSeconds: 0, status: "inProgress")
                         enqueueAndSyncLessonProgress(lessonId: lessonId, repsCompleted: 0, repsTarget: engine.repTarget, elapsedSeconds: 0, status: "inProgress")
                         startSensorInsightsCollection(lessonId: lessonId)
                     }
+                } else if engine.repCount >= engine.repTarget {
+                    engine.stopGuidedSimulation()
+                    persistAndCompleteLesson()
+                    router.go(.assessment(lessonId: lessonId))
                 }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 12)
-            
-            // Bottom primary action
-            PrimaryButton(
-                title: "Complete Session!",
-                isDisabled: engine.repCount < engine.repTarget,
-                useLargeFont: true
-            ) {
-                engine.stopGuidedSimulation()
-                persistAndCompleteLesson()
-                router.go(.assessment(lessonId: lessonId))
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
@@ -598,6 +591,10 @@ struct LessonView: View {
             router.reset(to: .journeyMap)
         })
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(lessonTitle ?? "Lesson")
+                    .font(.rrHeadline)
+            }
             ToolbarItem(placement: .topBarLeading) {
                 BackButton {
                     if hasStarted {

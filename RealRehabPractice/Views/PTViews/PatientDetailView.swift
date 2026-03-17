@@ -17,6 +17,7 @@ struct PatientDetailView: View {
     @State private var isKeyboardVisible = false
     @State private var showOfflineBanner = false
     @State private var unreadMessageCount = 0
+    @State private var patientStatus: PatientStatus = .neutral
     
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -244,8 +245,10 @@ struct PatientDetailView: View {
             }
         }
         .rrPageBackground()
-        .navigationTitle("My Patient")
+        .navigationTitle(patientStatus.label)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(patientStatus.color.opacity(patientStatus == .neutral ? 0 : 0.10), for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .swipeToGoBack(onBack: { router.reset(to: .patientList) })
         .toolbar {
@@ -428,6 +431,8 @@ struct PatientDetailView: View {
             self.currentPlan = plan
             self.notes = plan?.notes ?? ""
             self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (patientStale || planStale || forceRefresh)
+            let dates = (try? await RehabService.getCompletionDates(patientProfileId: patientProfileId)) ?? []
+            self.patientStatus = PatientStatus.compute(from: dates)
         } catch {
             if error is CancellationError || Task.isCancelled {
                 return

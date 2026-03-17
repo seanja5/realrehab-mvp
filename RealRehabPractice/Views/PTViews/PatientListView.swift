@@ -55,7 +55,7 @@ struct PatientListView: View {
                         .padding(.top, 60)
                     } else {
                         LazyVStack(spacing: 24) {
-                            ForEach(vm.patients) { patient in
+                            ForEach(vm.displayedPatients) { patient in
                                 PatientCard(
                                     name: formatPatientName(first: patient.first_name, last: patient.last_name),
                                     dob: formatDate(patient.date_of_birth),
@@ -65,6 +65,7 @@ struct PatientListView: View {
                                     accessCode: patient.access_code,
                                     patientProfileId: patient.patient_profile_id,
                                     isLinked: patient.profile_id != nil,
+                                    status: vm.patientStatuses[patient.patient_profile_id] ?? .neutral,
                                     onTap: {
                                         debugLog("📋 Opening patient \(patient.patient_profile_id.uuidString) with pt_profile_id=\(session.ptProfileId?.uuidString ?? "nil")")
                                         router.go(.ptPatientDetail(patientProfileId: patient.patient_profile_id))
@@ -110,6 +111,23 @@ struct PatientListView: View {
         .navigationTitle("My Patients")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    ForEach(PTPatientsViewModel.SortOrder.allCases, id: \.self) { order in
+                        Button {
+                            vm.sortOrder = order
+                        } label: {
+                            Label(order.rawValue, systemImage: vm.sortOrder == order ? "checkmark" : "")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundStyle(Color.brandDarkBlue)
+                }
+            }
+        }
         .task {
             vm.setPTProfileId(session.ptProfileId)
             await vm.load(forceRefresh: false)
@@ -234,6 +252,7 @@ private struct PatientCard: View {
     var accessCode: String?
     var patientProfileId: UUID?
     var isLinked: Bool = false
+    var status: PatientStatus = .neutral
     var onTap: (() -> Void)? = nil
     var onInvite: (() -> Void)? = nil
     
@@ -250,7 +269,17 @@ private struct PatientCard: View {
                 Text(name)
                     .font(.rrTitle)
                     .foregroundStyle(.primary)
-                
+
+                if status != .neutral {
+                    Text(status.label)
+                        .font(.rrCaption.bold())
+                        .foregroundStyle(status.color)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(status.color.opacity(0.10))
+                        .clipShape(Capsule())
+                }
+
                 Text("DOB: \(dob) • Gender: \(gender)")
                     .font(.rrBody)
                     .foregroundStyle(.secondary)
@@ -305,6 +334,14 @@ private struct PatientCard: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(.white)
+                .overlay(
+                    LinearGradient(
+                        colors: [.clear, status.color.opacity(status == .neutral ? 0 : 0.10)],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .allowsHitTesting(false)
+                )
                 .shadow(color: .black.opacity(0.05), radius: 18, x: 0, y: 6)
                 .shadow(color: Color.brandDarkBlue.opacity(0.07), radius: 6, x: 0, y: 2)
         )

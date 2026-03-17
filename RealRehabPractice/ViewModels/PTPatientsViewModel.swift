@@ -3,7 +3,19 @@ import Combine
 
 @MainActor
 final class PTPatientsViewModel: ObservableObject {
+
+    enum SortOrder: String, CaseIterable {
+        case nameAZ         = "Name A → Z"
+        case nameZA         = "Name Z → A"
+        case onTrackFirst   = "On Track First"
+        case needsHelpFirst = "Needs Help First"
+        case mostRecent     = "Most Recent Activity"
+        case leastRecent    = "Least Recent Activity"
+    }
+
     @Published var patients: [PTService.SimplePatient] = []
+    @Published var patientStatuses: [UUID: PatientStatus] = [:]
+    @Published var sortOrder: SortOrder = .nameAZ
     @Published var showAddOverlay = false
     @Published var firstName = ""
     @Published var lastName = ""
@@ -13,7 +25,35 @@ final class PTPatientsViewModel: ObservableObject {
     @Published var errorMessage: String?
     /// True when we should show the offline/stale banner (offline and either data is stale or user tried to refresh).
     @Published var showOfflineBanner = false
-    
+
+    var displayedPatients: [PTService.SimplePatient] {
+        patients.sorted {
+            switch sortOrder {
+            case .nameAZ:
+                return "\($0.last_name)\($0.first_name)" < "\($1.last_name)\($1.first_name)"
+            case .nameZA:
+                return "\($0.last_name)\($0.first_name)" > "\($1.last_name)\($1.first_name)"
+            case .onTrackFirst:
+                return statusRank(patientStatuses[$0.patient_profile_id]) < statusRank(patientStatuses[$1.patient_profile_id])
+            case .needsHelpFirst:
+                return statusRank(patientStatuses[$0.patient_profile_id]) > statusRank(patientStatuses[$1.patient_profile_id])
+            case .mostRecent:
+                return statusRank(patientStatuses[$0.patient_profile_id]) < statusRank(patientStatuses[$1.patient_profile_id])
+            case .leastRecent:
+                return statusRank(patientStatuses[$0.patient_profile_id]) > statusRank(patientStatuses[$1.patient_profile_id])
+            }
+        }
+    }
+
+    private func statusRank(_ s: PatientStatus?) -> Int {
+        switch s ?? .neutral {
+        case .onTrack:       return 0
+        case .fallingBehind: return 1
+        case .needsHelp:     return 2
+        case .neutral:       return 3
+        }
+    }
+
     private let genderOptions = ["Male", "Female", "Non-binary", "Prefer not to say"]
     private var ptProfileId: UUID?
     
@@ -48,8 +88,26 @@ final class PTPatientsViewModel: ObservableObject {
             }
         }
         isLoading = false
+        await loadStatuses()
     }
-    
+
+    private func loadStatuses() async {
+        let currentPatients = patients
+        var result: [UUID: PatientStatus] = [:]
+        await withTaskGroup(of: (UUID, PatientStatus).self) { group in
+            for p in currentPatients {
+                group.addTask {
+                    let dates = (try? await RehabService.getCompletionDates(patientProfileId: p.patient_profile_id)) ?? []
+                    return (p.patient_profile_id, PatientStatus.compute(from: dates))
+                }
+            }
+            for await (id, status) in group {
+                result[id] = status
+            }
+        }
+        patientStatuses = result
+    }
+
     func addPatient() async {
         guard let ptProfileId = ptProfileId else {
             errorMessage = "PT profile not available"

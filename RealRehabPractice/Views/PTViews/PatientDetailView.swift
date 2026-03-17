@@ -38,19 +38,11 @@ struct PatientDetailView: View {
                     // Status banner (only for non-neutral patients)
                     if patientStatus != .neutral {
                         ZStack {
-                            // Radial glow behind status text
+                            // Soft glow — blurred ellipse for natural light-bleed look
                             Ellipse()
-                                .fill(
-                                    RadialGradient(
-                                        colors: [patientStatus.color.opacity(0.22), patientStatus.color.opacity(0.08), .clear],
-                                        center: .center,
-                                        startRadius: 0,
-                                        endRadius: 160
-                                    )
-                                )
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 80)
-                                .scaleEffect(x: 2.2, y: 1.0)
+                                .fill(patientStatus.color.opacity(0.35))
+                                .frame(width: 320, height: 48)
+                                .blur(radius: 28)
                                 .allowsHitTesting(false)
 
                             Text(patientStatus.label)
@@ -58,7 +50,7 @@ struct PatientDetailView: View {
                                 .foregroundStyle(patientStatus.color)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.top, RRSpace.pageTop)
+                        .padding(.top, 4)
                         .padding(.horizontal, 16)
                     }
 

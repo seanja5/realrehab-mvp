@@ -270,16 +270,6 @@ private struct PatientCard: View {
                     .font(.rrTitle)
                     .foregroundStyle(.primary)
 
-                if status != .neutral {
-                    Text(status.label)
-                        .font(.rrCaption.bold())
-                        .foregroundStyle(status.color)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(status.color.opacity(0.10))
-                        .clipShape(Capsule())
-                }
-
                 Text("DOB: \(dob) • Gender: \(gender)")
                     .font(.rrBody)
                     .foregroundStyle(.secondary)
@@ -328,6 +318,16 @@ private struct PatientCard: View {
                 .buttonStyle(.plain)
                 .padding(.top, 12)
                 .padding(.trailing, 12)
+            } else if status != .neutral {
+                Text(status.label)
+                    .font(.rrCaption.bold())
+                    .foregroundStyle(status.color)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(status.color.opacity(0.10))
+                    .clipShape(Capsule())
+                    .padding(.top, 12)
+                    .padding(.trailing, 12)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)

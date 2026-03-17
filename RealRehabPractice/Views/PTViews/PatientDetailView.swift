@@ -35,6 +35,33 @@ struct PatientDetailView: View {
                         skeletonContent
                     } else {
                     VStack(alignment: .leading, spacing: RRSpace.section) {
+                    // Status banner (only for non-neutral patients)
+                    if patientStatus != .neutral {
+                        ZStack {
+                            // Radial glow behind status text
+                            Ellipse()
+                                .fill(
+                                    RadialGradient(
+                                        colors: [patientStatus.color.opacity(0.22), patientStatus.color.opacity(0.08), .clear],
+                                        center: .center,
+                                        startRadius: 0,
+                                        endRadius: 160
+                                    )
+                                )
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 80)
+                                .scaleEffect(x: 2.2, y: 1.0)
+                                .allowsHitTesting(false)
+
+                            Text(patientStatus.label)
+                                .font(.rrHeadline)
+                                .foregroundStyle(patientStatus.color)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, RRSpace.pageTop)
+                        .padding(.horizontal, 16)
+                    }
+
                     // Title card: same style as PTDetailView (name, phone, email)
                     RoundedRectangle(cornerRadius: 16)
                         .fill(.white)
@@ -56,7 +83,7 @@ struct PatientDetailView: View {
                         )
                         .frame(minHeight: 110)
                         .padding(.horizontal, 16)
-                        .padding(.top, RRSpace.pageTop)
+                        .padding(.top, patientStatus == .neutral ? RRSpace.pageTop : 0)
                     
                     // Below card: DOB & Gender left (gray), Last PT Visit & Date of Surgery right (gray)
                     HStack(alignment: .top, spacing: 12) {
@@ -245,10 +272,8 @@ struct PatientDetailView: View {
             }
         }
         .rrPageBackground()
-        .navigationTitle(patientStatus.label)
+        .navigationTitle("My Patient")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(patientStatus.color.opacity(patientStatus == .neutral ? 0 : 0.10), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .swipeToGoBack(onBack: { router.reset(to: .patientList) })
         .toolbar {

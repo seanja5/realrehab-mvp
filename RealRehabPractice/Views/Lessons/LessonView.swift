@@ -65,6 +65,9 @@ struct LessonView: View {
     // IMU state
     @State private var hasIMUError: Bool = false
 
+    // Countdown ring: wall-clock start time for smooth continuous progress
+    @State private var holdStartTime: Date? = nil
+
     // Sensor insights: track error count for rep_attempt (repCount + errorCount = attempt)
     @State private var errorCount: Int = 0
     
@@ -231,10 +234,7 @@ struct LessonView: View {
 
     // Helper function to determine text color
     private func textColor() -> Color {
-        if isUserPaused { return .primary }
-        if isCountingDown { return .primary }
-        if engine.phase == .idle && !showGoMessage { return .primary }
-        return .white
+        return .primary
     }
     
     // Helper function to determine background color
@@ -304,38 +304,16 @@ struct LessonView: View {
                 RoundedRectangle(cornerRadius: 20)
                     .fill(backgroundColor())
 
-                // Green gradient — correct active phases (upstroke, downstroke, completed)
-                if !isUserPaused && (engine.phase == .upstroke || engine.phase == .downstroke || engine.repCount >= engine.repTarget) {
+                // Green gradient — correct active phases (upstroke, downstroke, holding, completed)
+                if !isUserPaused && (engine.phase == .upstroke || engine.phase == .downstroke || engine.phase == .holding || engine.repCount >= engine.repTarget) {
                     GeometryReader { geo in
                         let h = geo.size.height
                         VStack {
                             Spacer()
                             LinearGradient(
                                 colors: [
-                                    Color(red: 0.2, green: 0.75, blue: 0.35).opacity(0.38),
-                                    Color(red: 0.05, green: 0.45, blue: 0.22).opacity(0.60)
-                                ],
-                                startPoint: .bottom,
-                                endPoint: .top
-                            )
-                            .frame(height: max(0, h * max(0.08, engine.fill)))
-                            .clipShape(RoundedRectangle(cornerRadius: 20))
-                        }
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .allowsHitTesting(false)
-                }
-
-                // Blue gradient — holding phase
-                if !isUserPaused && engine.phase == .holding {
-                    GeometryReader { geo in
-                        let h = geo.size.height
-                        VStack {
-                            Spacer()
-                            LinearGradient(
-                                colors: [
-                                    Color.brandLightBlue.opacity(0.35),
-                                    Color.brandDarkBlue.opacity(0.55)
+                                    Color(red: 0.10, green: 0.80, blue: 0.15).opacity(0.38),
+                                    Color(red: 0.04, green: 0.50, blue: 0.08).opacity(0.60)
                                 ],
                                 startPoint: .bottom,
                                 endPoint: .top
@@ -397,27 +375,30 @@ struct LessonView: View {
 
                 // Isometric hold: circular countdown ring overlay (replaces plain text for holding phase)
                 if engine.phase == .holding, case .isometricHold(_, let holdDur) = engine.exerciseType {
-                    let total = max(1, Int(holdDur.rounded()))
-                    let progress = Double(engine.holdSecondsRemaining) / Double(total)
-                    ZStack {
-                        Circle()
-                            .stroke(Color.white.opacity(0.25), lineWidth: 8)
-                            .frame(width: 88, height: 88)
-                        Circle()
-                            .trim(from: 0, to: CGFloat(progress))
-                            .stroke(Color.white, style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                            .frame(width: 88, height: 88)
-                            .rotationEffect(.degrees(-90))
-                            .animation(.linear(duration: 1.0), value: engine.holdSecondsRemaining)
-                        VStack(spacing: 1) {
-                            Text("\(engine.holdSecondsRemaining)")
-                                .font(.rrTitle.bold())
-                                .foregroundStyle(Color.white)
-                            Text("sec")
-                                .font(.rrCaption)
-                                .foregroundStyle(Color.white.opacity(0.7))
+                    TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { context in
+                        let elapsed = holdStartTime.map { context.date.timeIntervalSince($0) } ?? 0
+                        let progress = max(0, CGFloat(1.0 - elapsed / holdDur))
+                        ZStack {
+                            Circle()
+                                .stroke(Color.primary.opacity(0.15), lineWidth: 8)
+                                .frame(width: 88, height: 88)
+                            Circle()
+                                .trim(from: 0, to: progress)
+                                .stroke(Color.primary, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                                .frame(width: 88, height: 88)
+                                .rotationEffect(.degrees(-90))
+                            VStack(spacing: 1) {
+                                Text("\(engine.holdSecondsRemaining)")
+                                    .font(.rrTitle.bold())
+                                    .foregroundStyle(.primary)
+                                Text("sec")
+                                    .font(.rrCaption)
+                                    .foregroundStyle(.primary.opacity(0.7))
+                            }
                         }
                     }
+                    .onAppear { holdStartTime = Date() }
+                    .onDisappear { holdStartTime = nil }
                     .allowsHitTesting(false)
                 } else {
                     // Center text — countdown, error, phase cues

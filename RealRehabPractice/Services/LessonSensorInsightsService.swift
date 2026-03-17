@@ -39,4 +39,17 @@ enum LessonSensorInsightsService {
             .value
         return rows.first
     }
+
+    /// Fetch all completed lesson sensor insights for a patient (for PT performance overview).
+    static func fetchAll(patientProfileId: UUID) async throws -> [LessonSensorInsightsRow] {
+        let client = SupabaseService.shared.client
+        let rows: [LessonSensorInsightsRow] = try await client
+            .schema("rehab")
+            .from("lesson_sensor_insights")
+            .select()
+            .eq("patient_profile_id", value: patientProfileId.uuidString)
+            .execute()
+            .value
+        return rows.filter { $0.completed_at != nil }
+    }
 }

@@ -66,7 +66,7 @@ struct PTJourneyMapView: View {
             if nodes.isEmpty && isLoading {
                 ProgressView("Loading plan...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(red: 0.96, green: 0.97, blue: 0.99))
+                    .rrJourneyBackground()
             }
             
             // Confirm Journey button fixed at bottom
@@ -83,7 +83,7 @@ struct PTJourneyMapView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 20)
                 .padding(.bottom, 20)
-                .background(Color.white)
+                .background(Color.rrSurface)
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)
         }
@@ -94,7 +94,7 @@ struct PTJourneyMapView: View {
                     .reportHeaderBottom()
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white)
+                            .fill(Color.rrSurface)
                             .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
                     )
                     .padding(.horizontal, 16)
@@ -616,7 +616,7 @@ struct PTJourneyMapView: View {
                 .frame(width: min(340, geo.size.width - 32), height: Self.addLessonCardHeight)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(Color.white)
+                        .fill(Color.rrSurface)
                         .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
                 )
                 .position(x: geo.size.width / 2, y: cardY)
@@ -793,7 +793,7 @@ struct PTJourneyMapView: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.white)
+                    .fill(Color.rrSurface)
                     .shadow(color: .black.opacity(0.12), radius: 16, x: 0, y: 8)
             )
             .position(x: geo.size.width / 2, y: centerY)
@@ -830,7 +830,7 @@ struct PTJourneyMapView: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 28)
-            .background(Color.white)
+            .background(Color.rrSurface)
             .clipShape(RoundedRectangle(cornerRadius: 24))
             .shadow(color: .black.opacity(0.08), radius: 32, x: 0, y: 12)
             .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 4)
@@ -1210,7 +1210,7 @@ struct PhaseGoalsPopover: View {
         .fixedSize(horizontal: false, vertical: true)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white)
+                .fill(Color.rrSurface)
                 .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
         )
         .onTapGesture { }
@@ -1270,7 +1270,7 @@ struct PTNodeView: View {
                 }
                 .padding(.horizontal, 6)
                 .padding(.vertical, 4)
-                .background(Color.white.opacity(0.9))
+                .background(Color.rrSurface.opacity(0.9))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                 .offset(x: 4, y: -12)

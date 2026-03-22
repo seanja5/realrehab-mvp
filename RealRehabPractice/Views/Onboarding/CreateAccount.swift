@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-private let fieldFill = Color.white
+private let fieldFill = Color.rrInputBackground
 
 enum AccountType: String, CaseIterable {
     case patient = "Patient"

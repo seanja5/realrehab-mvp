@@ -12,6 +12,7 @@ struct Profile: Codable, Equatable {
   var phone: String?
   var created_at: Date?
   var updated_at: Date?
+  var dark_mode_enabled: Bool?
 }
 
 enum AuthService {
@@ -86,7 +87,7 @@ enum AuthService {
     let rows: [Profile] = try await supabase
       .schema("accounts")
       .from("profiles")
-      .select("id,user_id,email,role,first_name,last_name,phone,created_at,updated_at")
+      .select("id,user_id,email,role,first_name,last_name,phone,created_at,updated_at,dark_mode_enabled")
       .eq("user_id", value: uid.uuidString)
       .limit(1)
       .decoded(as: [Profile].self)
@@ -98,6 +99,21 @@ enum AuthService {
     debugLog("✅ AuthService.myProfile: cached result")
     
     return result
+  }
+
+  // MARK: - Dark mode preference
+
+  /// Save dark mode preference to accounts.profiles and invalidate profile cache.
+  static func setDarkModeEnabled(enabled: Bool) async throws {
+    let uid = try currentUserId()
+    _ = try await supabase
+      .schema("accounts")
+      .from("profiles")
+      .update(["dark_mode_enabled": enabled])
+      .eq("user_id", value: uid.uuidString)
+      .execute()
+    await CacheService.shared.invalidate(CacheKey.authProfile(userId: uid))
+    debugLog("✅ AuthService.setDarkModeEnabled: \(enabled)")
   }
 
   /// Load profile for display; when offline returns stale cache if available and reports isStale for banner.

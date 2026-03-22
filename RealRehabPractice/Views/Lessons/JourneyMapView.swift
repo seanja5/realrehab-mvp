@@ -164,7 +164,7 @@ struct JourneyMapView: View {
             if vm.isLoading {
                 ProgressView("Loading plan...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(red: 0.96, green: 0.97, blue: 0.99))
+                    .rrJourneyBackground()
             } else if vm.nodes.isEmpty {
                 VStack {
                     Spacer()
@@ -211,7 +211,7 @@ struct JourneyMapView: View {
                     .reportHeaderBottom()
                     .background(
                         RoundedRectangle(cornerRadius: 20)
-                            .fill(Color.white)
+                            .fill(Color.rrSurface)
                             .shadow(color: .black.opacity(0.05), radius: 18, x: 0, y: 6)
                             .shadow(color: Color.brandDarkBlue.opacity(0.07), radius: 6, x: 0, y: 2)
                     )
@@ -304,7 +304,7 @@ struct JourneyMapView: View {
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 28)
-                    .background(Color.white)
+                    .background(Color.rrSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 24))
                     .shadow(color: .black.opacity(0.08), radius: 32, x: 0, y: 12)
                     .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 4)
@@ -363,7 +363,7 @@ struct JourneyMapView: View {
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 28)
-                    .background(Color.white)
+                    .background(Color.rrSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 24))
                     .shadow(color: .black.opacity(0.08), radius: 32, x: 0, y: 12)
                     .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 4)
@@ -419,7 +419,7 @@ struct JourneyMapView: View {
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 28)
-                    .background(Color.white)
+                    .background(Color.rrSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 24))
                     .shadow(color: .black.opacity(0.08), radius: 32, x: 0, y: 12)
                     .padding(.horizontal, 24)

@@ -11,13 +11,15 @@ import SwiftUI
 
 struct ShimmerModifier: ViewModifier {
     @State private var phase: CGFloat = 0
-    
+    @Environment(\.colorScheme) private var colorScheme
+
     func body(content: Content) -> some View {
-        content
+        let shimmerOpacity: Double = colorScheme == .dark ? 0.10 : 0.50
+        return content
             .overlay(
                 GeometryReader { g in
                     LinearGradient(
-                        colors: [.clear, .white.opacity(0.5), .clear],
+                        colors: [.clear, .white.opacity(shimmerOpacity), .clear],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -46,10 +48,10 @@ struct SkeletonBlock: View {
     var width: CGFloat? = nil
     var height: CGFloat = 16
     var cornerRadius: CGFloat = 8
-    
+
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(Color(white: 0.88))
+            .fill(Color.rrSkeleton)
             .frame(width: width, height: height)
             .shimmer()
     }

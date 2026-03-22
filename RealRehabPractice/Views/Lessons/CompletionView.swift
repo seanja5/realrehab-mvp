@@ -179,7 +179,7 @@ struct CompletionView: View {
                     circularProgressRing(progress: 0)
                         .frame(width: 168, height: 168)
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(white: 0.88))
+                        .fill(Color.rrSkeleton)
                         .frame(width: 56, height: 44)
                         .shimmer()
                 } else {
@@ -235,7 +235,7 @@ struct CompletionView: View {
                 let valueW: CGFloat = compactSkeleton ? 48 : 80
                 let titleW: CGFloat = compactSkeleton ? 64 : 120
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(white: 0.88))
+                    .fill(Color.rrSkeleton)
                     .frame(width: iconSize, height: iconSize)
                     .shimmer()
                 VStack(alignment: .leading, spacing: 4) {
@@ -299,7 +299,7 @@ struct CompletionView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white)
+                        .fill(Color.rrSurface)
                         .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                 )
             } else if let summary = aiPatientSummary, !summary.isEmpty {
@@ -310,7 +310,7 @@ struct CompletionView: View {
                     .padding(16)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white)
+                            .fill(Color.rrSurface)
                             .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                     )
             } else if let fallback = computedScore.map({ PatientLessonScore.whatItMeans(for: $0.score) }) {
@@ -321,7 +321,7 @@ struct CompletionView: View {
                     .padding(16)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white)
+                            .fill(Color.rrSurface)
                             .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                     )
             }

@@ -5,6 +5,7 @@ import PostgREST
 struct PatientSettingsView: View {
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var pendingLinkStore: PendingLinkStore
+    @EnvironmentObject private var themeManager: AppThemeManager
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var allowReminders = false
     @State private var allowCamera = false
@@ -30,6 +31,7 @@ struct PatientSettingsView: View {
                     } else {
                     VStack(spacing: 24) {
                         accountSection
+                        appearanceSection
                         notificationsSection
                     if !hasPT {
                         connectPTSection
@@ -95,7 +97,7 @@ struct PatientSettingsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 SkeletonBlock(width: 80, height: 22)
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.88))
+                    .fill(Color.rrSkeleton)
                     .frame(maxWidth: .infinity)
                     .frame(height: 200)
                     .shimmer()
@@ -103,7 +105,7 @@ struct PatientSettingsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 SkeletonBlock(width: 130, height: 22)
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.88))
+                    .fill(Color.rrSkeleton)
                     .frame(maxWidth: .infinity)
                     .frame(height: 100)
                     .shimmer()
@@ -111,7 +113,7 @@ struct PatientSettingsView: View {
             VStack(alignment: .leading, spacing: 10) {
                 SkeletonBlock(width: 70, height: 14)
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(Color(white: 0.88))
+                    .fill(Color.rrSkeleton)
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
                     .shimmer()
@@ -170,6 +172,20 @@ struct PatientSettingsView: View {
         return outputFormatter.string(from: date)
     }
 
+    private var appearanceSection: some View {
+        SettingsSection(title: "Appearance") {
+            Toggle(isOn: $themeManager.isDarkMode) {
+                Text("Dark mode")
+                    .font(.rrBody)
+            }
+            .onChange(of: themeManager.isDarkMode) { _, enabled in
+                guard hasLoadedInitial else { return }
+                Task { try? await AuthService.setDarkModeEnabled(enabled: enabled) }
+            }
+        }
+        .toggleStyle(SwitchToggleStyle(tint: .brandDarkBlue))
+    }
+
     private var notificationsSection: some View {
         SettingsSection(title: "Notifications") {
             Toggle(isOn: $allowReminders) {
@@ -220,11 +236,11 @@ struct PatientSettingsView: View {
                         .font(.rrBody)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
-                        .background(Color.white)
+                        .background(Color.rrInputBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .overlay(
                             RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                                .stroke(Color.rrBorder, lineWidth: 1)
                         )
                         .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
                         .focused($isAccessCodeFocused)

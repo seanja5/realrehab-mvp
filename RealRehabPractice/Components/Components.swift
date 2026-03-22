@@ -527,7 +527,7 @@ private struct BluetoothPopupView: View {
     
     private var popupContent: some View {
         RoundedRectangle(cornerRadius: 16)
-            .fill(.white)
+            .fill(Color.rrSurface)
             .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
             .overlay {
                 VStack(spacing: 16) {
@@ -723,14 +723,14 @@ struct RecoveryChartWeekView: View {
                 showFullHistory = true
             } label: {
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(.white)
+                    .fill(Color.rrSurface)
                     .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                     .frame(maxWidth: .infinity)
                     .frame(height: 240)
                     .overlay {
                         if isLoading {
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(white: 0.88))
+                                .fill(Color.rrSkeleton)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .shimmer()
                         } else if chartData.isEmpty {
@@ -863,7 +863,7 @@ struct RecoveryChartFullHistoryView: View {
                 ScrollView(.horizontal, showsIndicators: true) {
                     VStack {
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(.white)
+                            .fill(Color.rrSurface)
                             .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                             .frame(width: max(geometry.size.width, CGFloat(chartData.count) * 60), height: 400)
                             .padding()
@@ -923,7 +923,7 @@ struct RecoveryChartMonthView: View {
         NavigationStack {
             VStack {
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(.white)
+                    .fill(Color.rrSurface)
                     .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                     .frame(maxWidth: .infinity)
                     .frame(height: 400)
@@ -1399,7 +1399,7 @@ struct ActivityConsistencyCard: View {
                 .padding(.horizontal, 16)
             
             RoundedRectangle(cornerRadius: 16)
-                .fill(.white)
+                .fill(Color.rrSurface)
                 .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                 .frame(maxWidth: .infinity)
                 .frame(height: 150)
@@ -1442,7 +1442,7 @@ struct CardContainer<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white)
+                .fill(Color.rrSurface)
                 .shadow(color: .black.opacity(0.05), radius: 18, x: 0, y: 6)
                 .shadow(color: Color.brandDarkBlue.opacity(0.07), radius: 6, x: 0, y: 2)
         )
@@ -1461,7 +1461,7 @@ struct SettingsSection<Content: View>: View {
             Text(title.uppercased())
                 .font(.system(size: 11, weight: .semibold))
                 .tracking(1.0)
-                .foregroundStyle(Color(red: 0.50, green: 0.53, blue: 0.62))
+                .foregroundStyle(Color.rrSectionLabel)
                 .padding(.leading, 4)
             CardContainer(padding: innerSpacing) {
                 VStack(alignment: .leading, spacing: innerSpacing) {

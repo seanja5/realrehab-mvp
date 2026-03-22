@@ -16,54 +16,108 @@ enum RRSpace {
     static let stack: CGFloat   = 12
 }
 
-// MARK: - Brand Background helpers
-extension View {
-    /// Standard page background — subtle cool gradient replacing the old flat gray.
-    func rrPageBackground() -> some View {
-        self
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(
-                LinearGradient(
-                    stops: [
-                        .init(color: Color(red: 0.978, green: 0.978, blue: 0.996), location: 0.0),
-                        .init(color: Color(red: 0.942, green: 0.943, blue: 0.966), location: 1.0)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-            )
-    }
+// MARK: - Page Background Modifier
+private struct RRPageBackgroundModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
 
-    /// Journey map background — richer ambient depth with dual radial glows.
-    func rrJourneyBackground() -> some View {
-        self
+    func body(content: Content) -> some View {
+        content
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(
-                ZStack {
-                    LinearGradient(
-                        stops: [
-                            .init(color: Color(red: 0.963, green: 0.968, blue: 1.000), location: 0.0),
-                            .init(color: Color(red: 0.900, green: 0.912, blue: 0.968), location: 1.0)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    RadialGradient(
-                        colors: [Color.brandDarkBlue.opacity(0.13), Color.clear],
-                        center: .topTrailing,
-                        startRadius: 0,
-                        endRadius: 430
-                    )
-                    RadialGradient(
-                        colors: [Color.brandElectric.opacity(0.055), Color.clear],
-                        center: .bottomLeading,
-                        startRadius: 0,
-                        endRadius: 320
-                    )
+                Group {
+                    if colorScheme == .dark {
+                        LinearGradient(
+                            stops: [
+                                .init(color: Color(red: 0.07, green: 0.08, blue: 0.12), location: 0.0),
+                                .init(color: Color(red: 0.06, green: 0.07, blue: 0.10), location: 1.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    } else {
+                        LinearGradient(
+                            stops: [
+                                .init(color: Color(red: 0.978, green: 0.978, blue: 0.996), location: 0.0),
+                                .init(color: Color(red: 0.942, green: 0.943, blue: 0.966), location: 1.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    }
                 }
                 .ignoresSafeArea()
             )
+    }
+}
+
+// MARK: - Journey Background Modifier
+private struct RRJourneyBackgroundModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(
+                ZStack {
+                    if colorScheme == .dark {
+                        LinearGradient(
+                            stops: [
+                                .init(color: Color(red: 0.07, green: 0.08, blue: 0.14), location: 0.0),
+                                .init(color: Color(red: 0.05, green: 0.06, blue: 0.12), location: 1.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        RadialGradient(
+                            colors: [Color.brandElectric.opacity(0.10), Color.clear],
+                            center: .topTrailing,
+                            startRadius: 0,
+                            endRadius: 430
+                        )
+                        RadialGradient(
+                            colors: [Color.brandDarkBlue.opacity(0.15), Color.clear],
+                            center: .bottomLeading,
+                            startRadius: 0,
+                            endRadius: 320
+                        )
+                    } else {
+                        LinearGradient(
+                            stops: [
+                                .init(color: Color(red: 0.963, green: 0.968, blue: 1.000), location: 0.0),
+                                .init(color: Color(red: 0.900, green: 0.912, blue: 0.968), location: 1.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        RadialGradient(
+                            colors: [Color.brandDarkBlue.opacity(0.13), Color.clear],
+                            center: .topTrailing,
+                            startRadius: 0,
+                            endRadius: 430
+                        )
+                        RadialGradient(
+                            colors: [Color.brandElectric.opacity(0.055), Color.clear],
+                            center: .bottomLeading,
+                            startRadius: 0,
+                            endRadius: 320
+                        )
+                    }
+                }
+                .ignoresSafeArea()
+            )
+    }
+}
+
+// MARK: - Brand Background helpers
+extension View {
+    /// Standard page background — adapts to light / dark mode.
+    func rrPageBackground() -> some View {
+        modifier(RRPageBackgroundModifier())
+    }
+
+    /// Journey map background — richer ambient depth with dual radial glows. Adapts to dark mode.
+    func rrJourneyBackground() -> some View {
+        modifier(RRJourneyBackgroundModifier())
     }
 
     /// Dismisses keyboard when tapping outside text fields/editors

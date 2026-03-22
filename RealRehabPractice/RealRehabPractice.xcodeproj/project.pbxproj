@@ -39,6 +39,8 @@
 		C8A2B3D52ED00003004D9348 /* ScheduleVisualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */; };
 		C8A3B4E62ED00004004D9348 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A3B4E52ED00004004D9347 /* NotificationManager.swift */; };
 		C8A3B4E82ED00005004D9348 /* NotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A3B4E72ED00005004D9347 /* NotificationDelegate.swift */; };
+		C8D0BBBB2F300001004D9348 /* AppThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D0BBBB2F300001004D9347 /* AppThemeManager.swift */; };
+		C8E1CC1C2F300002004D9348 /* Color+Adaptive.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1CC1C2F300002004D9347 /* Color+Adaptive.swift */; };
 		C8A4B5C72ED0006004D9348 /* AnalyticsSummaryBoxesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A4B5C62ED0006004D9347 /* AnalyticsSummaryBoxesView.swift */; };
 		C8A9B3E22ED0010A004D9348 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */; };
 		C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */; };
@@ -148,6 +150,8 @@
 		C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleVisualizerView.swift; sourceTree = "<group>"; };
 		C8A3B4E52ED00004004D9347 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		C8A3B4E72ED00005004D9347 /* NotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationDelegate.swift; sourceTree = "<group>"; };
+		C8D0BBBB2F300001004D9347 /* AppThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppThemeManager.swift; sourceTree = "<group>"; };
+		C8E1CC1C2F300002004D9347 /* Color+Adaptive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Adaptive.swift"; sourceTree = "<group>"; };
 		C8A4B5C62ED0006004D9347 /* AnalyticsSummaryBoxesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsSummaryBoxesView.swift; sourceTree = "<group>"; };
 		C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
@@ -344,6 +348,7 @@
 				C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */,
 				C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */,
 				C8A3B4E72ED00005004D9347 /* NotificationDelegate.swift */,
+				C8D0BBBB2F300001004D9347 /* AppThemeManager.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -359,6 +364,7 @@
 				C8003FB42EB7FC39008DC812 /* Components.swift */,
 				C8D677C92EB839FD00829145 /* SkeletonShimmer.swift */,
 				C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */,
+				C8E1CC1C2F300002004D9347 /* Color+Adaptive.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -657,6 +663,8 @@
 				C8A2B3D42ED00002004D9348 /* ScheduleService.swift in Sources */,
 				C8A3B4E62ED00004004D9348 /* NotificationManager.swift in Sources */,
 				C8A3B4E82ED00005004D9348 /* NotificationDelegate.swift in Sources */,
+				C8D0BBBB2F300001004D9348 /* AppThemeManager.swift in Sources */,
+				C8E1CC1C2F300002004D9348 /* Color+Adaptive.swift in Sources */,
 				C8B1B2C52ED00001004D9348 /* NetworkMonitor.swift in Sources */,
 				C8B1B2C72ED00001004D9349 /* LocalLessonProgressStore.swift in Sources */,
 				C8B1B2C92ED00001004D934A /* OutboxItem.swift in Sources */,

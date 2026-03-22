@@ -6,6 +6,7 @@ struct WelcomeView: View {
     @StateObject private var auth = AuthViewModel()
     @State private var logoVisible = false
     @State private var contentVisible = false
+    @Environment(\.colorScheme) private var colorScheme
 
     private var isFormValid: Bool {
         !auth.email.isEmpty && !auth.password.isEmpty
@@ -13,9 +14,14 @@ struct WelcomeView: View {
 
     var body: some View {
         ZStack {
-            // MARK: - Background: page-background color fading to a very soft blue at bottom
+            // MARK: - Background: adaptive gradient (light: periwinkle, dark: deep navy)
             LinearGradient(
-                stops: [
+                stops: colorScheme == .dark ? [
+                    .init(color: Color(red: 0.07, green: 0.08, blue: 0.12), location: 0.00),
+                    .init(color: Color(red: 0.07, green: 0.08, blue: 0.12), location: 0.50),
+                    .init(color: Color(red: 0.06, green: 0.07, blue: 0.10), location: 0.75),
+                    .init(color: Color(red: 0.06, green: 0.07, blue: 0.10), location: 1.00)
+                ] : [
                     .init(color: Color(red: 0.978, green: 0.978, blue: 0.996), location: 0.00),
                     .init(color: Color(red: 0.966, green: 0.967, blue: 0.990), location: 0.25),
                     .init(color: Color(red: 0.945, green: 0.948, blue: 0.982), location: 0.50),
@@ -136,12 +142,12 @@ struct WelcomeView: View {
 
                         // Divider
                         HStack {
-                            Rectangle().fill(Color.black.opacity(0.08)).frame(height: 1)
+                            Rectangle().fill(Color.rrBorder).frame(height: 1)
                             Text("or")
                                 .font(.rrCaption)
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 12)
-                            Rectangle().fill(Color.black.opacity(0.08)).frame(height: 1)
+                            Rectangle().fill(Color.rrBorder).frame(height: 1)
                         }
                         .padding(.horizontal, 32)
 
@@ -211,11 +217,11 @@ private struct WelcomeFormField: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(Color.white)
+        .background(Color.rrInputBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                .stroke(Color.rrBorder, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
     }
@@ -237,11 +243,11 @@ private struct WelcomeSecureField: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(Color.white)
+        .background(Color.rrInputBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                .stroke(Color.rrBorder, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
     }

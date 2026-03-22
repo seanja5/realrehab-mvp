@@ -206,7 +206,7 @@ struct AnalyticsView: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
+                .fill(Color.rrSurface)
                 .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
         )
     }
@@ -298,7 +298,7 @@ struct DriftGraphView: View {
             }
         }
         .frame(height: 260)
-        .background(Color.white)
+        .background(Color.rrSurface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
     }
@@ -422,7 +422,7 @@ struct ShakeGraphView: View {
             }
         }
         .frame(height: 200)
-        .background(Color.white)
+        .background(Color.rrSurface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
     }
@@ -530,7 +530,7 @@ struct EventTimelineView: View {
                             .padding(.vertical, 4)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.white)
+                                    .fill(Color.rrSurface)
                                     .shadow(color: .black.opacity(0.08), radius: 4)
                             )
                         Circle()
@@ -548,7 +548,7 @@ struct EventTimelineView: View {
             }
         }
         .frame(height: 120)
-        .background(Color.white)
+        .background(Color.rrSurface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
     }

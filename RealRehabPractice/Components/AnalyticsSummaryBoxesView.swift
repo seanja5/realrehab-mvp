@@ -81,7 +81,7 @@ struct AnalyticsSummaryBoxesView: View {
 
     private var boxBackground: some View {
         RoundedRectangle(cornerRadius: 12)
-            .fill(Color.white)
+            .fill(Color.rrSurface)
             .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
     }
 

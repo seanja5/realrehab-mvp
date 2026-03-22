@@ -107,7 +107,7 @@ struct PatientDetailView: View {
                             // — Notes
                             sectionHeader("Notes")
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(.white)
+                                .fill(Color.rrSurface)
                                 .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                                 .overlay(
                                     ZStack(alignment: .topLeading) {
@@ -133,7 +133,7 @@ struct PatientDetailView: View {
                             if let accessCode = patient?.access_code, !accessCode.isEmpty {
                                 sectionHeader("Access Code")
                                 RoundedRectangle(cornerRadius: 16)
-                                    .fill(.white)
+                                    .fill(Color.rrSurface)
                                     .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                                     .overlay(
                                         VStack(alignment: .leading, spacing: 8) {
@@ -190,7 +190,7 @@ struct PatientDetailView: View {
                             router.goWithoutAnimation(.ptSettings)
                         }
                     }
-                    .background(Color.white)
+                    .background(Color.rrSurface)
                 }
                 .ignoresSafeArea(.keyboard, edges: .bottom)
             }
@@ -320,11 +320,11 @@ struct PatientDetailView: View {
             if isPatientCardExpanded {
                 HStack(spacing: 0) {
                     metaCellView(label: "Date of Birth", value: formattedDOB(patient?.date_of_birth))
-                    Rectangle().fill(Color.black.opacity(0.07)).frame(width: 1, height: 36)
+                    Rectangle().fill(Color.rrBorder).frame(width: 1, height: 36)
                     metaCellView(label: "Gender", value: patient?.gender?.capitalized ?? "--")
-                    Rectangle().fill(Color.black.opacity(0.07)).frame(width: 1, height: 36)
+                    Rectangle().fill(Color.rrBorder).frame(width: 1, height: 36)
                     metaCellView(label: "Last PT Visit", value: formattedDOB(patient?.last_pt_visit))
-                    Rectangle().fill(Color.black.opacity(0.07)).frame(width: 1, height: 36)
+                    Rectangle().fill(Color.rrBorder).frame(width: 1, height: 36)
                     metaCellView(label: "Surgery Date", value: formattedDOB(patient?.surgery_date))
                 }
                 .padding(.horizontal, 8)
@@ -336,7 +336,7 @@ struct PatientDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(.white)
+                .fill(Color.rrSurface)
                 .overlay(
                     LinearGradient(
                         colors: [.clear, patientStatus.color.opacity(patientStatus == .neutral ? 0 : 0.10)],
@@ -390,7 +390,7 @@ struct PatientDetailView: View {
                         ForEach(0..<3, id: \.self) { _ in
                             VStack(spacing: 8) {
                                 Circle()
-                                    .fill(Color(white: 0.88))
+                                    .fill(Color.rrSkeleton)
                                     .frame(width: 64, height: 64)
                                     .shimmer()
                                 SkeletonBlock(width: 56, height: 11)
@@ -402,7 +402,7 @@ struct PatientDetailView: View {
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(.white)
+                            .fill(Color.rrSurface)
                             .shadow(color: .black.opacity(0.05), radius: 14, x: 0, y: 4)
                     )
                     .padding(.horizontal, 16)
@@ -444,7 +444,7 @@ struct PatientDetailView: View {
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(.white)
+                    .fill(Color.rrSurface)
                     .shadow(color: .black.opacity(0.05), radius: 14, x: 0, y: 4)
                     .shadow(color: Color.brandDarkBlue.opacity(0.05), radius: 5, x: 0, y: 2)
             )
@@ -493,7 +493,7 @@ struct PatientDetailView: View {
     private var skeletonContent: some View {
         VStack(alignment: .leading, spacing: RRSpace.section) {
             RoundedRectangle(cornerRadius: 16)
-                .fill(.white)
+                .fill(Color.rrSurface)
                 .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                 .overlay(
                     VStack(alignment: .leading, spacing: 8) {
@@ -530,7 +530,7 @@ struct PatientDetailView: View {
             VStack(alignment: .leading, spacing: RRSpace.stack) {
                 SkeletonBlock(width: 160, height: 18).padding(.horizontal, 16)
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.88))
+                    .fill(Color.rrSkeleton)
                     .frame(maxWidth: .infinity)
                     .frame(height: 240)
                     .padding(.horizontal, 16)
@@ -548,7 +548,7 @@ struct PatientDetailView: View {
             VStack(alignment: .leading, spacing: RRSpace.stack) {
                 SkeletonBlock(width: 60, height: 18).padding(.horizontal, 16)
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.88))
+                    .fill(Color.rrSkeleton)
                     .frame(minHeight: 180)
                     .padding(.horizontal, 16)
                     .shimmer()

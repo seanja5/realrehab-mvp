@@ -33,7 +33,7 @@ struct PTTabBar: View {
         .frame(maxWidth: .infinity)
         .background(
             Rectangle()
-                .fill(Color.white)
+                .fill(Color.rrSurface)
                 .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: -4)
                 .ignoresSafeArea(edges: .bottom)
         )

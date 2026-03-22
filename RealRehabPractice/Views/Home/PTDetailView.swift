@@ -15,7 +15,7 @@ struct PTDetailView: View {
                         skeletonContent
                     } else {
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(.white)
+                        .fill(Color.rrSurface)
                         .shadow(color: .black.opacity(0.05), radius: 18, x: 0, y: 6)
                         .shadow(color: Color.brandDarkBlue.opacity(0.07), radius: 6, x: 0, y: 2)
                         .overlay(
@@ -162,7 +162,7 @@ struct PTDetailView: View {
     private var skeletonContent: some View {
         VStack(alignment: .leading, spacing: RRSpace.section) {
             RoundedRectangle(cornerRadius: 16)
-                .fill(.white)
+                .fill(Color.rrSurface)
                 .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                 .overlay(
                     VStack(alignment: .leading, spacing: 8) {
@@ -184,7 +184,7 @@ struct PTDetailView: View {
                 SkeletonBlock(width: 160, height: 18)
                     .padding(.horizontal, 16)
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.88))
+                    .fill(Color.rrSkeleton)
                     .frame(maxWidth: .infinity)
                     .frame(height: 240)
                     .padding(.horizontal, 16)

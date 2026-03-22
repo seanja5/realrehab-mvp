@@ -3,6 +3,7 @@ import SwiftUI
 struct PTSettingsView: View {
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var session: SessionContext
+    @EnvironmentObject private var themeManager: AppThemeManager
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var notifySessionComplete = true
     @State private var notifyMissedDay = false
@@ -26,6 +27,7 @@ struct PTSettingsView: View {
                     VStack(spacing: 24) {
                         accountSection
                         practiceSection
+                        appearanceSection
                         notificationsSection
                         dangerZoneSection
                     }
@@ -86,7 +88,7 @@ struct PTSettingsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(white: 0.94))
+                        .fill(Color.rrSkeleton)
                         .shimmer()
                 )
             }
@@ -94,7 +96,7 @@ struct PTSettingsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 SkeletonBlock(width: 100, height: 22)
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.88))
+                    .fill(Color.rrSkeleton)
                     .frame(maxWidth: .infinity)
                     .frame(height: 140)
                     .shimmer()
@@ -103,7 +105,7 @@ struct PTSettingsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 SkeletonBlock(width: 130, height: 22)
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.88))
+                    .fill(Color.rrSkeleton)
                     .frame(maxWidth: .infinity)
                     .frame(height: 100)
                     .shimmer()
@@ -112,7 +114,7 @@ struct PTSettingsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 SkeletonBlock(width: 70, height: 22)
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.88))
+                    .fill(Color.rrSkeleton)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
                     .shimmer()
@@ -141,6 +143,20 @@ struct PTSettingsView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var appearanceSection: some View {
+        SettingsSection(title: "Appearance") {
+            Toggle(isOn: $themeManager.isDarkMode) {
+                Text("Dark mode")
+                    .font(.rrBody)
+            }
+            .onChange(of: themeManager.isDarkMode) { _, enabled in
+                guard !skipNextNotifySave else { return }
+                Task { try? await AuthService.setDarkModeEnabled(enabled: enabled) }
+            }
+        }
+        .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
     }
 
     private var notificationsSection: some View {

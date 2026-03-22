@@ -209,7 +209,7 @@ struct PatientListView: View {
             .frame(maxWidth: 340)
             .background(
                 RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.white)
+                    .fill(Color.rrSurface)
                     .shadow(color: .black.opacity(0.08), radius: 28, x: 0, y: 12)
                     .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 3)
             )
@@ -222,7 +222,7 @@ struct PatientListView: View {
         VStack(spacing: 24) {
             ForEach(0..<3, id: \.self) { _ in
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.88))
+                    .fill(Color.rrSkeleton)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: 110)
                     .overlay(
@@ -333,7 +333,7 @@ private struct PatientCard: View {
         .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(.white)
+                .fill(Color.rrSurface)
                 .overlay(
                     LinearGradient(
                         colors: [.clear, status.color.opacity(status == .neutral ? 0 : 0.10)],

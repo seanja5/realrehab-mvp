@@ -17,6 +17,7 @@ struct RealRehabPracticeApp: App {
     @StateObject private var pendingLinkStore = PendingLinkStore()
     @StateObject private var invitedStore = InvitedPatientsStore()
     @StateObject private var networkMonitor = NetworkMonitor.shared
+    @StateObject private var themeManager = AppThemeManager()
 
     init() {
         UNUserNotificationCenter.current().delegate = NotificationDelegate()
@@ -87,6 +88,7 @@ struct RealRehabPracticeApp: App {
             .environmentObject(session)
             .environmentObject(pendingLinkStore)
             .environmentObject(invitedStore)
+            .environmentObject(themeManager)
             .onOpenURL { url in
                 guard let code = parseAccessCode(from: url) else { return }
                 pendingLinkStore.setCode(code)
@@ -111,6 +113,10 @@ struct RealRehabPracticeApp: App {
                     default:
                         break
                     }
+                }
+                // Sync dark mode preference from profile (handles cross-device consistency)
+                if let profile = try? await AuthService.myProfile() {
+                    themeManager.syncFromProfile(profile)
                 }
                 await OutboxSyncManager.shared.processQueueIfOnline()
                 // Handle deep link after cold start: if code was set by onOpenURL before session existed, navigate now
@@ -144,7 +150,7 @@ struct RealRehabPracticeApp: App {
                     Task { await OutboxSyncManager.shared.processQueueIfOnline() }
                 }
             }
-            .preferredColorScheme(.light)   // <- force Light mode app-wide
+            .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
         }
     }
 

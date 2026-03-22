@@ -129,7 +129,7 @@ struct ScheduleVisualizerView: View {
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(Color.white)
+                    .fill(Color.rrSurface)
                     .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
             )
         }

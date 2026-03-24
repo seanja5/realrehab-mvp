@@ -919,14 +919,16 @@ struct LessonView: View {
             validateIMU()
         }
         
-        // Validate isometric hold: check angle stays above threshold during .holding phase
+        // Validate isometric hold: check angle stays within 15° of max calibration during .holding phase
         if hasStarted, !engine.isPaused, engine.phase == .holding,
-           let currentDegrees = currentDegreeValue {
-            if case .isometricHold(let holdThreshold, _) = engine.exerciseType {
-                if Double(currentDegrees) < holdThreshold {
+           let currentDegrees = currentDegreeValue,
+           let maxCal = maxCalibrationValue {
+            if case .isometricHold = engine.exerciseType {
+                let failThreshold = Double(maxCal) - 15.0
+                if Double(currentDegrees) < failThreshold {
                     recordSensorEvent(type: .holdBroken, repAttempt: engine.repCount + errorCount, timeSec: Double(currentElapsedSeconds()))
                     errorCount += 1
-                    engine.startOrRestartFromBottom()
+                    showError("Make sure you hold your leg!", duration: 3.0)
                 }
             }
         }

@@ -134,6 +134,7 @@ struct BenchmarkSLRLessonView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(lessonTitle)
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar { ToolbarItem(placement: .topBarLeading) { BackButton() } }
         .onAppear { loadCalibration() }
         .onDisappear {

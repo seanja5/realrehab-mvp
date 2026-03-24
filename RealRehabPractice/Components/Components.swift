@@ -415,7 +415,7 @@ struct BackButton: View {
             .padding(.vertical, 8)
             .contentShape(Rectangle())
         }
-        .foregroundColor(Color.brandDarkBlue)
+        .foregroundStyle(.primary)
         .buttonStyle(.plain)
         .accessibilityLabel(title ?? "Back")
     }

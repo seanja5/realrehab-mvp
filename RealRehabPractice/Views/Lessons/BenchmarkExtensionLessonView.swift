@@ -83,20 +83,46 @@ struct BenchmarkExtensionLessonView: View {
         return Swift.max(0, Swift.min(1, f))
     }
 
-    // Dot position inside hold circle
+    // Dot diameter — larger = harder to keep still inside the circle
+    private let dotDiameter: CGFloat = 112
+
+    // Dot position inside hold circle — fully proportional to live sensor values
     private var dotX: CGFloat {
         guard let imu = ble.currentIMUValue else { return 0 }
-        let frac = CGFloat(imu) / 14.0         // ±7 maps to ±0.5
-        return Swift.max(-1, Swift.min(1, frac)) * (circleSize / 2 * 0.55)
-    }
-    private var dotY: CGFloat {
-        let dev = fill - 1.0                   // small deviation from max (negative = below max)
-        return Swift.max(-1, Swift.min(1, CGFloat(dev) * 3.0) ) * (circleSize / 2 * 0.4)
+        // Negate: positive IMU (right tilt) = dot moves RIGHT
+        let normalized = -Double(imu) / 7.0     // ±7 → ±1.0 = circle edge
+        return CGFloat(max(-1.5, min(1.5, normalized))) * (circleSize / 2)
     }
 
+    private var dotY: CGFloat {
+        // Use unclamped fill so upward extension (past cal max) moves dot above center too
+        let rawFill: Double
+        if testMode {
+            rawFill = testSimFill
+        } else if let deg = currentDegrees,
+                  let rest = restCalibrationValue,
+                  let maxCal = maxCalibrationValue,
+                  maxCal > rest {
+            rawFill = (deg - Double(rest)) / Double(maxCal - rest)   // unclamped
+        } else {
+            rawFill = fill
+        }
+        // Scale ×6: a 1/6-range drop from max (≈15° for 90° calibration) = circle edge
+        // Positive = below max = dot moves DOWN; negative = above max = dot moves UP
+        let scaled = (1.0 - rawFill) * 6.0
+        return CGFloat(max(-1.5, min(1.5, scaled))) * (circleSize / 2)
+    }
+
+    private var dotDistanceFromCenter: CGFloat { sqrt(dotX * dotX + dotY * dotY) }
+
+    // Edge of dot touches circle wall → warn with red (no stop)
+    private var dotAtEdge: Bool {
+        dotDistanceFromCenter + dotDiameter / 2 >= circleSize / 2
+    }
+
+    // Center of dot exits circle → stop the hold
     private var dotOutOfBounds: Bool {
-        let limit: CGFloat = circleSize / 2 * 0.55
-        return abs(dotX) > limit * 0.7 || abs(dotY) > limit * 0.7
+        dotDistanceFromCenter >= circleSize / 2
     }
 
     var body: some View {
@@ -133,6 +159,7 @@ struct BenchmarkExtensionLessonView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(lessonTitle)
         .navigationBarBackButtonHidden(true)
+        .swipeToGoBack()
         .toolbar { ToolbarItem(placement: .topBarLeading) { BackButton() } }
         .onAppear {
             loadCalibration()
@@ -233,11 +260,11 @@ struct BenchmarkExtensionLessonView: View {
                         return CGFloat(0.5 - Double(imu) / 14.0)
                     }()
 
+                    // Horizontal bar: offset(y: -shapeHeight * userPos) puts bar at bottom when fill=0
                     Rectangle()
                         .fill(Color.brandDarkBlue.opacity(0.7))
                         .frame(width: shapeWidth, height: 2)
-                        .offset(y: -shapeHeight * userPos + shapeHeight / 2)
-                        .clipShape(RoundedRectangle(cornerRadius: shapeCornerRadius))
+                        .offset(y: -shapeHeight * userPos)
                         .allowsHitTesting(false)
 
                     Circle()
@@ -245,11 +272,12 @@ struct BenchmarkExtensionLessonView: View {
                         .frame(width: 14, height: 14)
                         .offset(
                             x: (imuPos - 0.5) * shapeWidth * 0.8,
-                            y: -shapeHeight * userPos + shapeHeight / 2
+                            y: -shapeHeight * userPos
                         )
                         .allowsHitTesting(false)
                 }
             }
+            .clipShape(RoundedRectangle(cornerRadius: shapeCornerRadius))
 
             if phase == .filling {
                 Text("Fill the bar all the way")
@@ -294,21 +322,21 @@ struct BenchmarkExtensionLessonView: View {
                             .stroke(Color.brandDarkBlue.opacity(0.2), lineWidth: 1.5)
                     )
 
-                // Position dot
+                // Position dot (112pt — large to constrain movement and encourage stillness)
                 Circle()
-                    .fill(dotOutOfBounds ? Color.red : Color(red: 0.10, green: 0.80, blue: 0.15))
-                    .frame(width: 28, height: 28)
-                    .shadow(color: (dotOutOfBounds ? Color.red : Color.green).opacity(0.5), radius: 6)
+                    .fill(dotAtEdge ? Color.red : Color(red: 0.10, green: 0.80, blue: 0.15))
+                    .frame(width: dotDiameter, height: dotDiameter)
+                    .shadow(color: (dotAtEdge ? Color.red : Color.green).opacity(0.5), radius: 10)
                     .offset(x: dotX, y: dotY)
                     .animation(.linear(duration: 0.05), value: dotX)
                     .animation(.linear(duration: 0.05), value: dotY)
             }
             .frame(maxWidth: .infinity)
 
-            Text(dotOutOfBounds ? "Keep the dot centered!" : "Keep the dot in the circle")
+            Text(dotAtEdge ? "Keep the dot centered!" : "Keep the dot in the circle")
                 .font(.rrBody)
-                .foregroundStyle(dotOutOfBounds ? Color.red : Color.secondary)
-                .animation(.easeInOut(duration: 0.2), value: dotOutOfBounds)
+                .foregroundStyle(dotAtEdge ? Color.red : Color.secondary)
+                .animation(.easeInOut(duration: 0.2), value: dotAtEdge)
         }
         .frame(maxWidth: .infinity)
     }

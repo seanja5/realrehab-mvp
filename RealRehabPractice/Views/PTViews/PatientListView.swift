@@ -124,7 +124,7 @@ struct PatientListView: View {
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                         .font(.system(size: 17, weight: .medium))
-                        .foregroundStyle(Color.brandDarkBlue)
+                        .foregroundStyle(.primary)
                 }
             }
         }

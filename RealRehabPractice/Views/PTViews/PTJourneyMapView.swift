@@ -842,7 +842,7 @@ struct PTJourneyMapView: View {
     
     // Computed property to count enabled parameters
     private var enabledParameterCount: Int {
-        guard let id = selectedNodeID, let node = nodes.first(where: { $0.id == id }), node.nodeType == .lesson else {
+        guard let id = selectedNodeID, let node = nodes.first(where: { $0.id == id }), node.nodeType == .lesson || node.nodeType == .benchmark else {
             return 0
         }
         var count = 0
@@ -868,8 +868,8 @@ struct PTJourneyMapView: View {
                     .foregroundStyle(.secondary)
             }
             
-            // Benchmarks: title only, lock, remove. Lessons: full parameters.
-            if let id = selectedNodeID, let node = nodes.first(where: { $0.id == id }), node.nodeType == .lesson {
+            // Lessons and benchmarks: show enabled parameter steppers.
+            if let id = selectedNodeID, let node = nodes.first(where: { $0.id == id }), node.nodeType == .lesson || node.nodeType == .benchmark {
                 if node.enableReps {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Set number of repetitions")
@@ -1013,9 +1013,9 @@ struct PTJourneyMapView: View {
         if let id = selectedNodeID,
            let idx = nodeIndex(for: id) {
             nodes[idx].isLocked = tempLocked
-            if nodes[idx].nodeType == .lesson {
-                nodes[idx].reps = tempReps
-                nodes[idx].restSec = tempRest
+            if nodes[idx].nodeType == .lesson || nodes[idx].nodeType == .benchmark {
+                if nodes[idx].enableReps { nodes[idx].reps = tempReps }
+                if nodes[idx].enableRestBetweenReps { nodes[idx].restSec = tempRest }
                 if nodes[idx].enableSets { nodes[idx].sets = tempSets }
                 if nodes[idx].enableRestBetweenSets { nodes[idx].restBetweenSets = tempRestBetweenSets }
                 if nodes[idx].enableKneeBendAngle { nodes[idx].kneeBendAngle = tempKneeBendAngle }

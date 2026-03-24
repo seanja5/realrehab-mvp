@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreBluetooth
 
-private let testMode = false
+private let testMode = true
 
 struct CalibrateDeviceView: View {
     let reps: Int?

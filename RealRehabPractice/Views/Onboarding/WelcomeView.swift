@@ -151,25 +151,9 @@ struct WelcomeView: View {
                         }
                         .padding(.horizontal, 32)
 
-                        // Create Account — outline secondary pill
-                        Button(action: { router.go(.createAccount) }) {
-                            Text("Create Account")
-                                .font(.rrBody)
-                                .fontWeight(.semibold)
-                                .tracking(0.2)
-                                .foregroundStyle(Color.brandDarkBlue)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 17)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.brandDarkBlue.opacity(0.06))
-                                )
-                                .overlay(
-                                    Capsule()
-                                        .stroke(Color.brandDarkBlue.opacity(0.55), lineWidth: 1.5)
-                                )
+                        SecondaryButton(title: "Create Account") {
+                            router.go(.createAccount)
                         }
-                        .buttonStyle(ScaleButtonStyle())
                         .padding(.horizontal, 24)
                     }
                 }

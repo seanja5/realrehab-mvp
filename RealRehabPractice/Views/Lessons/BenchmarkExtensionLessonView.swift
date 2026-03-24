@@ -2,7 +2,7 @@ import SwiftUI
 import Combine
 import CoreBluetooth
 
-private let testMode = false
+private let testMode = true
 
 struct BenchmarkExtensionLessonView: View {
     let holdDuration: Int
@@ -48,6 +48,10 @@ struct BenchmarkExtensionLessonView: View {
     // Sensor validation timer
     @State private var sensorTimer: Timer? = nil
 
+    // Test mode: simulated fill value driven by timer
+    @State private var testSimFill: Double = 0.0
+    @State private var testSimTimer: Timer? = nil
+
     // Calibration constants
     private let minSensorValue: Int = 185
     private let sensorRange: Int = 115
@@ -65,6 +69,7 @@ struct BenchmarkExtensionLessonView: View {
 
     /// Normalized fill: 0 = at rest calibration, 1 = at max calibration
     private var sensorFill: Double {
+        if testMode { return testSimFill }
         guard let deg = currentDegrees,
               let rest = restCalibrationValue,
               let max = maxCalibrationValue,
@@ -353,9 +358,10 @@ struct BenchmarkExtensionLessonView: View {
 
     private func startBenchmark() {
         hasStarted = true
-        ble.zeroIMUValue()
+        if !testMode { ble.zeroIMUValue() }
         phase = .filling
         startSensorTimer()
+        if testMode { startTestSimulation() }
     }
 
     private func updateFill() {
@@ -454,9 +460,11 @@ struct BenchmarkExtensionLessonView: View {
 
     private func resetToFilling() {
         fill = 0
+        testSimFill = 0
         outOfBoundsStart = nil
         shapeCornerRadius = 14
         phase = .filling
+        if testMode { startTestSimulation() }
     }
 
     private func completeBenchmark() {
@@ -498,6 +506,25 @@ struct BenchmarkExtensionLessonView: View {
         restartTimer?.invalidate(); restartTimer = nil
         sensorTimer?.invalidate(); sensorTimer = nil
         failDwellTimer?.invalidate(); failDwellTimer = nil
+        testSimTimer?.invalidate(); testSimTimer = nil
+    }
+
+    /// Test mode: ramp fill from 0 → 1 over 3 seconds, simulating the patient extending their leg.
+    private func startTestSimulation() {
+        testSimTimer?.invalidate()
+        testSimFill = 0
+        let start = Date()
+        let rampDuration: Double = 3.0
+        testSimTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [self] _ in
+            let elapsed = Date().timeIntervalSince(start)
+            let newFill = Swift.min(1.0, elapsed / rampDuration)
+            testSimFill = newFill
+            updateFill()
+            if newFill >= 1.0 {
+                testSimTimer?.invalidate()
+                testSimTimer = nil
+            }
+        }
     }
 
     private func loadCalibration() {

@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreBluetooth
 
-private let testMode = false
+private let testMode = true
 
 /// Benchmark 2: Straight Leg Raise Control
 /// Per-rep flow: Extend leg (fill box) → Lock confirm (0.4s) → Raise (hold straight 1.5s) → Rest (restSec countdown) → repeat
@@ -54,6 +54,10 @@ struct BenchmarkSLRLessonView: View {
     @State private var restTimer: Timer? = nil
     @State private var lockConfirmTimer: Timer? = nil
 
+    // Test mode: simulated fill value
+    @State private var testSimFill: Double = 0.0
+    @State private var testSimTimer: Timer? = nil
+
     // Calibration constants
     private let minSensorValue: Int = 185
     private let sensorRange: Int = 115
@@ -65,6 +69,7 @@ struct BenchmarkSLRLessonView: View {
     }
 
     private var sensorFill: Double {
+        if testMode { return testSimFill }
         guard let deg = ble.currentFlexSensorValue.map({ convertToDegrees($0) }),
               let rest = restCalibrationValue,
               let max = maxCalibrationValue,
@@ -371,10 +376,11 @@ struct BenchmarkSLRLessonView: View {
 
     private func startBenchmark() {
         hasStarted = true
-        ble.zeroIMUValue()
+        if !testMode { ble.zeroIMUValue() }
         completedReps = 0
         subPhase = .extend
         startSensorTimer()
+        if testMode { startTestSimulation() }
     }
 
     private func updateSensorState() {
@@ -448,9 +454,11 @@ struct BenchmarkSLRLessonView: View {
                 self.restTimer?.invalidate()
                 self.restTimer = nil
                 self.fill = 0
+                self.testSimFill = 0
                 self.raiseArcProgress = 0.0
                 self.raiseStartTime = nil
                 self.subPhase = .extend
+                if testMode { self.startTestSimulation() }
             }
         }
     }
@@ -491,6 +499,25 @@ struct BenchmarkSLRLessonView: View {
         sensorTimer?.invalidate(); sensorTimer = nil
         restTimer?.invalidate(); restTimer = nil
         lockConfirmTimer?.invalidate(); lockConfirmTimer = nil
+        testSimTimer?.invalidate(); testSimTimer = nil
+    }
+
+    /// Test mode: ramp fill 0 → 1 over 2.5s to simulate the patient extending their leg for each rep.
+    private func startTestSimulation() {
+        testSimTimer?.invalidate()
+        testSimFill = 0
+        let start = Date()
+        let rampDuration: Double = 2.5
+        testSimTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [self] _ in
+            let elapsed = Date().timeIntervalSince(start)
+            let newFill = Swift.min(1.0, elapsed / rampDuration)
+            testSimFill = newFill
+            updateSensorState()
+            if newFill >= 1.0 {
+                testSimTimer?.invalidate()
+                testSimTimer = nil
+            }
+        }
     }
 
     private func loadCalibration() {

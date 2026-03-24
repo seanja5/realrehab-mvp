@@ -424,11 +424,35 @@ enum RehabService {
         .from("rehab_plans")
         .insert(AnyEncodable(payload))
         .executeAsync()
+
+      // New plan with lessons: clear prior lesson progress (same lesson UUIDs often repeat across templates).
+      if !nodes.isEmpty {
+        try await Task { @Sendable in
+          struct Params: Encodable, Sendable {
+            let p_pt_profile_id: String
+            let p_patient_profile_id: String
+          }
+          let params = Params(
+            p_pt_profile_id: ptProfileId.uuidString,
+            p_patient_profile_id: patientProfileId.uuidString
+          )
+          let client = SupabaseService.shared.client
+          try await client
+            .schema("accounts")
+            .rpc("clear_patient_lesson_progress_for_pt_patient", params: params)
+            .executeAsync()
+        }.value
+        debugLog("✅ RehabService.saveACLPlan: cleared patient_lesson_progress for new plan")
+      }
       
-      // Invalidate cache for this plan
+      // Invalidate cache for this plan and progress-derived UI (journey map, PT patient list status)
       let cacheKey = CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
       await CacheService.shared.invalidate(cacheKey)
-      debugLog("✅ RehabService.saveACLPlan: invalidated cache")
+      await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
+      await CacheService.shared.invalidate(CacheKey.completionDates(patientProfileId: patientProfileId))
+      await CacheService.shared.invalidate(CacheKey.patientList(ptProfileId: ptProfileId))
+      await CacheService.shared.invalidate(CacheKey.patientDetail(patientProfileId: patientProfileId))
+      debugLog("✅ RehabService.saveACLPlan: invalidated plan + progress caches")
       
       debugLog("✅ RehabService.saveACLPlan: successfully saved plan with \(nodes.count) nodes")
     } catch {

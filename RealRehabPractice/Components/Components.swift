@@ -81,23 +81,29 @@ struct SecondaryButton: View {
     var isDisabled: Bool = false
     var action: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
+        let accentColor: Color = isDisabled ? .gray : (colorScheme == .dark ? .brandElectric : .brandDarkBlue)
+        let fillOpacity: Double = isDisabled ? 0 : (colorScheme == .dark ? 0.18 : 0.06)
+        let strokeOpacity: Double = isDisabled ? 0.4 : (colorScheme == .dark ? 0.85 : 0.55)
+
         Button(action: action) {
             Text(title)
                 .font(.rrBody)
                 .fontWeight(.semibold)
                 .tracking(0.2)
-                .foregroundStyle(isDisabled ? Color.gray : .brandDarkBlue)
+                .foregroundStyle(accentColor)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 32)
                 .padding(.vertical, 17)
                 .background(
                     Capsule()
-                        .fill(isDisabled ? Color.clear : Color.brandDarkBlue.opacity(0.06))
+                        .fill(isDisabled ? Color.clear : accentColor.opacity(fillOpacity))
                 )
                 .overlay(
                     Capsule()
-                        .stroke(isDisabled ? Color.gray.opacity(0.4) : Color.brandDarkBlue.opacity(0.55), lineWidth: 1.5)
+                        .stroke(isDisabled ? Color.gray.opacity(0.4) : accentColor.opacity(strokeOpacity), lineWidth: 1.5)
                 )
                 .contentShape(Capsule())
         }

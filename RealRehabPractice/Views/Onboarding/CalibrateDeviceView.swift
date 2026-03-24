@@ -1,8 +1,7 @@
 import SwiftUI
 import CoreBluetooth
 
-// ⚠️ TEST MODE — set to false to restore real BLE calibration before release
-private let testMode = true
+private let testMode = false
 
 struct CalibrateDeviceView: View {
     let reps: Int?

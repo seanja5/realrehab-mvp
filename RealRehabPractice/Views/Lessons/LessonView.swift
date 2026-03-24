@@ -9,8 +9,7 @@ import SwiftUI
 import Combine
 import CoreBluetooth
 
-// ⚠️ TEST MODE — set to false to restore real BLE behaviour before release
-private let testMode = true
+private let testMode = false
 
 struct LessonView: View {
     @EnvironmentObject var router: Router

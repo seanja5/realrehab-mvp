@@ -261,11 +261,11 @@ struct CompletionView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 14)
         .padding(.horizontal, 18)
-        .background(Color.white)
+        .background(Color.rrSurface)
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .strokeBorder(Color.black.opacity(0.05), lineWidth: 1)
+                .strokeBorder(Color.rrBorder, lineWidth: 1)
         )
     }
 

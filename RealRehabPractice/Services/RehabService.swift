@@ -39,6 +39,7 @@ enum RehabService {
     let restSec: Int
     let nodeType: String?  // "lesson" or "benchmark"; nil = legacy, treat as lesson
     let phase: Int?       // 1–4; nil = legacy, treat as 1
+    let timeHoldingPosition: Int?  // seconds to hold; used by Extension Control benchmark and wall sit
   }
   
   struct PlanRow: Codable {
@@ -78,13 +79,25 @@ enum RehabService {
           node.enableKneeBendAngle = true
           node.enableTimeHoldingPosition = true
           node.kneeBendAngle = 120
-          node.timeHoldingPosition = 30
+          node.timeHoldingPosition = dto.timeHoldingPosition ?? 30
         } else if t.contains("quad set") {
           node.enableRestBetweenReps = false
           node.enableTimeHoldingPosition = true
-          node.timeHoldingPosition = node.restSec
+          node.timeHoldingPosition = dto.timeHoldingPosition ?? node.restSec
         } else if t.contains("ankle pump") {
           node.enableRestBetweenReps = false
+        }
+      } else if node.nodeType == .benchmark {
+        let t = node.title.lowercased()
+        if t.contains("extension control") {
+          node.enableReps = false
+          node.enableRestBetweenReps = false
+          node.enableTimeHoldingPosition = true
+          node.timeHoldingPosition = dto.timeHoldingPosition ?? 8
+        } else if t.contains("straight leg raise control") {
+          node.enableReps = true
+          node.enableRestBetweenReps = true
+          node.enableTimeHoldingPosition = false
         }
       }
       return node
@@ -380,7 +393,8 @@ enum RehabService {
           reps: node.reps,
           restSec: node.restSec,
           nodeType: node.nodeType.rawValue,
-          phase: node.phase
+          phase: node.phase,
+          timeHoldingPosition: node.timeHoldingPosition
         )
       }
       

@@ -206,7 +206,20 @@ struct LessonNode: Identifiable {
     }
     
     static func benchmark(title: String, phase: Int, isLocked: Bool = false) -> LessonNode {
-        LessonNode(title: title, isLocked: isLocked, reps: 0, restSec: 0, nodeType: .benchmark, phase: phase)
+        var node = LessonNode(title: title, isLocked: isLocked, reps: 0, restSec: 0, nodeType: .benchmark, phase: phase)
+        let t = title.lowercased()
+        if t.contains("extension control") {
+            node.enableReps = false
+            node.enableRestBetweenReps = false
+            node.enableTimeHoldingPosition = true
+            node.timeHoldingPosition = 8
+        } else if t.contains("straight leg raise control") {
+            node.enableReps = true
+            node.enableRestBetweenReps = true
+            node.reps = 5
+            node.restSec = 5
+        }
+        return node
     }
 }
 
@@ -252,8 +265,8 @@ extension ACLJourneyModels {
 
     private static let lessonDescriptions: [String: String] = [
         // Phase 1 — benchmarks
-        "Extension Control": "Straighten your leg completely and hold the position. Pass criteria: hold full extension for 8 seconds without movement — a key gate before Phase 2.",
-        "Straight Leg Raise Control": "Lift your straight leg and hold it steady for 5 seconds. Pass criteria: knee stays fully straight throughout the hold — confirms your quad can stabilize independently.",
+        "Extension Control": "Straighten your leg completely and hold the position. Pass criteria: hold full extension without movement — a key gate before Phase 2.",
+        "Straight Leg Raise Control": "Lift your straight leg while keeping the knee fully straight. Pass criteria: knee stays fully straight throughout each rep — confirms your quad can stabilize independently.",
         // Phase 1 — exercises
         "Quad Sets": "Tighten your thigh muscle while keeping your leg flat, holding the contraction for the full duration shown.",
         "Quad Sets — Extended Holds": "Hold a thigh contraction for an extended duration to build isometric endurance in the quadriceps.",

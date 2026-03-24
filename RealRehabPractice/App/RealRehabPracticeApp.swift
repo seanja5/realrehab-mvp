@@ -48,6 +48,16 @@ struct RealRehabPracticeApp: App {
                                 case .lesson(let reps, let restSec, let lessonId, let lessonTitle): LessonView(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle)
                                 case .assessment(let lessonId): AssessmentView(lessonId: lessonId)
                                 case .completion(let lessonId): CompletionView(lessonId: lessonId)
+                                case .benchmarkCalibrateDevice(let holdDuration, let reps, let restSec, let lessonId, let lessonTitle):
+                                    CalibrateDeviceView(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle, onFinish: {
+                                        router.go(.benchmarkLesson(holdDuration: holdDuration, reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle))
+                                    })
+                                case .benchmarkLesson(let holdDuration, let reps, let restSec, let lessonId, let lessonTitle):
+                                    if lessonTitle.lowercased().contains("straight leg raise") {
+                                        BenchmarkSLRLessonView(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle)
+                                    } else {
+                                        BenchmarkExtensionLessonView(holdDuration: holdDuration, lessonId: lessonId, lessonTitle: lessonTitle)
+                                    }
                                 case .ptSettings: PTSettingsView()
                                 case .patientList: PatientListView()
                                 case .ptPatientDetail(let patientProfileId): PatientDetailView(patientProfileId: patientProfileId)

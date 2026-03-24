@@ -217,7 +217,7 @@ struct CalibrateDeviceView: View {
                     isDisabled: !(startSet && maxSet),
                     useLargeFont: true,
                     action: {
-                        if fromUnpause, let finish = onFinish {
+                        if let finish = onFinish {
                             finish()
                         } else if lessonId != nil {
                             router.go(.directionsView1(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle))

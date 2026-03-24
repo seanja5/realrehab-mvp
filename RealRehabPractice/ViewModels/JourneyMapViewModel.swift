@@ -12,9 +12,10 @@ public struct JourneyNode: Identifiable {
     public let restSec: Int
     public let nodeType: JourneyNodeType
     public let phase: Int
-    
+    public let timeHoldingPosition: Int?
+
     /// Display icons come from lessonIconSystemName(for: title), not from a stored icon.
-    public init(id: UUID, isLocked: Bool, title: String, yOffset: CGFloat, reps: Int = 20, restSec: Int = 3, nodeType: JourneyNodeType = .lesson, phase: Int = 1) {
+    public init(id: UUID, isLocked: Bool, title: String, yOffset: CGFloat, reps: Int = 20, restSec: Int = 3, nodeType: JourneyNodeType = .lesson, phase: Int = 1, timeHoldingPosition: Int? = nil) {
         self.id = id
         self.isLocked = isLocked
         self.title = title
@@ -23,6 +24,7 @@ public struct JourneyNode: Identifiable {
         self.restSec = restSec
         self.nodeType = nodeType
         self.phase = phase
+        self.timeHoldingPosition = timeHoldingPosition
     }
 }
 
@@ -115,7 +117,7 @@ public final class JourneyMapViewModel: ObservableObject {
                     let yOffset = index < yOffsets.count ? yOffsets[index] : CGFloat(index) * ACLJourneyModels.baseStep
                     let nodeType: JourneyNodeType = (dto.nodeType == "benchmark") ? .benchmark : .lesson
                     let phase = phases[index]
-                    return JourneyNode(id: lessonId, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
+                    return JourneyNode(id: lessonId, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase, timeHoldingPosition: dto.timeHoldingPosition)
                 }
                 debugLog("✅ JourneyMapViewModel: loaded \(nodes.count) nodes from plan")
                 

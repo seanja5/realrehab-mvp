@@ -1228,10 +1228,8 @@ struct PTNodeView: View {
             ZStack {
                 Group {
                     if node.nodeType == .benchmark {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 66 * scale))
-                            .foregroundStyle(Color.brandDarkBlue)
-                            .shadow(color: Color.brandDarkBlue.opacity(0.4), radius: 12, x: 0, y: 2)
+                        let isCompleted = progress?.isCompleted ?? false
+                        GlossyBenchmarkBubble(isLocked: node.isLocked, isCompleted: isCompleted)
                     } else {
                         let isCompleted = progress?.isCompleted ?? false
                         GlossyLessonBubbleBackground(

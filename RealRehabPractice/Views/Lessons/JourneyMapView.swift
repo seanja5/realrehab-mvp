@@ -348,7 +348,12 @@ struct JourneyMapView: View {
                                 .multilineTextAlignment(.center)
                         }
                         PrimaryButton(title: "Go!") {
-                            router.go(.calibrateDevice(reps: node.reps, restSec: node.restSec, lessonId: node.id, lessonTitle: node.title))
+                            if node.nodeType == .benchmark {
+                                let holdDuration = node.timeHoldingPosition ?? 8
+                                router.go(.benchmarkCalibrateDevice(holdDuration: holdDuration, reps: node.reps, restSec: node.restSec, lessonId: node.id, lessonTitle: node.title))
+                            } else {
+                                router.go(.calibrateDevice(reps: node.reps, restSec: node.restSec, lessonId: node.id, lessonTitle: node.title))
+                            }
                             withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                                 showCallout = false
                                 selectedNodeIndex = nil
@@ -504,10 +509,8 @@ struct JourneyMapView: View {
             ZStack {
                 Group {
                     if node.nodeType == .benchmark {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 66))
-                            .foregroundStyle(node.isLocked ? Color.gray.opacity(0.5) : Color.brandDarkBlue)
-                            .shadow(color: (node.isLocked ? Color.gray : Color.brandDarkBlue).opacity(0.3), radius: 12, x: 0, y: 2)
+                        let isCompleted = progress?.isCompleted ?? false
+                        GlossyBenchmarkBubble(isLocked: node.isLocked, isCompleted: isCompleted)
                     } else {
                         let isCompleted = progress?.isCompleted ?? false
                         GlossyLessonBubbleBackground(

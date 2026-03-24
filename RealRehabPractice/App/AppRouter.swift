@@ -16,6 +16,8 @@ enum Route: Hashable {
     case lesson(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil)
     case assessment(lessonId: UUID?)
     case completion(lessonId: UUID?)
+    case benchmarkCalibrateDevice(holdDuration: Int, reps: Int, restSec: Int, lessonId: UUID, lessonTitle: String)
+    case benchmarkLesson(holdDuration: Int, reps: Int, restSec: Int, lessonId: UUID, lessonTitle: String)
     case ptSettings
     case patientList
     case ptPatientDetail(patientProfileId: UUID)

@@ -220,6 +220,138 @@ struct GlossyLessonBubbleBackground: View {
     }
 }
 
+// MARK: - Star Shape (5-point star path for benchmark bubbles)
+struct StarShape: Shape {
+    /// Outer radius (tip of each point). Inner radius is ~42% of outer.
+    var outerRadius: CGFloat = 40
+    var innerRadius: CGFloat = 17
+    var points: Int = 5
+
+    func path(in rect: CGRect) -> Path {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        var path = Path()
+        let angleStep = (.pi * 2) / CGFloat(points)
+        let startAngle: CGFloat = -.pi / 2   // Start at top
+        for i in 0..<points {
+            let outerAngle = startAngle + angleStep * CGFloat(i)
+            let innerAngle = outerAngle + angleStep / 2
+            let outerPoint = CGPoint(
+                x: center.x + outerRadius * cos(outerAngle),
+                y: center.y + outerRadius * sin(outerAngle)
+            )
+            let innerPoint = CGPoint(
+                x: center.x + innerRadius * cos(innerAngle),
+                y: center.y + innerRadius * sin(innerAngle)
+            )
+            if i == 0 {
+                path.move(to: outerPoint)
+            } else {
+                path.addLine(to: outerPoint)
+            }
+            path.addLine(to: innerPoint)
+        }
+        path.closeSubpath()
+        return path
+    }
+}
+
+// MARK: - Glossy Benchmark Bubble (3D star shape matching lesson bubble style)
+/// Same 5-layer rendering as GlossyLessonBubbleBackground but clipped to a 5-point star shape.
+struct GlossyBenchmarkBubble: View {
+    var isLocked: Bool = false
+    var isCompleted: Bool = false
+
+    private let hitSize: CGFloat = 88
+    private let pressOffset: CGFloat = 5
+    private static let lockedLightGray = Color(white: 0.72)
+    private static let lockedDarkGray = Color(white: 0.38)
+    private static let completedBrightGreen = Color(red: 0.2, green: 0.85, blue: 0.35)
+    private static let completedDarkGreen = Color(red: 0.1, green: 0.5, blue: 0.2)
+    private var baseColor: Color {
+        isLocked ? Self.lockedLightGray : (isCompleted ? Self.completedBrightGreen : Color.brandDarkBlue)
+    }
+    private var undersideColor: Color {
+        isLocked ? Self.lockedDarkGray : (isCompleted ? Self.completedDarkGreen : Color.brandDarkerBlue)
+    }
+
+    var body: some View {
+        ZStack {
+            // 1) Underside star (fixed, offset down to show 3D depth)
+            StarShape(outerRadius: 40, innerRadius: 17)
+                .fill(undersideColor)
+                .frame(width: hitSize, height: hitSize)
+                .offset(y: pressOffset)
+
+            // 2–5) Top star layer
+            ZStack {
+                // 2) Base fill
+                StarShape(outerRadius: 40, innerRadius: 17)
+                    .fill(baseColor)
+                    .frame(width: hitSize, height: hitSize)
+
+                if !isLocked {
+                    // 3) Vertical lighting gradient
+                    StarShape(outerRadius: 40, innerRadius: 17)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.15),
+                                    Color.white.opacity(0.02),
+                                    Color.black.opacity(0.08),
+                                    Color.black.opacity(0.14)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(width: hitSize, height: hitSize)
+                        .allowsHitTesting(false)
+
+                    // 4) Diagonal shine stripes (clipped to star)
+                    ZStack {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.22))
+                            .frame(width: 12, height: 110)
+                            .rotationEffect(.degrees(45))
+                        Rectangle()
+                            .fill(Color.white.opacity(0.18))
+                            .frame(width: 6, height: 110)
+                            .rotationEffect(.degrees(45))
+                            .offset(x: -10, y: -10)
+                    }
+                    .frame(width: hitSize, height: hitSize)
+                    .clipShape(StarShape(outerRadius: 40, innerRadius: 17))
+                    .allowsHitTesting(false)
+                }
+
+                // 5) Rim stroke
+                StarShape(outerRadius: 40, innerRadius: 17)
+                    .stroke(
+                        isLocked
+                            ? AnyShapeStyle(Color(white: 0.55))
+                            : AnyShapeStyle(LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.4),
+                                    Color.white.opacity(0.15),
+                                    Color.clear,
+                                    baseColor.opacity(0.5)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )),
+                        lineWidth: 1.2
+                    )
+                    .frame(width: hitSize, height: hitSize)
+                    .allowsHitTesting(false)
+            }
+        }
+        .frame(width: hitSize, height: hitSize)
+        .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 4)
+        .shadow(color: baseColor.opacity(0.35), radius: 12, x: 0, y: 3)
+    }
+}
+
 // MARK: - Step Indicator (with label + connected dots)
 struct StepIndicator: View {
     let current: Int

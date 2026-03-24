@@ -84,6 +84,36 @@ final class OutboxSyncManager: ObservableObject {
         enqueue(item)
     }
 
+    /// True if a lesson progress upsert for this lesson is still queued (offline completion not yet synced).
+    func hasPendingLessonProgressUpsert(patientProfileId: UUID, lessonId: UUID) -> Bool {
+        loadItems().contains { item in
+            guard item.type == .lessonProgress else { return false }
+            guard let p = try? JSONDecoder().decode(LessonProgressPayload.self, from: item.payload) else { return false }
+            return p.patientProfileId == patientProfileId && p.lessonId == lessonId
+        }
+    }
+
+    /// Removes queued lesson progress upserts/clears for this patient (e.g. after PT assigns a new plan).
+    func removeAllLessonProgressItems(patientProfileId: UUID) {
+        var items = loadItems()
+        let before = items.count
+        items.removeAll { item in
+            switch item.type {
+            case .lessonProgress:
+                guard let p = try? JSONDecoder().decode(LessonProgressPayload.self, from: item.payload) else { return false }
+                return p.patientProfileId == patientProfileId
+            case .lessonProgressClear:
+                guard let p = try? JSONDecoder().decode(LessonProgressClearPayload.self, from: item.payload) else { return false }
+                return p.patientProfileId == patientProfileId
+            case .lessonSensorInsights:
+                return false
+            }
+        }
+        if items.count != before {
+            saveItems(items)
+        }
+    }
+
     // MARK: - Process
 
     func processQueueIfOnline() async {

@@ -2,7 +2,7 @@ import SwiftUI
 import Combine
 import CoreBluetooth
 
-private let testMode = true
+private let testMode = false
 
 struct BenchmarkExtensionLessonView: View {
     let holdDuration: Int
@@ -31,8 +31,13 @@ struct BenchmarkExtensionLessonView: View {
     @State private var shapeCornerRadius: CGFloat = 14
     @State private var shapeWidth: CGFloat = 0      // set from geometry
     @State private var shapeHeight: CGFloat = 0
-    private let circleSize: CGFloat = 220
+    @State private var geoSize: CGSize = .zero
     @State private var hasStarted: Bool = false
+
+    private var circleSize: CGFloat {
+        guard geoSize.width > 0 else { return 300 }
+        return geoSize.width - 60   // fills most of screen, ~330pt on a 390pt phone
+    }
 
     // Hold countdown
     @State private var holdSecondsRemaining: Int = 0
@@ -105,7 +110,7 @@ struct BenchmarkExtensionLessonView: View {
                         prepareView
 
                     case .filling, .transitioning:
-                        fillingView(geo: geo)
+                        fillingView
 
                     case .holding:
                         holdingView
@@ -119,8 +124,10 @@ struct BenchmarkExtensionLessonView: View {
 
                     Spacer()
                 }
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, 20)
             }
+            .onAppear { geoSize = geo.size }
         }
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)
@@ -185,24 +192,21 @@ struct BenchmarkExtensionLessonView: View {
         }
     }
 
-    private func fillingView(geo: GeometryProxy) -> some View {
-        let boxH: CGFloat = geo.size.height * 0.55
-        let boxW: CGFloat = geo.size.width - 40
-
-        return VStack(spacing: 24) {
+    private var fillingView: some View {
+        VStack(spacing: 24) {
             Text(phase == .transitioning ? "Hold it there!" : (hasIMUError ? "Keep your hip steady!" : "Extend your leg"))
                 .font(.rrTitle)
                 .foregroundStyle(hasIMUError ? Color.red : Color.primary)
                 .animation(.easeInOut(duration: 0.2), value: hasIMUError)
 
-            // Main animated box
+            // Main animated box — shapeWidth/shapeHeight animate from box to circle
             ZStack(alignment: .bottom) {
-                // Background box
+                // Background
                 RoundedRectangle(cornerRadius: shapeCornerRadius)
                     .fill(Color.gray.opacity(0.12))
-                    .frame(width: boxW, height: boxH)
+                    .frame(width: shapeWidth, height: shapeHeight)
 
-                // Fill overlay (green or red)
+                // Fill overlay
                 RoundedRectangle(cornerRadius: shapeCornerRadius)
                     .fill(
                         LinearGradient(
@@ -213,50 +217,47 @@ struct BenchmarkExtensionLessonView: View {
                             endPoint: .top
                         )
                     )
-                    .frame(width: boxW, height: boxH * max(0.06, fill))
+                    .frame(width: shapeWidth, height: shapeHeight * max(0.06, fill))
                     .animation(.linear(duration: 0.08), value: fill)
 
                 // Rim border
                 RoundedRectangle(cornerRadius: shapeCornerRadius)
                     .stroke(hasIMUError ? Color.red.opacity(0.4) : Color.brandDarkBlue.opacity(0.18), lineWidth: 1.5)
-                    .frame(width: boxW, height: boxH)
+                    .frame(width: shapeWidth, height: shapeHeight)
 
-                // User position line + IMU dot
-                if let _ = restCalibrationValue, let _ = maxCalibrationValue {
+                // User position line + IMU dot — hide during transition
+                if phase == .filling, let _ = restCalibrationValue, let _ = maxCalibrationValue {
                     let userPos = CGFloat(fill)
                     let imuPos: CGFloat = {
                         guard let imu = ble.currentIMUValue else { return 0.5 }
                         return CGFloat(0.5 - Double(imu) / 14.0)
                     }()
 
-                    // Horizontal line
-                    HStack(spacing: 0) {
-                        Rectangle()
-                            .fill(Color.brandDarkBlue.opacity(0.7))
-                            .frame(height: 2)
-                    }
-                    .frame(width: boxW)
-                    .offset(y: -boxH * userPos + boxH / 2)
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: shapeCornerRadius))
-                    .allowsHitTesting(false)
+                    Rectangle()
+                        .fill(Color.brandDarkBlue.opacity(0.7))
+                        .frame(width: shapeWidth, height: 2)
+                        .offset(y: -shapeHeight * userPos + shapeHeight / 2)
+                        .clipShape(RoundedRectangle(cornerRadius: shapeCornerRadius))
+                        .allowsHitTesting(false)
 
-                    // IMU dot on the line
                     Circle()
                         .fill(Color.brandDarkBlue)
                         .frame(width: 14, height: 14)
                         .offset(
-                            x: (imuPos - 0.5) * boxW * 0.8,
-                            y: -boxH * userPos + boxH / 2
+                            x: (imuPos - 0.5) * shapeWidth * 0.8,
+                            y: -shapeHeight * userPos + shapeHeight / 2
                         )
                         .allowsHitTesting(false)
                 }
             }
 
-            Text(phase == .transitioning ? "Transitioning..." : "Fill the bar all the way")
-                .font(.rrCaption)
-                .foregroundStyle(.secondary)
+            if phase == .filling {
+                Text("Fill the bar all the way")
+                    .font(.rrCaption)
+                    .foregroundStyle(.secondary)
+            }
         }
+        .frame(maxWidth: .infinity)
     }
 
     private var holdingView: some View {
@@ -275,12 +276,12 @@ struct BenchmarkExtensionLessonView: View {
                 // Outer countdown ring
                 Circle()
                     .stroke(Color.gray.opacity(0.15), lineWidth: 6)
-                    .frame(width: circleSize + 20, height: circleSize + 20)
+                    .frame(width: circleSize + 16, height: circleSize + 16)
 
                 Circle()
                     .trim(from: 0, to: ringProgress)
                     .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                    .frame(width: circleSize + 20, height: circleSize + 20)
+                    .frame(width: circleSize + 16, height: circleSize + 16)
                     .rotationEffect(.degrees(-90))
                     .animation(.linear(duration: 0.1), value: ringProgress)
 
@@ -302,12 +303,14 @@ struct BenchmarkExtensionLessonView: View {
                     .animation(.linear(duration: 0.05), value: dotX)
                     .animation(.linear(duration: 0.05), value: dotY)
             }
+            .frame(maxWidth: .infinity)
 
             Text(dotOutOfBounds ? "Keep the dot centered!" : "Keep the dot in the circle")
                 .font(.rrBody)
                 .foregroundStyle(dotOutOfBounds ? Color.red : Color.secondary)
                 .animation(.easeInOut(duration: 0.2), value: dotOutOfBounds)
         }
+        .frame(maxWidth: .infinity)
     }
 
     private var holdFailedView: some View {
@@ -359,6 +362,10 @@ struct BenchmarkExtensionLessonView: View {
     private func startBenchmark() {
         hasStarted = true
         if !testMode { ble.zeroIMUValue() }
+        // Initialize box to full available area
+        shapeWidth = geoSize.width - 40
+        shapeHeight = geoSize.height * 0.55
+        shapeCornerRadius = 14
         phase = .filling
         startSensorTimer()
         if testMode { startTestSimulation() }
@@ -378,10 +385,13 @@ struct BenchmarkExtensionLessonView: View {
     private func transitionToHold() {
         guard phase == .filling else { return }
         phase = .transitioning
-        withAnimation(.easeInOut(duration: 0.6)) {
-            shapeCornerRadius = circleSize / 2
+        let target = circleSize
+        withAnimation(.easeInOut(duration: 0.65)) {
+            shapeWidth = target
+            shapeHeight = target
+            shapeCornerRadius = target / 2
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
             guard self.phase == .transitioning else { return }
             self.startHold()
         }
@@ -462,6 +472,8 @@ struct BenchmarkExtensionLessonView: View {
         fill = 0
         testSimFill = 0
         outOfBoundsStart = nil
+        shapeWidth = geoSize.width - 40
+        shapeHeight = geoSize.height * 0.55
         shapeCornerRadius = 14
         phase = .filling
         if testMode { startTestSimulation() }

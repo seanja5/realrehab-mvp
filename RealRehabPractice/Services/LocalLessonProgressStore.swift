@@ -62,4 +62,12 @@ final class LocalLessonProgressStore {
         let fileURL = progressDirectory.appendingPathComponent("\(lessonId.uuidString).json")
         try? fileManager.removeItem(at: fileURL)
     }
+
+    /// Clears all per-lesson drafts (e.g. when PT assigns a new plan so old completions are not shown).
+    func clearAllDrafts() {
+        guard let urls = try? fileManager.contentsOfDirectory(at: progressDirectory, includingPropertiesForKeys: nil) else { return }
+        for url in urls where url.pathExtension == "json" && !url.lastPathComponent.hasSuffix(".tmp.json") {
+            try? fileManager.removeItem(at: url)
+        }
+    }
 }

@@ -106,6 +106,19 @@ public final class JourneyMapViewModel: ObservableObject {
                 return
             }
             planTitle = "\(plan.injury) Rehab"
+
+            // New active plan row → PT replaced the plan; drop stale disk cache + local drafts + queued upserts
+            // so the patient does not see old completions (lesson IDs often repeat across templates).
+            let planKey = Self.lastRehabPlanUserDefaultsKey(patientProfileId: patientProfileId)
+            let previousPlanId = UserDefaults.standard.string(forKey: planKey)
+            if let previousPlanId, previousPlanId != plan.id.uuidString {
+                await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
+                await CacheService.shared.invalidate(CacheKey.completionDates(patientProfileId: patientProfileId))
+                LocalLessonProgressStore.shared.clearAllDrafts()
+                OutboxSyncManager.shared.removeAllLessonProgressItems(patientProfileId: patientProfileId)
+                debugLog("🔄 JourneyMapViewModel: rehab plan id changed (\(previousPlanId) → \(plan.id)); cleared local progress + outbox")
+            }
+            UserDefaults.standard.set(plan.id.uuidString, forKey: planKey)
             
             var anyStale = idsStale || planStale
             
@@ -130,22 +143,14 @@ public final class JourneyMapViewModel: ObservableObject {
                 let completionDates = (try? await datesFetch) ?? []
 
                 anyStale = anyStale || (NetworkMonitor.shared.isOnline ? false : progressStale)
-                for node in nodes where node.nodeType == .lesson {
+                for node in nodes {
                     let lessonId = node.id
-                    if let local = LocalLessonProgressStore.shared.loadDraft(lessonId: lessonId) {
-                        progress[lessonId] = LessonProgressInfo(
-                            repsCompleted: local.repsCompleted,
-                            repsTarget: local.repsTarget,
-                            isCompleted: local.status == "completed",
-                            isInProgress: local.status == "inProgress"
-                        )
-                    } else if let remote = remoteProgress[lessonId] {
-                        progress[lessonId] = LessonProgressInfo(
-                            repsCompleted: remote.reps_completed,
-                            repsTarget: remote.reps_target,
-                            isCompleted: remote.status == "completed",
-                            isInProgress: remote.status == "inProgress"
-                        )
+                    if let info = mergedLessonProgress(
+                        lessonId: lessonId,
+                        remoteProgress: remoteProgress,
+                        patientProfileId: patientProfileId
+                    ) {
+                        progress[lessonId] = info
                     }
                 }
                 lessonProgress = progress
@@ -168,6 +173,84 @@ public final class JourneyMapViewModel: ObservableObject {
             }
         }
         isLoading = false
+    }
+
+    private static func lastRehabPlanUserDefaultsKey(patientProfileId: UUID) -> String {
+        "journey_last_rehab_plan_id_\(patientProfileId.uuidString)"
+    }
+
+    /// Remote progress is source of truth for completed; local drafts only for in-progress resume or offline completion still queued.
+    private func mergedLessonProgress(
+        lessonId: UUID,
+        remoteProgress: [UUID: RehabService.PatientLessonProgressRow],
+        patientProfileId: UUID
+    ) -> LessonProgressInfo? {
+        let remote = remoteProgress[lessonId]
+        let local = LocalLessonProgressStore.shared.loadDraft(lessonId: lessonId)
+
+        if let remote {
+            if remote.status == "completed" {
+                if local != nil {
+                    LocalLessonProgressStore.shared.clearDraft(lessonId: lessonId)
+                }
+                return LessonProgressInfo(
+                    repsCompleted: remote.reps_completed,
+                    repsTarget: remote.reps_target,
+                    isCompleted: true,
+                    isInProgress: false
+                )
+            }
+            if remote.status == "inProgress" {
+                if let local, local.status == "inProgress" {
+                    return LessonProgressInfo(
+                        repsCompleted: max(local.repsCompleted, remote.reps_completed),
+                        repsTarget: max(local.repsTarget, remote.reps_target),
+                        isCompleted: false,
+                        isInProgress: true
+                    )
+                }
+                return LessonProgressInfo(
+                    repsCompleted: remote.reps_completed,
+                    repsTarget: remote.reps_target,
+                    isCompleted: false,
+                    isInProgress: true
+                )
+            }
+        }
+
+        guard let local else { return nil }
+
+        if local.status == "inProgress" {
+            return LessonProgressInfo(
+                repsCompleted: local.repsCompleted,
+                repsTarget: local.repsTarget,
+                isCompleted: false,
+                isInProgress: true
+            )
+        }
+
+        if local.status == "completed" {
+            if OutboxSyncManager.shared.hasPendingLessonProgressUpsert(patientProfileId: patientProfileId, lessonId: lessonId) {
+                return LessonProgressInfo(
+                    repsCompleted: local.repsCompleted,
+                    repsTarget: local.repsTarget,
+                    isCompleted: true,
+                    isInProgress: false
+                )
+            }
+            if NetworkMonitor.shared.isOnline {
+                LocalLessonProgressStore.shared.clearDraft(lessonId: lessonId)
+                return nil
+            }
+            return LessonProgressInfo(
+                repsCompleted: local.repsCompleted,
+                repsTarget: local.repsTarget,
+                isCompleted: true,
+                isInProgress: false
+            )
+        }
+
+        return nil
     }
 }
 

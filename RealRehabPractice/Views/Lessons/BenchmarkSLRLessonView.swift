@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreBluetooth
 
-private let testMode = true
+private let testMode = false
 
 /// Benchmark 2: Straight Leg Raise Control
 /// Per-rep flow: Extend leg (fill box) → Lock confirm (0.4s) → Raise (hold straight 1.5s) → Rest (restSec countdown) → repeat

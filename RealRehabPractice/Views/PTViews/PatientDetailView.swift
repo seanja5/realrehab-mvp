@@ -28,6 +28,10 @@ struct PatientDetailView: View {
     @State private var isLoadingScores = false
     @State private var isPatientCardExpanded = false
 
+    // Outreach banner
+    @State private var outreachSent = false
+    @State private var outreachBannerVisible = true
+
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
@@ -51,6 +55,14 @@ struct PatientDetailView: View {
                             patientCard
 
                             sectionDivider
+
+                            // — Outreach text banner (only when patient is behind)
+                            if (patientStatus == .fallingBehind || patientStatus == .needsHelp) && outreachBannerVisible {
+                                outreachBannerView
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+
+                                sectionDivider
+                            }
 
                             // — Current Rehab Plan
                             sectionHeader("Current Rehab Plan")
@@ -251,6 +263,10 @@ struct PatientDetailView: View {
             }
         } message: {
             Text(errorMessage ?? "")
+        }
+        .onChange(of: patientStatus) { _, _ in
+            outreachSent = false
+            outreachBannerVisible = true
         }
         .onDisappear {
             errorMessage = nil
@@ -488,6 +504,155 @@ struct PatientDetailView: View {
         return PatientStatus.needsHelp.color
     }
 
+    // MARK: - Outreach Banner
+
+    private func outreachMessage(for status: PatientStatus, firstName: String) -> String {
+        let name = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let greeting = name.isEmpty ? "Hi there" : "Hi \(name)"
+        switch status {
+        case .fallingBehind:
+            return "\(greeting)! Just checking in — we noticed you haven't done your exercises in a few days. Staying consistent is key to your recovery. Let us know if you need anything! 💪"
+        case .needsHelp:
+            return "\(greeting), we're reaching out because it's been a while since your last exercise session. Your recovery is important to us — please reach out or schedule a visit so we can get you back on track!"
+        default:
+            return ""
+        }
+    }
+
+    @ViewBuilder
+    private var outreachBannerView: some View {
+        let accentColor = patientStatus.color
+        let phone = patient?.phone?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let message = outreachMessage(for: patientStatus, firstName: patient?.first_name ?? "")
+        let isUrgent = patientStatus == .needsHelp
+        let iconName = isUrgent ? "exclamationmark.triangle.fill" : "clock.badge.exclamationmark.fill"
+        let titleText = isUrgent ? "Needs Immediate Outreach" : "Falling Behind Schedule"
+
+        ZStack(alignment: .leading) {
+            // Card background
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.rrSurface)
+                .shadow(color: accentColor.opacity(0.10), radius: 16, x: 0, y: 5)
+                .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(accentColor.opacity(0.18), lineWidth: 1)
+                )
+
+            // Left accent stripe
+            HStack(spacing: 0) {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(accentColor)
+                    .frame(width: 4)
+                    .padding(.vertical, 12)
+                    .padding(.leading, 10)
+                Spacer()
+            }
+
+            // Content
+            VStack(alignment: .leading, spacing: 14) {
+                // Header
+                HStack(alignment: .center, spacing: 10) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(accentColor.opacity(0.10))
+                            .frame(width: 38, height: 38)
+                        Image(systemName: iconName)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(accentColor)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(titleText)
+                            .font(.rrCallout.bold())
+                            .foregroundStyle(.primary)
+                        Text("Suggested message ready to send")
+                            .font(.rrCaption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+
+                // Message quote block
+                HStack(alignment: .top, spacing: 10) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(accentColor.opacity(0.45))
+                        .frame(width: 3)
+                    Text(message)
+                        .font(.system(size: 13.5, weight: .regular))
+                        .foregroundStyle(Color.primary.opacity(0.70))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .lineSpacing(2)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(accentColor.opacity(0.045))
+                )
+
+                // Action button
+                Group {
+                    if outreachSent {
+                        HStack(spacing: 7) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(PatientStatus.onTrack.color)
+                            Text("Message sent to Messages app")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(PatientStatus.onTrack.color)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 11)
+                                .fill(PatientStatus.onTrack.color.opacity(0.09))
+                        )
+                        .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .center)))
+                    } else {
+                        Button {
+                            guard !phone.isEmpty else { return }
+                            let encoded = message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                            if let url = URL(string: "sms:\(phone)&body=\(encoded)") {
+                                UIApplication.shared.open(url)
+                            }
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                                outreachSent = true
+                            }
+                            Task {
+                                try? await Task.sleep(nanoseconds: 2_500_000_000)
+                                withAnimation(.easeOut(duration: 0.30)) {
+                                    outreachBannerVisible = false
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 7) {
+                                Image(systemName: "message.fill")
+                                    .font(.system(size: 13, weight: .semibold))
+                                Text("Send Text Message")
+                                    .font(.system(size: 14, weight: .semibold))
+                            }
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(accentColor)
+                            .clipShape(RoundedRectangle(cornerRadius: 11))
+                            .shadow(color: accentColor.opacity(0.28), radius: 8, x: 0, y: 4)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(phone.isEmpty)
+                        .opacity(phone.isEmpty ? 0.45 : 1)
+                        .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .center)))
+                    }
+                }
+                .animation(.spring(response: 0.38, dampingFraction: 0.72), value: outreachSent)
+            }
+            .padding(.leading, 22)
+            .padding(.trailing, 16)
+            .padding(.vertical, 16)
+        }
+        .padding(.horizontal, 16)
+    }
+
     // MARK: - Skeleton
 
     private var skeletonContent: some View {
@@ -593,7 +758,6 @@ struct PatientDetailView: View {
             self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (patientStale || planStale || forceRefresh)
             let dates = (try? await RehabService.getCompletionDates(patientProfileId: patientProfileId)) ?? []
             self.patientStatus = PatientStatus.compute(from: dates)
-
             // Load lesson performance scores
             isLoadingScores = true
             isLoading = false

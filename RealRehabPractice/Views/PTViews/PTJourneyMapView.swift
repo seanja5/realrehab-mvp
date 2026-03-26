@@ -999,8 +999,8 @@ struct PTJourneyMapView: View {
         tempReps = node.reps
         tempRest = node.restSec
         tempLocked = node.isLocked
-        tempSets = node.sets ?? 4
-        tempRestBetweenSets = node.restBetweenSets ?? 20
+        tempSets = node.sets ?? 1
+        tempRestBetweenSets = node.restBetweenSets ?? 60
         tempKneeBendAngle = node.kneeBendAngle ?? 120
         tempTimeHoldingPosition = node.timeHoldingPosition ?? 30
         selectedNodeID = node.id

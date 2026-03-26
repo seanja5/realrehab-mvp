@@ -124,6 +124,7 @@ enum Phase {
     case upstroke
     case holding      // isometric hold at peak (isometricHold type only)
     case downstroke
+    case setRest      // countdown between sets
 }
 
 // MARK: - LessonEngine
@@ -137,16 +138,25 @@ final class LessonEngine: ObservableObject {
     @Published var isPaused: Bool = false
     /// Remaining hold seconds shown in UI during isometric hold phase.
     @Published private(set) var holdSecondsRemaining: Int = 0
+    /// Current set number (1-based). Increments after each set's rest period.
+    @Published private(set) var currentSet: Int = 1
+    /// Remaining seconds shown in UI during between-sets rest.
+    @Published private(set) var setRestSecondsRemaining: Int = 0
+    /// True once all sets are fully complete.
+    @Published private(set) var isFullyComplete: Bool = false
 
     let repTarget: Int
     let restDuration: TimeInterval  // total cycle time (extension); hold duration (isometric)
     let exerciseType: ExerciseType
+    let setTotal: Int
+    let setRestDuration: TimeInterval
 
     private var inCooldown = false
     private var simulationTimer: Timer?
     private var guidedRunToken: UUID?
     private var animationTimer: Timer?
     private var holdTimer: Timer?
+    private var setRestTimer: Timer?
     private var pausedFill: Double = 0.0
     var targets = LessonTargets()
 
@@ -155,16 +165,20 @@ final class LessonEngine: ObservableObject {
 
     // MARK: Init
 
-    init(repTarget: Int = 20, restDuration: TimeInterval = 6.0, exerciseType: ExerciseType = .kneeExtension) {
+    init(repTarget: Int = 20, restDuration: TimeInterval = 6.0, exerciseType: ExerciseType = .kneeExtension, setTotal: Int = 1, setRestDuration: TimeInterval = 60) {
         self.repTarget = repTarget
         self.restDuration = restDuration
         self.exerciseType = exerciseType
+        self.setTotal = max(1, setTotal)
+        self.setRestDuration = setRestDuration
     }
 
     // MARK: Reset / Restore
 
     func reset() {
         repCount = 0
+        currentSet = 1
+        isFullyComplete = false
         inCooldown = false
         lastEvaluation = .init(isCorrect: false, reason: "Waiting…")
         phase = .idle
@@ -173,6 +187,9 @@ final class LessonEngine: ObservableObject {
         isPaused = false
         pausedFill = 0.0
         holdSecondsRemaining = 0
+        setRestSecondsRemaining = 0
+        setRestTimer?.invalidate()
+        setRestTimer = nil
         stopGuidedSimulation()
     }
 
@@ -190,6 +207,8 @@ final class LessonEngine: ObservableObject {
         animationTimer = nil
         holdTimer?.invalidate()
         holdTimer = nil
+        setRestTimer?.invalidate()
+        setRestTimer = nil
     }
 
     func resumeAnimation() {
@@ -212,6 +231,8 @@ final class LessonEngine: ObservableObject {
             let elapsedTime = elapsedFill * totalDuration
             let remainingTime = totalDuration - elapsedTime
             continueDownstroke(fromFill: pausedFill, remainingTime: remainingTime, token: token)
+        case .setRest:
+            resumeSetRest(remainingSeconds: setRestSecondsRemaining, token: token)
         default:
             break
         }
@@ -265,12 +286,15 @@ final class LessonEngine: ObservableObject {
         animationTimer = nil
         holdTimer?.invalidate()
         holdTimer = nil
+        setRestTimer?.invalidate()
+        setRestTimer = nil
         phase = .idle
         fill = 0.0
         statusText = "Waiting…"
         lastEvaluation = .init(isCorrect: false, reason: "Waiting…")
         isPaused = false
         holdSecondsRemaining = 0
+        setRestSecondsRemaining = 0
     }
 
     func restartFromBottom() {
@@ -304,7 +328,7 @@ final class LessonEngine: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
             guard let self = self, self.guidedRunToken == token else { return }
             if self.repCount >= self.repTarget {
-                self.finishLesson()
+                self.finishLesson(token: token)
                 return
             }
             self.runUpstroke(token: token)
@@ -331,9 +355,9 @@ final class LessonEngine: ObservableObject {
             }
             DispatchQueue.main.async {
                 let elapsed = Date().timeIntervalSince(startTime)
-                let progress = min(elapsed / duration, 1.0)
-                self.fill = startFill + (endFill - startFill) * progress
-                if progress >= 1.0 {
+                let rawProgress = min(elapsed / duration, 1.0)
+                self.fill = startFill + (endFill - startFill) * self.easeInOut(rawProgress)
+                if rawProgress >= 1.0 {
                     timer.invalidate()
                     self.animationTimer = nil
                     self.onUpstrokeComplete(token: token)
@@ -352,7 +376,7 @@ final class LessonEngine: ObservableObject {
             // Count rep immediately (callback validates sensor)
             let shouldCount = shouldCountRepCallback?() ?? true
             if shouldCount { repCount += 1 }
-            if repCount >= repTarget { finishLesson(); return }
+            if repCount >= repTarget { finishLesson(token: token); return }
             runDownstroke(token: token)
         }
     }
@@ -414,7 +438,7 @@ final class LessonEngine: ObservableObject {
         // Rep counts only if callback confirms hold was maintained
         let shouldCount = shouldCountRepCallback?() ?? true
         if shouldCount { repCount += 1 }
-        if repCount >= repTarget { finishLesson(); return }
+        if repCount >= repTarget { finishLesson(token: token); return }
         runDownstroke(token: token)
     }
 
@@ -440,12 +464,12 @@ final class LessonEngine: ObservableObject {
             DispatchQueue.main.async {
                 guard !self.isPaused else { return }
                 let elapsed = Date().timeIntervalSince(startTime)
-                let progress = min(elapsed / duration, 1.0)
-                self.fill = startFill + (endFill - startFill) * progress
-                if progress >= 1.0 {
+                let rawProgress = min(elapsed / duration, 1.0)
+                self.fill = startFill + (endFill - startFill) * self.easeInOut(rawProgress)
+                if rawProgress >= 1.0 {
                     timer.invalidate()
                     self.animationTimer = nil
-                    if self.repCount >= self.repTarget { self.finishLesson(); return }
+                    if self.repCount >= self.repTarget { self.finishLesson(token: token); return }
                     self.runUpstroke(token: token)
                 }
             }
@@ -453,13 +477,77 @@ final class LessonEngine: ObservableObject {
         RunLoop.main.add(animationTimer!, forMode: .common)
     }
 
-    // MARK: Finish
+    // MARK: Finish / Set Rest
 
-    private func finishLesson() {
-        phase = .idle
-        statusText = "Great work!"
+    private func finishLesson(token: UUID) {
+        guard guidedRunToken == token else { return }
+        if currentSet < setTotal {
+            // More sets remain — start the between-sets rest
+            runSetRest(token: token)
+        } else {
+            // All sets done
+            phase = .idle
+            statusText = "Great work!"
+            fill = 1.0
+            lastEvaluation = .init(isCorrect: true, reason: nil)
+            isFullyComplete = true
+        }
+    }
+
+    private func runSetRest(token: UUID) {
+        guard guidedRunToken == token else { return }
+        phase = .setRest
+        statusText = "Rest"
         fill = 1.0
-        lastEvaluation = .init(isCorrect: true, reason: nil)
+        setRestSecondsRemaining = Int(setRestDuration.rounded())
+
+        setRestTimer?.invalidate()
+        setRestTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            guard let self = self, self.guidedRunToken == token, !self.isPaused else {
+                timer.invalidate()
+                return
+            }
+            DispatchQueue.main.async {
+                self.setRestSecondsRemaining = max(0, self.setRestSecondsRemaining - 1)
+                if self.setRestSecondsRemaining <= 0 {
+                    timer.invalidate()
+                    self.setRestTimer = nil
+                    self.startNextSet(token: token)
+                }
+            }
+        }
+        RunLoop.main.add(setRestTimer!, forMode: .common)
+    }
+
+    private func resumeSetRest(remainingSeconds: Int, token: UUID) {
+        guard guidedRunToken == token else { return }
+        phase = .setRest
+        fill = 1.0
+        setRestSecondsRemaining = remainingSeconds
+
+        setRestTimer?.invalidate()
+        setRestTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            guard let self = self, self.guidedRunToken == token, !self.isPaused else {
+                timer.invalidate()
+                return
+            }
+            DispatchQueue.main.async {
+                self.setRestSecondsRemaining = max(0, self.setRestSecondsRemaining - 1)
+                if self.setRestSecondsRemaining <= 0 {
+                    timer.invalidate()
+                    self.setRestTimer = nil
+                    self.startNextSet(token: token)
+                }
+            }
+        }
+        RunLoop.main.add(setRestTimer!, forMode: .common)
+    }
+
+    private func startNextSet(token: UUID) {
+        guard guidedRunToken == token else { return }
+        currentSet += 1
+        repCount = 0
+        runUpstroke(token: token)
     }
 
     // MARK: Resume helpers (continue mid-animation after unpause)
@@ -477,9 +565,9 @@ final class LessonEngine: ObservableObject {
             }
             DispatchQueue.main.async {
                 let elapsed = Date().timeIntervalSince(startTime)
-                let progress = min(elapsed / remainingTime, 1.0)
-                self.fill = startFill + (endFill - startFill) * progress
-                if progress >= 1.0 {
+                let rawProgress = min(elapsed / remainingTime, 1.0)
+                self.fill = startFill + (endFill - startFill) * self.easeInOut(rawProgress)
+                if rawProgress >= 1.0 {
                     timer.invalidate()
                     self.animationTimer = nil
                     self.onUpstrokeComplete(token: token)
@@ -502,17 +590,23 @@ final class LessonEngine: ObservableObject {
             }
             DispatchQueue.main.async {
                 let elapsed = Date().timeIntervalSince(startTime)
-                let progress = min(elapsed / remainingTime, 1.0)
-                self.fill = startFill + (endFill - startFill) * progress
-                if progress >= 1.0 {
+                let rawProgress = min(elapsed / remainingTime, 1.0)
+                self.fill = startFill + (endFill - startFill) * self.easeInOut(rawProgress)
+                if rawProgress >= 1.0 {
                     timer.invalidate()
                     self.animationTimer = nil
-                    if self.repCount >= self.repTarget { self.finishLesson(); return }
+                    if self.repCount >= self.repTarget { self.finishLesson(token: token); return }
                     self.runUpstroke(token: token)
                 }
             }
         }
         RunLoop.main.add(animationTimer!, forMode: .common)
+    }
+
+    // MARK: Animation easing
+
+    private func easeInOut(_ t: Double) -> Double {
+        0.5 * (1 - cos(.pi * t))
     }
 
     // MARK: Status text helpers

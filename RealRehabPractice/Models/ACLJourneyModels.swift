@@ -183,6 +183,9 @@ struct LessonNode: Identifiable {
     
     static func lesson(title: String, isLocked: Bool = false, reps: Int = 12, restSec: Int = 3, phase: Int) -> LessonNode {
         var node = LessonNode(title: title, isLocked: isLocked, reps: reps, restSec: restSec, nodeType: .lesson, phase: phase)
+        // Sets and rest-between-sets are always adjustable for standard lessons
+        node.enableSets = true
+        node.enableRestBetweenSets = true
         let t = node.title.lowercased()
         if t.contains("wall sit") {
             node.enableReps = false
@@ -319,14 +322,14 @@ enum ACLJourneyModels {
         allExerciseNames + ["Custom"]
     }
     
-    /// Per-exercise default reps and restSec for Phase 1 exercises.
+    /// Per-exercise default reps and restSec for Phase 1 exercises (Round 1 values).
     /// restSec for Quad Sets is the isometric hold duration (not rest between reps).
+    /// Progressive reps/sets across rounds are defined in the Supabase plan template migration.
     private static let phase1Defaults: [String: (reps: Int, restSec: Int)] = [
         "Quad Sets":         (reps: 10, restSec: 5),
-        "Short Arc Quad":    (reps: 10, restSec: 3),
-        "Heel Slides":       (reps: 10, restSec: 3),
-        "Straight Leg Raise":(reps: 10, restSec: 3),
-        "Ankle Pumps":       (reps: 20, restSec: 3),
+        "Short Arc Quad":    (reps: 10, restSec: 6),
+        "Heel Slides":       (reps: 10, restSec: 6),
+        "Straight Leg Raise":(reps: 10, restSec: 6),
     ]
 
     static func defaultACLPlanNodes() -> [LessonNode] {

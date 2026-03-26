@@ -13,9 +13,11 @@ public struct JourneyNode: Identifiable {
     public let nodeType: JourneyNodeType
     public let phase: Int
     public let timeHoldingPosition: Int?
+    public let sets: Int?
+    public let restBetweenSets: Int?
 
     /// Display icons come from lessonIconSystemName(for: title), not from a stored icon.
-    public init(id: UUID, isLocked: Bool, title: String, yOffset: CGFloat, reps: Int = 20, restSec: Int = 3, nodeType: JourneyNodeType = .lesson, phase: Int = 1, timeHoldingPosition: Int? = nil) {
+    public init(id: UUID, isLocked: Bool, title: String, yOffset: CGFloat, reps: Int = 20, restSec: Int = 3, nodeType: JourneyNodeType = .lesson, phase: Int = 1, timeHoldingPosition: Int? = nil, sets: Int? = nil, restBetweenSets: Int? = nil) {
         self.id = id
         self.isLocked = isLocked
         self.title = title
@@ -25,6 +27,8 @@ public struct JourneyNode: Identifiable {
         self.nodeType = nodeType
         self.phase = phase
         self.timeHoldingPosition = timeHoldingPosition
+        self.sets = sets
+        self.restBetweenSets = restBetweenSets
     }
 }
 
@@ -130,7 +134,7 @@ public final class JourneyMapViewModel: ObservableObject {
                     let yOffset = index < yOffsets.count ? yOffsets[index] : CGFloat(index) * ACLJourneyModels.baseStep
                     let nodeType: JourneyNodeType = (dto.nodeType == "benchmark") ? .benchmark : .lesson
                     let phase = phases[index]
-                    return JourneyNode(id: lessonId, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase, timeHoldingPosition: dto.timeHoldingPosition)
+                    return JourneyNode(id: lessonId, isLocked: dto.isLocked, title: dto.title, yOffset: yOffset, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase, timeHoldingPosition: dto.timeHoldingPosition, sets: dto.sets, restBetweenSets: dto.setRestSec)
                 }
                 debugLog("✅ JourneyMapViewModel: loaded \(nodes.count) nodes from plan")
                 

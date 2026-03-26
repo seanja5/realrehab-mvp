@@ -6,14 +6,14 @@ enum Route: Hashable {
     case createAccount
     case ptCreateAccount
     case pairDevice
-    case calibrateDevice(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil)
+    case calibrateDevice(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, sets: Int? = nil, setRestSec: Int? = nil)
     case ptDetail
     case rehabOverview
     case journeyMap
     case patientSettings
-    case directionsView1(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil)
-    case directionsView2(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil)
-    case lesson(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil)
+    case directionsView1(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, sets: Int? = nil, setRestSec: Int? = nil)
+    case directionsView2(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, sets: Int? = nil, setRestSec: Int? = nil)
+    case lesson(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, sets: Int? = nil, setRestSec: Int? = nil)
     case assessment(lessonId: UUID?)
     case completion(lessonId: UUID?)
     case benchmarkCalibrateDevice(holdDuration: Int, reps: Int, restSec: Int, lessonId: UUID, lessonTitle: String)

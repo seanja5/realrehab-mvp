@@ -9,7 +9,7 @@ import SwiftUI
 import Combine
 import CoreBluetooth
 
-private let testMode = false
+private let testMode = true
 
 struct LessonView: View {
     @EnvironmentObject var router: Router
@@ -66,6 +66,8 @@ struct LessonView: View {
 
     // Countdown ring: wall-clock start time for smooth continuous progress
     @State private var holdStartTime: Date? = nil
+    // Between-sets rest ring start time
+    @State private var setRestStartTime: Date? = nil
 
     // Sensor insights: track error count for rep_attempt (repCount + errorCount = attempt)
     @State private var errorCount: Int = 0
@@ -138,19 +140,26 @@ struct LessonView: View {
         return CGFloat(clampedPosition)
     }
     
-    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil) {
+    let sets: Int?
+    let setRestSec: Int?
+
+    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, sets: Int? = nil, setRestSec: Int? = nil) {
         self.reps = reps
         self.restSec = restSec
         self.lessonId = lessonId
         self.lessonTitle = lessonTitle
+        self.sets = sets
+        self.setRestSec = setRestSec
         let exerciseType = ExerciseType.from(lessonTitle: lessonTitle)
-        var targets = LessonTargets.defaults(for: exerciseType, lessonTitle: lessonTitle)
+        let targets = LessonTargets.defaults(for: exerciseType, lessonTitle: lessonTitle)
+        let setTotal = sets ?? 1
+        let setRestDuration = TimeInterval(setRestSec ?? 60)
         if let reps = reps, let restSec = restSec {
-            let engine = LessonEngine(repTarget: reps, restDuration: TimeInterval(restSec), exerciseType: exerciseType)
+            let engine = LessonEngine(repTarget: reps, restDuration: TimeInterval(restSec), exerciseType: exerciseType, setTotal: setTotal, setRestDuration: setRestDuration)
             engine.targets = targets
             _engine = StateObject(wrappedValue: engine)
         } else {
-            let engine = LessonEngine(exerciseType: exerciseType)
+            let engine = LessonEngine(exerciseType: exerciseType, setTotal: setTotal, setRestDuration: setRestDuration)
             engine.targets = targets
             _engine = StateObject(wrappedValue: engine)
         }
@@ -167,9 +176,13 @@ struct LessonView: View {
     
     // Helper function to determine display text
     private func displayText() -> String {
-        // Check if all reps are completed - show completion message
-        if engine.repCount >= engine.repTarget {
+        // All sets fully complete
+        if engine.isFullyComplete {
             return "You're Done!"
+        }
+        // Between-sets rest
+        if engine.phase == .setRest {
+            return "Rest — Set \(engine.currentSet) of \(engine.setTotal) done"
         }
         
         // User paused (via pause button, back, or background)
@@ -217,6 +230,8 @@ struct LessonView: View {
             case .anklePumps:       return "Pump Down!"
             default:                return "Lower Slowly"
             }
+        case .setRest:
+            return "Rest — Set \(engine.currentSet) of \(engine.setTotal) done"
         }
     }
     
@@ -238,8 +253,8 @@ struct LessonView: View {
     
     // Helper function to determine background color
     private func backgroundColor() -> Color {
-        // All reps completed — subtle green tint
-        if engine.repCount >= engine.repTarget {
+        // All sets fully complete or between-sets rest — subtle green tint
+        if engine.isFullyComplete || engine.phase == .setRest {
             return Color.green.opacity(0.05)
         }
         // User paused - neutral gray
@@ -281,6 +296,11 @@ struct LessonView: View {
                         Text("reps")
                             .font(.rrCaption)
                             .foregroundStyle(.secondary)
+                        if engine.setTotal > 1 {
+                            Text("· Set \(min(engine.currentSet, engine.setTotal)) of \(engine.setTotal)")
+                                .font(.rrCaption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     Spacer()
                     if hasStarted && elapsedDisplaySeconds > 0 {
@@ -303,8 +323,8 @@ struct LessonView: View {
                 RoundedRectangle(cornerRadius: 20)
                     .fill(backgroundColor())
 
-                // Green gradient — correct active phases (upstroke, downstroke, holding, completed)
-                if !isUserPaused && (engine.phase == .upstroke || engine.phase == .downstroke || engine.phase == .holding || engine.repCount >= engine.repTarget) {
+                // Green gradient — correct active phases (upstroke, downstroke, holding, setRest, completed)
+                if !isUserPaused && (engine.phase == .upstroke || engine.phase == .downstroke || engine.phase == .holding || engine.phase == .setRest || engine.isFullyComplete) {
                     GeometryReader { geo in
                         let h = geo.size.height
                         VStack {
@@ -398,6 +418,34 @@ struct LessonView: View {
                     }
                     .onAppear { holdStartTime = Date() }
                     .onDisappear { holdStartTime = nil }
+                    .allowsHitTesting(false)
+                } else if engine.phase == .setRest {
+                    // Between-sets rest: same-style ring countdown
+                    let setRestDur = TimeInterval(setRestSec ?? 60)
+                    TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { context in
+                        let elapsed = setRestStartTime.map { context.date.timeIntervalSince($0) } ?? 0
+                        let progress = max(0, CGFloat(1.0 - elapsed / setRestDur))
+                        ZStack {
+                            Circle()
+                                .stroke(Color.primary.opacity(0.15), lineWidth: 8)
+                                .frame(width: 88, height: 88)
+                            Circle()
+                                .trim(from: 0, to: progress)
+                                .stroke(Color.primary, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                                .frame(width: 88, height: 88)
+                                .rotationEffect(.degrees(-90))
+                            VStack(spacing: 2) {
+                                Text("\(engine.setRestSecondsRemaining)")
+                                    .font(.rrTitle.bold())
+                                    .foregroundStyle(.primary)
+                                Text("rest")
+                                    .font(.rrCaption)
+                                    .foregroundStyle(.primary.opacity(0.7))
+                            }
+                        }
+                    }
+                    .onAppear { setRestStartTime = Date() }
+                    .onDisappear { setRestStartTime = nil }
                     .allowsHitTesting(false)
                 } else {
                     // Center text — countdown, error, phase cues
@@ -502,8 +550,8 @@ struct LessonView: View {
 
             // Single primary action button
             PrimaryButton(
-                title: !hasStarted ? "Begin Lesson" : (engine.repCount >= engine.repTarget ? "Complete Session!" : "Lesson Running"),
-                isDisabled: hasStarted && engine.repCount < engine.repTarget,
+                title: !hasStarted ? "Begin Lesson" : (engine.isFullyComplete ? "Complete Session!" : "Lesson Running"),
+                isDisabled: hasStarted && !engine.isFullyComplete,
                 useLargeFont: true
             ) {
                 if !hasStarted {
@@ -521,7 +569,7 @@ struct LessonView: View {
                         enqueueAndSyncLessonProgress(lessonId: lessonId, repsCompleted: 0, repsTarget: engine.repTarget, elapsedSeconds: 0, status: "inProgress")
                         startSensorInsightsCollection(lessonId: lessonId)
                     }
-                } else if engine.repCount >= engine.repTarget {
+                } else if engine.isFullyComplete {
                     engine.stopGuidedSimulation()
                     persistAndCompleteLesson()
                     router.go(.assessment(lessonId: lessonId))
@@ -616,14 +664,16 @@ struct LessonView: View {
             }
         }
         .onChange(of: engine.repCount) { _, newCount in
+            // Skip when repCount resets to 0 at start of next set — don't overwrite prior progress
+            guard newCount > 0 else { return }
             persistLessonDraft()
             LessonSensorInsightsCollector.shared.saveDraftIntermediate(
                 repsCompleted: newCount,
                 totalDurationSec: currentElapsedSeconds()
             )
             // Sync to Supabase on every rep so PT sees progress in real time
-            if newCount > 0, let lessonId = lessonId {
-                let status = newCount >= engine.repTarget ? "completed" : "inProgress"
+            if let lessonId = lessonId {
+                let status = engine.isFullyComplete ? "completed" : "inProgress"
                 enqueueAndSyncLessonProgress(lessonId: lessonId, repsCompleted: newCount, repsTarget: engine.repTarget, elapsedSeconds: currentElapsedSeconds(), status: status)
             }
         }

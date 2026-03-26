@@ -348,11 +348,17 @@ struct JourneyMapView: View {
                                 .multilineTextAlignment(.center)
                         }
                         PrimaryButton(title: "Go!") {
+                            let nReps = node.reps
+                            let nRest = node.restSec
+                            let nId = node.id
+                            let nTitle = node.title
+                            let nSets = node.sets
+                            let nSetRest = node.restBetweenSets
                             if node.nodeType == .benchmark {
                                 let holdDuration = node.timeHoldingPosition ?? 8
-                                router.go(.benchmarkCalibrateDevice(holdDuration: holdDuration, reps: node.reps, restSec: node.restSec, lessonId: node.id, lessonTitle: node.title))
+                                router.go(.benchmarkCalibrateDevice(holdDuration: holdDuration, reps: nReps, restSec: nRest, lessonId: nId, lessonTitle: nTitle))
                             } else {
-                                router.go(.calibrateDevice(reps: node.reps, restSec: node.restSec, lessonId: node.id, lessonTitle: node.title))
+                                router.go(.calibrateDevice(reps: nReps, restSec: nRest, lessonId: nId, lessonTitle: nTitle, sets: nSets, setRestSec: nSetRest))
                             }
                             withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                                 showCallout = false

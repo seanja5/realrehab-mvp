@@ -84,6 +84,45 @@ final class OutboxSyncManager: ObservableObject {
         enqueue(item)
     }
 
+    func enqueueLessonRedoRemoteDelete(patientProfileId: UUID, lessonId: UUID) {
+        let payload = LessonRedoRemoteDeletePayload(patientProfileId: patientProfileId, lessonId: lessonId)
+        guard let data = try? JSONEncoder().encode(payload) else { return }
+        let item = OutboxItem(
+            id: UUID(),
+            createdAt: Date(),
+            type: .lessonRedoRemoteDelete,
+            payload: data,
+            retryCount: 0,
+            lastAttemptAt: nil
+        )
+        enqueue(item)
+    }
+
+    /// Removes queued upserts/clears/redo-delete for this lesson (before re-do or after PT plan change).
+    func removeOutboxItemsForLessonRedo(patientProfileId: UUID, lessonId: UUID) {
+        var items = loadItems()
+        let before = items.count
+        items.removeAll { item in
+            switch item.type {
+            case .lessonProgress:
+                guard let p = try? JSONDecoder().decode(LessonProgressPayload.self, from: item.payload) else { return false }
+                return p.patientProfileId == patientProfileId && p.lessonId == lessonId
+            case .lessonProgressClear:
+                guard let p = try? JSONDecoder().decode(LessonProgressClearPayload.self, from: item.payload) else { return false }
+                return p.patientProfileId == patientProfileId && p.lessonId == lessonId
+            case .lessonSensorInsights:
+                guard let d = try? JSONDecoder().decode(LessonSensorInsightsDraft.self, from: item.payload) else { return false }
+                return d.patientProfileId == patientProfileId && d.lessonId == lessonId
+            case .lessonRedoRemoteDelete:
+                guard let p = try? JSONDecoder().decode(LessonRedoRemoteDeletePayload.self, from: item.payload) else { return false }
+                return p.patientProfileId == patientProfileId && p.lessonId == lessonId
+            }
+        }
+        if items.count != before {
+            saveItems(items)
+        }
+    }
+
     /// True if a lesson progress upsert for this lesson is still queued (offline completion not yet synced).
     func hasPendingLessonProgressUpsert(patientProfileId: UUID, lessonId: UUID) -> Bool {
         loadItems().contains { item in
@@ -107,6 +146,9 @@ final class OutboxSyncManager: ObservableObject {
                 return p.patientProfileId == patientProfileId
             case .lessonSensorInsights:
                 return false
+            case .lessonRedoRemoteDelete:
+                guard let p = try? JSONDecoder().decode(LessonRedoRemoteDeletePayload.self, from: item.payload) else { return false }
+                return p.patientProfileId == patientProfileId
             }
         }
         if items.count != before {
@@ -164,6 +206,8 @@ final class OutboxSyncManager: ObservableObject {
             try await syncLessonProgressClear(payload: item.payload)
         case .lessonSensorInsights:
             try await syncLessonSensorInsights(payload: item.payload)
+        case .lessonRedoRemoteDelete:
+            try await syncLessonRedoRemoteDelete(payload: item.payload)
         }
     }
 
@@ -193,6 +237,13 @@ final class OutboxSyncManager: ObservableObject {
     private func syncLessonProgressClear(payload: Data) async throws {
         let p = try JSONDecoder().decode(LessonProgressClearPayload.self, from: payload)
         try await LessonProgressSync.delete(lessonId: p.lessonId.uuidString)
+        await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: p.patientProfileId))
+        await CacheService.shared.invalidate(CacheKey.completionDates(patientProfileId: p.patientProfileId))
+    }
+
+    private func syncLessonRedoRemoteDelete(payload: Data) async throws {
+        let p = try JSONDecoder().decode(LessonRedoRemoteDeletePayload.self, from: payload)
+        try await LessonRedoRemoteSync.performDeletes(patientProfileId: p.patientProfileId, lessonId: p.lessonId)
         await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: p.patientProfileId))
         await CacheService.shared.invalidate(CacheKey.completionDates(patientProfileId: p.patientProfileId))
     }

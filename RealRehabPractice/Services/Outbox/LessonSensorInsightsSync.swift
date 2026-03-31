@@ -32,6 +32,18 @@ enum LessonSensorInsightsSync {
             .upsert(row, onConflict: "lesson_id,patient_profile_id")
             .execute()
     }
+
+    /// Remove row for this lesson+patient (patient re-do flow). Must be called from nonisolated context.
+    static func delete(lessonId: UUID, patientProfileId: UUID) async throws {
+        let client = SupabaseService.shared.client
+        try await client
+            .schema("rehab")
+            .from("lesson_sensor_insights")
+            .delete()
+            .eq("lesson_id", value: lessonId.uuidString)
+            .eq("patient_profile_id", value: patientProfileId.uuidString)
+            .executeAsync()
+    }
 }
 
 private struct LessonSensorInsightsUpsertRow: Encodable {

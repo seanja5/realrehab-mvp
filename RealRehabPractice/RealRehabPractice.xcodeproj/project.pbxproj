@@ -20,6 +20,7 @@
 		C82D70102EBE91D3004D9347 /* LessonEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70092EBE91D3004D9347 /* LessonEngine.swift */; };
 		C82D70112EBE91D3004D9347 /* TelemetryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D700C2EBE91D3004D9347 /* TelemetryService.swift */; };
 		C82D70122EBE91D3004D9347 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70082EBE91D3004D9347 /* AuthService.swift */; };
+		C9F2E3D52F401100004D934F /* LessonRedoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F2E3D42F401100004D934E /* LessonRedoService.swift */; };
 		C82D70272EBEB10C004D9347 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70222EBEB10C004D9347 /* AuthViewModel.swift */; };
 		C82D70282EBEB10C004D9347 /* PatientDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70242EBEB10C004D9347 /* PatientDashboardViewModel.swift */; };
 		C82D70292EBEB10C004D9347 /* PTProgramEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70252EBEB10C004D9347 /* PTProgramEditorViewModel.swift */; };
@@ -126,6 +127,7 @@
 		C82537812F2B12D400465343 /* PhaseHeaderPreferenceKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseHeaderPreferenceKey.swift; sourceTree = "<group>"; };
 		C826BD3E2ECC23CB00B500DC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C82D70082EBE91D3004D9347 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		C9F2E3D42F401100004D934E /* LessonRedoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonRedoService.swift; sourceTree = "<group>"; };
 		C82D70092EBE91D3004D9347 /* LessonEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonEngine.swift; sourceTree = "<group>"; };
 		C82D700A2EBE91D3004D9347 /* RehabService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RehabService.swift; sourceTree = "<group>"; };
 		C82D700B2EBE91D3004D9347 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
@@ -265,6 +267,7 @@
 				C8B1B2CC2ED00001004D9350 /* Outbox */,
 				C82D70082EBE91D3004D9347 /* AuthService.swift */,
 				C82D70092EBE91D3004D9347 /* LessonEngine.swift */,
+				C9F2E3D42F401100004D934E /* LessonRedoService.swift */,
 				C8B1B2C62ED00001004D9349 /* LocalLessonProgressStore.swift */,
 				C8B1B2C42ED00001004D9348 /* NetworkMonitor.swift */,
 				C82D700A2EBE91D3004D9347 /* RehabService.swift */,
@@ -626,6 +629,7 @@
 				C82D70102EBE91D3004D9347 /* LessonEngine.swift in Sources */,
 				C82D70112EBE91D3004D9347 /* TelemetryService.swift in Sources */,
 				C82D70122EBE91D3004D9347 /* AuthService.swift in Sources */,
+				C9F2E3D52F401100004D934F /* LessonRedoService.swift in Sources */,
 				C8F4A7002ED2C79A00BADF02 /* BluetoothManager.swift in Sources */,
 				C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */,
 				C8AEECB42EB2D7A200720184 /* WelcomeView.swift in Sources */,

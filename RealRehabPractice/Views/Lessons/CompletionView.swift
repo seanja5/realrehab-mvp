@@ -21,6 +21,9 @@ struct CompletionView: View {
     @State private var aiNextTimeCue: String? = nil
     /// True while fetching AI summary; sheet shows skeleton until this is false.
     @State private var isLoadingAISummary: Bool = false
+    @State private var showRedoConfirmation = false
+    @State private var isRedoing = false
+    @State private var redoError: String?
 
     private let circleAnimationDuration: Double = 1.2
 
@@ -101,6 +104,17 @@ struct CompletionView: View {
         }
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 12) {
+                if lessonId != nil {
+                    Button {
+                        showRedoConfirmation = true
+                    } label: {
+                        Text("Re-do lesson")
+                            .font(.rrBody)
+                            .underline()
+                            .foregroundStyle(Color.brandDarkBlue)
+                    }
+                    .padding(.bottom, 4)
+                }
                 PrimaryButton(title: "Back to Journey Map") {
                     router.go(.journeyMap)
                 }
@@ -117,6 +131,50 @@ struct CompletionView: View {
             scoreExplanationSheet
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showRedoConfirmation) {
+            VStack(spacing: 16) {
+                Text("Re-do lesson?")
+                    .font(.rrHeadline)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 24)
+                Text("This clears this lesson's completion, score, and session details from your device and your account so you can start the lesson again from the beginning.")
+                    .font(.rrBody)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let redoError {
+                    Text(redoError)
+                        .font(.rrCaption)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                }
+                PrimaryButton(title: "Yes", isDisabled: isRedoing) {
+                    Task {
+                        guard let lid = lessonId else { return }
+                        isRedoing = true
+                        redoError = nil
+                        defer { isRedoing = false }
+                        do {
+                            try await LessonRedoService.clearLessonForRedo(lessonId: lid)
+                            showRedoConfirmation = false
+                            router.go(.journeyMap)
+                        } catch {
+                            redoError = "Couldn't reset. Try again."
+                        }
+                    }
+                }
+                SecondaryButton(title: "Cancel") {
+                    showRedoConfirmation = false
+                    redoError = nil
+                }
+                .padding(.bottom, 24)
+            }
+            .padding(.horizontal, 24)
+            .frame(maxWidth: .infinity)
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+            .rrPageBackground()
         }
         .rrPageBackground()
         .navigationTitle("Complete")
@@ -476,7 +534,7 @@ struct CompletionView: View {
 }
 
 // MARK: - Completion page cache (in-memory so returning to the screen shows data instantly)
-private actor CompletionPageCache {
+actor CompletionPageCache {
     struct Entry {
         var insights: LessonSensorInsightsRow?
         var rangeGained: Int?
@@ -489,4 +547,5 @@ private actor CompletionPageCache {
     private var storage: [UUID: Entry] = [:]
     func get(_ lessonId: UUID) -> Entry? { storage[lessonId] }
     func set(_ lessonId: UUID, _ entry: Entry) { storage[lessonId] = entry }
+    func remove(_ lessonId: UUID) { storage.removeValue(forKey: lessonId) }
 }

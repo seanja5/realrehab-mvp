@@ -285,4 +285,10 @@ final class LessonSensorInsightsCollector {
         }
         return decoded
     }
+
+    /// Deletes persisted draft (e.g. patient re-do after completion).
+    func removeDraftFile(lessonId: UUID) {
+        let fileURL = draftDirectory.appendingPathComponent("\(lessonId.uuidString).json")
+        try? fileManager.removeItem(at: fileURL)
+    }
 }

@@ -11,6 +11,8 @@ enum OutboxItemType: String, Codable {
     case lessonProgress
     case lessonProgressClear
     case lessonSensorInsights
+    /// Offline: delete progress + sensor insights + AI summary cache for one lesson (patient re-do).
+    case lessonRedoRemoteDelete
 }
 
 struct OutboxItem: Codable, Identifiable {
@@ -35,6 +37,12 @@ struct LessonProgressPayload: Codable {
 
 /// Payload for clearing (deleting) one lesson's progress on the server when patient restarts.
 struct LessonProgressClearPayload: Codable {
+    let patientProfileId: UUID
+    let lessonId: UUID
+}
+
+/// Full server-side clear for re-do: progress RPC delete + insights + AI summaries.
+struct LessonRedoRemoteDeletePayload: Codable {
     let patientProfileId: UUID
     let lessonId: UUID
 }

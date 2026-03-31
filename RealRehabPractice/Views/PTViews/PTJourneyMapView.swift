@@ -53,6 +53,9 @@ struct PTJourneyMapView: View {
     @State private var showingCompletedLessonPopover = false
     @State private var completedLessonNode: LessonNode? = nil
     @State private var showingPTParameterHelp = false
+    @State private var showLessonRemovedToast = false
+    @State private var pendingRemovedLesson: (node: LessonNode, index: Int)?
+    @State private var toastDismissWorkItem: DispatchWorkItem?
     
     /// Pop-up center Y as fraction of (visible) height. 0.5 = vertically centered.
     private static let popupCenterYRatio: CGFloat = 0.5
@@ -125,6 +128,28 @@ struct PTJourneyMapView: View {
                     }
                     .padding(.trailing, 24)
                     .padding(.top, 12)
+                }
+                
+                if showLessonRemovedToast {
+                    HStack {
+                        Text("Lesson removed")
+                            .font(.rrBody)
+                        Spacer(minLength: 16)
+                        Button(action: undoLessonRemoval) {
+                            Text("Undo")
+                                .font(.rrBody)
+                                .underline()
+                                .foregroundStyle(Color.brandDarkBlue)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.rrSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 2)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .transition(.opacity)
                 }
             }
             }
@@ -1066,15 +1091,47 @@ struct PTJourneyMapView: View {
     }
     
     private func removeSelectedNode() {
-        if let id = selectedNodeID,
-           let idx = nodeIndex(for: id) {
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                nodes.remove(at: idx)
-                ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
-                showingEditor = false
-                selectedNodeID = nil
-                pressedIndex = nil
+        guard let id = selectedNodeID,
+              let idx = nodeIndex(for: id) else { return }
+        let removed = nodes[idx]
+        toastDismissWorkItem?.cancel()
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+            nodes.remove(at: idx)
+            ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
+            showingEditor = false
+            selectedNodeID = nil
+            pressedIndex = nil
+        }
+        pendingRemovedLesson = (removed, idx)
+        withAnimation(.easeIn(duration: 0.35)) {
+            showLessonRemovedToast = true
+        }
+        scheduleLessonRemovedToastDismiss()
+    }
+    
+    private func scheduleLessonRemovedToastDismiss() {
+        toastDismissWorkItem?.cancel()
+        let work = DispatchWorkItem {
+            withAnimation(.easeOut(duration: 0.35)) {
+                showLessonRemovedToast = false
             }
+            pendingRemovedLesson = nil
+        }
+        toastDismissWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: work)
+    }
+    
+    private func undoLessonRemoval() {
+        toastDismissWorkItem?.cancel()
+        guard let pending = pendingRemovedLesson else { return }
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+            let insertAt = min(pending.index, nodes.count)
+            nodes.insert(pending.node, at: insertAt)
+            ACLJourneyModels.layoutNodesZigZag(nodes: &nodes)
+        }
+        pendingRemovedLesson = nil
+        withAnimation(.easeOut(duration: 0.35)) {
+            showLessonRemovedToast = false
         }
     }
     

@@ -22,7 +22,12 @@ struct BenchmarkSLRLessonView: View {
     @State private var hasStarted: Bool = false
     @State private var fill: Double = 0.0
     @State private var hasIMUWarning: Bool = false
-    @Namespace private var boxNamespace
+
+    // Animation geometry (mirrors BenchmarkExtensionLessonView pattern)
+    @State private var geoSize: CGSize = .zero
+    @State private var innerCardH: CGFloat = 0   // measured from inside extendAndPrepView after layout settles
+    @State private var animBoxH: CGFloat = 0
+    @State private var extendFillOpacity: Double = 1.0
 
     private enum SLRPhase {
         case prepare
@@ -114,10 +119,8 @@ struct BenchmarkSLRLessonView: View {
                     switch phase {
                     case .prepare:
                         prepareView
-                    case .extend:
-                        extendCardContent(geo: geo)
-                    case .prepCountdown:
-                        prepCountdownCardContent(geo: geo)
+                    case .extend, .prepCountdown:
+                        extendAndPrepView(geo: geo)
                     case .mainExercise:
                         mainExerciseCardContent(geo: geo)
                     case .completed:
@@ -127,8 +130,10 @@ struct BenchmarkSLRLessonView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
+                .padding(.bottom, 20)
                 .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
             }
+            .onAppear { geoSize = geo.size }
         }
         .rrPageBackground()
         .navigationBarTitleDisplayMode(.inline)
@@ -240,87 +245,76 @@ struct BenchmarkSLRLessonView: View {
         }
     }
 
-    // MARK: - Extend (flex only)
+    // MARK: - Extend + PrepCountdown (single unified view for smooth transition)
 
-    private func extendCardContent(geo: GeometryProxy) -> some View {
-        // Smaller box that animates into the full-size card box on transition
-        // Account for outer card padding (20) + inner content padding (20).
-        let targetW: CGFloat = min(geo.size.width - 80, 360)
-        let smallH: CGFloat = geo.size.height * 0.48
-        let largeH: CGFloat = geo.size.height * 0.55
-        let boxH: CGFloat = (phase == .extend) ? smallH : largeH
-
-        return ZStack {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.gray.opacity(0.12))
-
-            VStack(spacing: 14) {
-                Text(hasIMUWarning ? "Stabilize your hip!" : "Straighten your leg fully")
-                    .font(.rrHeadline)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(hasIMUWarning ? Color.orange : Color.primary)
-
-                ZStack(alignment: .bottom) {
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(Color.gray.opacity(0.12))
-                        .frame(width: targetW, height: boxH)
-                        .matchedGeometryEffect(id: "slrExtendBox", in: boxNamespace)
-
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(
-                            LinearGradient(
-                                colors: hasIMUWarning
-                                    ? [Color.orange.opacity(0.3), Color.orange.opacity(0.5)]
-                                    : [Color(red: 0.10, green: 0.80, blue: 0.15).opacity(0.38), Color(red: 0.04, green: 0.50, blue: 0.08).opacity(0.60)],
-                                startPoint: .bottom,
-                                endPoint: .top
-                            )
-                        )
-                        .frame(width: targetW, height: boxH * max(0.06, fill))
-                        .animation(.linear(duration: 0.08), value: fill)
-                        .matchedGeometryEffect(id: "slrExtendFill", in: boxNamespace)
-
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.brandDarkBlue.opacity(0.18), lineWidth: 1.5)
-                        .frame(width: targetW, height: boxH)
-                        .matchedGeometryEffect(id: "slrExtendStroke", in: boxNamespace)
-                }
-
-                Text("Fill the bar completely")
-                    .font(.rrCaption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 18)
-        }
-        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: phase)
-    }
-
-    // MARK: - Prep countdown
-
-    private func prepCountdownCardContent(geo: GeometryProxy) -> some View {
-        let boxH: CGFloat = geo.size.height * 0.55
-        let boxW: CGFloat = min(geo.size.width - 80, 360)
+    private func extendAndPrepView(geo: GeometryProxy) -> some View {
+        // Full card width — matches BenchmarkExtensionLessonView's shapeWidth = geoSize.width - 40
+        let targetW: CGFloat = geo.size.width - 40
         let ringProgress = CGFloat(prepSecondsRemaining / prepTotalSeconds)
+        let stripH: CGFloat = max(16, animBoxH * 0.12)
+
+        // Outer ZStack fills the card (maxHeight: .infinity). Inner box is centered at animBoxH.
+        // clipShape prevents overflow. innerCardH is measured here (after layout settles),
+        // not in body — avoids the pre-constraint measurement bug.
         return ZStack {
-            // Animated enlargement: reuse extend box geometry (single box; no nested boxes)
+            // ── Height measurement (fires after layout is fully resolved) ─
+            GeometryReader { inner in
+                Color.clear.onAppear {
+                    if inner.size.height > 100 { innerCardH = inner.size.height }
+                }
+            }
+
+            // ── Animated box background ──────────────────────────────────
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.gray.opacity(0.12))
-                .frame(width: boxW, height: boxH)
-                .matchedGeometryEffect(id: "slrExtendBox", in: boxNamespace)
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.brandDarkBlue.opacity(0.18), lineWidth: 1.5)
-                .frame(width: boxW, height: boxH)
-                .matchedGeometryEffect(id: "slrExtendStroke", in: boxNamespace)
+                .frame(width: targetW, height: animBoxH)
 
+            // ── Green fill rises from bottom, fades on transition ────────
+            VStack {
+                Spacer(minLength: 0)
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(LinearGradient(
+                        colors: [
+                            Color(red: 0.10, green: 0.80, blue: 0.15).opacity(0.38),
+                            Color(red: 0.04, green: 0.50, blue: 0.08).opacity(0.60)
+                        ],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    ))
+                    .frame(width: targetW, height: animBoxH * max(0.06, fill))
+                    .animation(.linear(duration: 0.08), value: fill)
+            }
+            .frame(width: targetW, height: animBoxH)
+            .opacity(extendFillOpacity)
+
+            // ── Blue tracking line + dot (extend phase only) ─────────────
+            if phase == .extend {
+                let userPos = CGFloat(fill)
+                let imuPos: CGFloat = {
+                    guard let imu = ble.currentIMUValue else { return 0.5 }
+                    return CGFloat(0.5 - Double(imu) / 14.0)
+                }()
+                Rectangle()
+                    .fill(Color.brandDarkBlue.opacity(0.7))
+                    .frame(width: targetW, height: 2)
+                    .offset(y: animBoxH * (0.5 - userPos))
+                    .allowsHitTesting(false)
+                Circle()
+                    .fill(Color.brandDarkBlue)
+                    .frame(width: 14, height: 14)
+                    .offset(x: (imuPos - 0.5) * targetW * 0.8,
+                            y: animBoxH * (0.5 - userPos))
+                    .allowsHitTesting(false)
+            }
+
+            // ── Countdown content — centered, shifted up to clear strip ──
             if showPrepCountdownContent {
                 VStack(spacing: 16) {
                     Text("Hold your leg in this position, and get ready to do the straight leg raises for the amount of reps shown.")
                         .font(.rrHeadline)
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 16)
-
+                        .padding(.horizontal, 20)
                     ZStack {
                         Circle()
                             .stroke(Color.gray.opacity(0.15), lineWidth: 6)
@@ -335,11 +329,16 @@ struct BenchmarkSLRLessonView: View {
                             .foregroundStyle(Color.brandDarkBlue)
                     }
                 }
+                // Offset upward by half the strip height so content stays visually centred
+                // in the remaining box area above the green strip
+                .offset(y: -(stripH / 2))
+                .transition(.opacity)
             }
 
+            // ── Green base strip at bottom (start-position indicator) ────
             if showPrepCountdownContent {
                 VStack {
-                    Spacer()
+                    Spacer(minLength: 0)
                     LinearGradient(
                         colors: [
                             Color(red: 0.10, green: 0.80, blue: 0.15).opacity(0.35),
@@ -348,13 +347,50 @@ struct BenchmarkSLRLessonView: View {
                         startPoint: .bottom,
                         endPoint: .top
                     )
-                    .frame(height: max(8, boxH * 0.12))
+                    .frame(height: stripH)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                .frame(width: boxW, height: boxH, alignment: .bottom)
+                .frame(width: targetW, height: animBoxH)
+                .transition(.opacity)
             }
+
+            // ── Title inside box top — extend phase ──────────────────────
+            if !showPrepCountdownContent {
+                VStack {
+                    Text(hasIMUWarning ? "Stabilize your hip!" : "Straighten your leg fully")
+                        .font(.rrHeadline)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(hasIMUWarning ? Color.orange : Color.primary)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                    Spacer(minLength: 0)
+                }
+                .frame(width: targetW, height: animBoxH)
+                .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+            }
+
+            // ── Caption inside box bottom — extend phase ─────────────────
+            if phase == .extend {
+                VStack {
+                    Spacer(minLength: 0)
+                    Text("Fill the bar completely")
+                        .font(.rrCaption)
+                        .foregroundStyle(.secondary)
+                        .padding(.bottom, 16)
+                }
+                .frame(width: targetW, height: animBoxH)
+                .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+            }
+
+            // ── Stroke border ─────────────────────────────────────────────
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.brandDarkBlue.opacity(0.18), lineWidth: 1.5)
+                .frame(width: targetW, height: animBoxH)
         }
-        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: phase)
+        // Fill the card; clipShape guarantees the box never overflows the card bounds
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .animation(.easeInOut(duration: 0.65), value: animBoxH)
     }
 
     // MARK: - Main exercise (LessonEngine + IMU line)
@@ -474,6 +510,9 @@ struct BenchmarkSLRLessonView: View {
 
     private func startBenchmark() {
         hasStarted = true
+        // Same starting size as BenchmarkExtensionLessonView: width = geoSize.width - 40, height = 0.55
+        animBoxH = geoSize.height * 0.55
+        extendFillOpacity = 1.0
         phase = .extend
         startSensorTimer()
         if testMode { startTestSimulationExtend() }
@@ -495,9 +534,18 @@ struct BenchmarkSLRLessonView: View {
         sensorTimer?.invalidate()
         sensorTimer = nil
         showPrepCountdownContent = false
-        phase = .prepCountdown
 
-        // Let the box expansion animation finish before showing content
+        // Animate box expansion + green fill fade simultaneously (same pattern as BenchmarkExtensionLessonView)
+        // innerCardH is measured from inside extendAndPrepView (after layout settles), so it reflects
+        // the true available height after all padding — no overflow possible.
+        let targetH = innerCardH > 100 ? innerCardH : geoSize.height * 0.72
+        withAnimation(.easeInOut(duration: 0.65)) {
+            phase = .prepCountdown
+            animBoxH = targetH
+            extendFillOpacity = 0.0
+        }
+
+        // Fade in countdown content after box expansion settles
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
             if self.phase == .prepCountdown {
                 withAnimation(.easeIn(duration: 0.18)) {

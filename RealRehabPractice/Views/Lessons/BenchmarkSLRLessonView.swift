@@ -3,8 +3,7 @@ import CoreBluetooth
 
 private let testMode = true
 
-/// Benchmark 2: Straight Leg Raise Control
-/// Per-rep flow: Extend leg (fill box) → Lock confirm (0.4s) → Raise (hold straight 1.5s) → Rest (restSec countdown) → repeat
+/// Benchmark 2: Straight Leg Raise — extend with flex → 10s prep countdown → guided reps (LessonEngine SLR) with IMU for line/dot.
 struct BenchmarkSLRLessonView: View {
     let reps: Int
     let restSec: Int
@@ -13,56 +12,65 @@ struct BenchmarkSLRLessonView: View {
 
     @EnvironmentObject var router: Router
     @StateObject private var ble = BluetoothManager.shared
+    @StateObject private var engine: LessonEngine
 
     // Calibration
     @State private var maxCalibrationValue: Int? = nil
     @State private var restCalibrationValue: Int? = nil
     @State private var calibrationError: String? = nil
 
-    // Rep state
-    @State private var completedReps: Int = 0
     @State private var hasStarted: Bool = false
-
-    // Sensor fill
     @State private var fill: Double = 0.0
-
-    // IMU warning (soft — no full restart for B2)
     @State private var hasIMUWarning: Bool = false
+    @Namespace private var boxNamespace
 
-    // Sub-phase state machine
-    private enum SLRSubPhase {
+    private enum SLRPhase {
         case prepare
-        case extend           // Fill box until leg is straight
-        case lockConfirm      // Brief animation: box collapses to locked band
-        case raise            // Hold straight while raising — arc progress fills
-        case rest             // Countdown rest between reps
+        case extend
+        case prepCountdown
+        case mainExercise
         case completed
     }
-    @State private var subPhase: SLRSubPhase = .prepare
 
-    // Raise phase: arc progress (0 → 1 over 1.5s)
-    @State private var raiseArcProgress: Double = 0.0
-    @State private var raiseStartTime: Date? = nil
-    private let raiseDuration: Double = 1.5
+    @State private var phase: SLRPhase = .prepare
 
-    // Rest countdown
-    @State private var restSecondsRemaining: Int = 0
-    @State private var restRingProgress: Double = 1.0
+    private let prepTotalSeconds: Double = 10.0
+    @State private var prepSecondsRemaining: Double = 10.0
+    @State private var prepTimer: Timer? = nil
+    @State private var showPrepCountdownContent: Bool = false
 
-    // Timers
     @State private var sensorTimer: Timer? = nil
-    @State private var restTimer: Timer? = nil
-    @State private var lockConfirmTimer: Timer? = nil
-
-    // Test mode: simulated fill value
-    @State private var testSimFill: Double = 0.0
     @State private var testSimTimer: Timer? = nil
+    @State private var testSimFill: Double = 0.0
 
-    // Calibration constants
+    @State private var elapsedBaseSeconds: Int = 0
+    @State private var elapsedReferenceTime: Date? = nil
+    @State private var elapsedDisplaySeconds: Int = 0
+    @State private var elapsedTimer: Timer? = nil
+
+    @State private var lastRepWasValid: Bool = true
+
     private let minSensorValue: Int = 185
     private let sensorRange: Int = 115
     private let minDegrees: Double = 90.0
     private let degreeRange: Double = 90.0
+
+    init(reps: Int, restSec: Int, lessonId: UUID, lessonTitle: String) {
+        self.reps = reps
+        self.restSec = restSec
+        self.lessonId = lessonId
+        self.lessonTitle = lessonTitle
+        let targets = LessonTargets.defaults(for: .straightLegRaise, lessonTitle: lessonTitle)
+        let eng = LessonEngine(
+            repTarget: reps,
+            restDuration: TimeInterval(restSec),
+            exerciseType: .straightLegRaise,
+            setTotal: 1,
+            setRestDuration: 60
+        )
+        eng.targets = targets
+        _engine = StateObject(wrappedValue: eng)
+    }
 
     private func convertToDegrees(_ v: Int) -> Double {
         minDegrees + (Double(v - minSensorValue) / Double(sensorRange)) * degreeRange
@@ -77,57 +85,49 @@ struct BenchmarkSLRLessonView: View {
         return Swift.max(0, Swift.min(1, (deg - Double(rest)) / Double(max - rest)))
     }
 
-    // Dot for raise phase (same as B1 circle dot)
-    private let circleSize: CGFloat = 160
-    private var dotX: CGFloat {
-        guard let imu = ble.currentIMUValue else { return 0 }
-        return Swift.max(-1, Swift.min(1, CGFloat(imu) / 14.0)) * (circleSize / 2 * 0.55)
+    /// Vertical line position: 0 bottom, 1 top (matches LessonView semantics).
+    private func verticalLineNormalized() -> CGFloat? {
+        if testMode, phase == .mainExercise {
+            return CGFloat(engine.fill)
+        }
+        guard let v = ble.currentIMUVertical else { return 0.5 }
+        let n = 0.5 + Double(v) / 14.0
+        return CGFloat(Swift.max(0, Swift.min(1, n)))
     }
-    private var dotY: CGFloat {
-        let dev = fill - 1.0
-        return Swift.max(-1, Swift.min(1, CGFloat(dev) * 3.0)) * (circleSize / 2 * 0.4)
-    }
-    private var dotInBounds: Bool {
-        let limit = circleSize / 2 * 0.6
-        return abs(dotX) <= limit && abs(dotY) <= limit
+
+    /// Horizontal dot 0...1 (left...right), same as LessonView `imuCirclePosition`.
+    private func imuHorizontalNormalized() -> CGFloat {
+        guard let imu = ble.currentIMUValue else { return 0.5 }
+        let pos = 0.5 - (Double(imu) / 14.0)
+        return CGFloat(Swift.max(0, Swift.min(1, pos)))
     }
 
     var body: some View {
         GeometryReader { geo in
-            VStack(spacing: 0) {
-                // Rep progress dots strip
-                if hasStarted {
-                    repDotsView
-                        .padding(.top, 16)
-                        .padding(.horizontal, 20)
-                }
+            VStack(alignment: .center, spacing: 0) {
+                // Progress header (match LessonView style/positioning)
+                progressHeader
+                    .padding(.top, 4)
 
-                Spacer()
-
-                VStack(spacing: 24) {
-                    switch subPhase {
+                // Main card (same size/feel as LessonView)
+                ZStack {
+                    switch phase {
                     case .prepare:
                         prepareView
-
                     case .extend:
-                        extendView(geo: geo)
-
-                    case .lockConfirm:
-                        lockConfirmView
-
-                    case .raise:
-                        raiseView
-
-                    case .rest:
-                        restView
-
+                        extendCardContent(geo: geo)
+                    case .prepCountdown:
+                        prepCountdownCardContent(geo: geo)
+                    case .mainExercise:
+                        mainExerciseCardContent(geo: geo)
                     case .completed:
                         completedView
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 20)
-
-                Spacer()
+                .padding(.top, 8)
+                .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
             }
         }
         .rrPageBackground()
@@ -139,37 +139,80 @@ struct BenchmarkSLRLessonView: View {
         .onAppear { loadCalibration() }
         .onDisappear {
             stopAll()
+            engine.stopGuidedSimulation()
             ble.resetIMUZero()
         }
         .onChange(of: ble.currentFlexSensorValue) { _, _ in
-            updateSensorState()
+            updateExtendSensor()
         }
         .onChange(of: ble.currentIMUValue) { _, newVal in
             guard let val = newVal else { return }
             hasIMUWarning = abs(val) > 7.0
         }
-    }
-
-    // MARK: - Subviews
-
-    private var repDotsView: some View {
-        HStack(spacing: 10) {
-            ForEach(0..<reps, id: \.self) { i in
-                ZStack {
-                    Circle()
-                        .fill(i < completedReps ? Color(red: 0.2, green: 0.85, blue: 0.35) : Color.gray.opacity(0.2))
-                        .frame(width: 18, height: 18)
-                    if i == completedReps && subPhase != .completed {
-                        Circle()
-                            .stroke(Color.brandDarkBlue, lineWidth: 2)
-                            .frame(width: 22, height: 22)
-                            .scaleEffect(1.0)
-                            .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: subPhase == .raise)
-                    }
-                }
+        .onChange(of: engine.isFullyComplete) { _, done in
+            if done, phase == .mainExercise { finishBenchmark() }
+        }
+        .onChange(of: engine.repCount) { _, newCount in
+            guard phase == .mainExercise, newCount > 0 else { return }
+            persistDraftProgress()
+            LessonSensorInsightsCollector.shared.saveDraftIntermediate(
+                repsCompleted: newCount,
+                totalDurationSec: currentElapsedSeconds()
+            )
+            Task {
+                await syncProgress(repsCompleted: newCount, status: engine.isFullyComplete ? "completed" : "inProgress")
+            }
+        }
+        .onChange(of: engine.phase) { oldP, newP in
+            if newP == .upstroke && oldP != .upstroke {
+                lastRepWasValid = false
+            }
+        }
+        .onChange(of: engine.fill) { oldF, newF in
+            guard phase == .mainExercise else { return }
+            if newF >= 0.99 && oldF < 0.99 && engine.phase == .upstroke {
+                validatePeakIMU()
             }
         }
     }
+
+    // MARK: - Progress header (copy LessonView style)
+
+    private var progressHeader: some View {
+        VStack(spacing: 6) {
+            ProgressView(value: min(Double(engine.repCount) / Double(max(1, engine.repTarget)), 1.0))
+                .progressViewStyle(.linear)
+                .tint(Color.brandDarkBlue)
+                .padding(.horizontal, 16)
+
+            HStack(spacing: 0) {
+                HStack(spacing: 4) {
+                    Text("\(engine.repCount)")
+                        .font(.rrBody.bold())
+                        .foregroundStyle(Color.brandDarkBlue)
+                    Text("/ \(engine.repTarget)")
+                        .font(.rrBody)
+                        .foregroundStyle(.secondary)
+                    Text("reps")
+                        .font(.rrCaption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if hasStarted && elapsedDisplaySeconds > 0 {
+                    Text(formatElapsed(elapsedDisplaySeconds))
+                        .font(.rrCaption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 6)
+            .background(Color.gray.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, 16)
+        }
+    }
+
+    // MARK: - Prepare
 
     private var prepareView: some View {
         VStack(spacing: 28) {
@@ -186,12 +229,10 @@ struct BenchmarkSLRLessonView: View {
             } else {
                 Text("Straight Leg Raise")
                     .font(.rrHeadline)
-
-                Text("First straighten your leg, then raise it while keeping your knee straight. Complete \(reps) raises.")
+                Text("Straighten your leg fully, then you’ll get a short countdown before the guided raises begin.")
                     .font(.rrBody)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-
                 PrimaryButton(title: "Begin Benchmark", useLargeFont: true) {
                     startBenchmark()
                 }
@@ -199,152 +240,212 @@ struct BenchmarkSLRLessonView: View {
         }
     }
 
-    private func extendView(geo: GeometryProxy) -> some View {
-        let boxH: CGFloat = geo.size.height * 0.48
-        let boxW: CGFloat = geo.size.width - 40
+    // MARK: - Extend (flex only)
 
-        return VStack(spacing: 20) {
-            Text(hasIMUWarning ? "Stabilize your hip!" : "Straighten your leg fully")
-                .font(.rrTitle)
-                .foregroundStyle(hasIMUWarning ? Color.orange : Color.primary)
-                .animation(.easeInOut(duration: 0.2), value: hasIMUWarning)
+    private func extendCardContent(geo: GeometryProxy) -> some View {
+        // Smaller box that animates into the full-size card box on transition
+        // Account for outer card padding (20) + inner content padding (20).
+        let targetW: CGFloat = min(geo.size.width - 80, 360)
+        let smallH: CGFloat = geo.size.height * 0.48
+        let largeH: CGFloat = geo.size.height * 0.55
+        let boxH: CGFloat = (phase == .extend) ? smallH : largeH
 
-            Text("Rep \(completedReps + 1) of \(reps)")
-                .font(.rrBody)
-                .foregroundStyle(.secondary)
+        return ZStack {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.gray.opacity(0.12))
 
-            ZStack(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color.gray.opacity(0.12))
-                    .frame(width: boxW, height: boxH)
+            VStack(spacing: 14) {
+                Text(hasIMUWarning ? "Stabilize your hip!" : "Straighten your leg fully")
+                    .font(.rrHeadline)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(hasIMUWarning ? Color.orange : Color.primary)
 
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(
+                ZStack(alignment: .bottom) {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.gray.opacity(0.12))
+                        .frame(width: targetW, height: boxH)
+                        .matchedGeometryEffect(id: "slrExtendBox", in: boxNamespace)
+
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(
+                            LinearGradient(
+                                colors: hasIMUWarning
+                                    ? [Color.orange.opacity(0.3), Color.orange.opacity(0.5)]
+                                    : [Color(red: 0.10, green: 0.80, blue: 0.15).opacity(0.38), Color(red: 0.04, green: 0.50, blue: 0.08).opacity(0.60)],
+                                startPoint: .bottom,
+                                endPoint: .top
+                            )
+                        )
+                        .frame(width: targetW, height: boxH * max(0.06, fill))
+                        .animation(.linear(duration: 0.08), value: fill)
+                        .matchedGeometryEffect(id: "slrExtendFill", in: boxNamespace)
+
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.brandDarkBlue.opacity(0.18), lineWidth: 1.5)
+                        .frame(width: targetW, height: boxH)
+                        .matchedGeometryEffect(id: "slrExtendStroke", in: boxNamespace)
+                }
+
+                Text("Fill the bar completely")
+                    .font(.rrCaption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
+        }
+        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: phase)
+    }
+
+    // MARK: - Prep countdown
+
+    private func prepCountdownCardContent(geo: GeometryProxy) -> some View {
+        let boxH: CGFloat = geo.size.height * 0.55
+        let boxW: CGFloat = min(geo.size.width - 80, 360)
+        let ringProgress = CGFloat(prepSecondsRemaining / prepTotalSeconds)
+        return ZStack {
+            // Animated enlargement: reuse extend box geometry (single box; no nested boxes)
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.gray.opacity(0.12))
+                .frame(width: boxW, height: boxH)
+                .matchedGeometryEffect(id: "slrExtendBox", in: boxNamespace)
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.brandDarkBlue.opacity(0.18), lineWidth: 1.5)
+                .frame(width: boxW, height: boxH)
+                .matchedGeometryEffect(id: "slrExtendStroke", in: boxNamespace)
+
+            if showPrepCountdownContent {
+                VStack(spacing: 16) {
+                    Text("Hold your leg in this position, and get ready to do the straight leg raises for the amount of reps shown.")
+                        .font(.rrHeadline)
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+
+                    ZStack {
+                        Circle()
+                            .stroke(Color.gray.opacity(0.15), lineWidth: 6)
+                            .frame(width: 132, height: 132)
+                        Circle()
+                            .trim(from: 0, to: ringProgress)
+                            .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                            .frame(width: 132, height: 132)
+                            .rotationEffect(.degrees(-90))
+                        Text("\(Int(ceil(prepSecondsRemaining)))")
+                            .font(.system(size: 40, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.brandDarkBlue)
+                    }
+                }
+            }
+
+            if showPrepCountdownContent {
+                VStack {
+                    Spacer()
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.10, green: 0.80, blue: 0.15).opacity(0.35),
+                            Color(red: 0.04, green: 0.50, blue: 0.08).opacity(0.55)
+                        ],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                    .frame(height: max(8, boxH * 0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .frame(width: boxW, height: boxH, alignment: .bottom)
+            }
+        }
+        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: phase)
+    }
+
+    // MARK: - Main exercise (LessonEngine + IMU line)
+
+    private func mainExerciseCardContent(geo: GeometryProxy) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(mainCardBackground())
+
+            if !engine.isPaused && (engine.phase == .upstroke || engine.phase == .downstroke || engine.phase == .setRest || engine.isFullyComplete) {
+                GeometryReader { g in
+                    let h = g.size.height
+                    VStack {
+                        Spacer()
                         LinearGradient(
-                            colors: hasIMUWarning
-                                ? [Color.orange.opacity(0.3), Color.orange.opacity(0.5)]
-                                : [Color(red: 0.10, green: 0.80, blue: 0.15).opacity(0.38), Color(red: 0.04, green: 0.50, blue: 0.08).opacity(0.60)],
+                            colors: [
+                                Color(red: 0.10, green: 0.80, blue: 0.15).opacity(0.38),
+                                Color(red: 0.04, green: 0.50, blue: 0.08).opacity(0.60)
+                            ],
                             startPoint: .bottom,
                             endPoint: .top
                         )
-                    )
-                    .frame(width: boxW, height: boxH * max(0.06, fill))
-                    .animation(.linear(duration: 0.08), value: fill)
-
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.brandDarkBlue.opacity(0.18), lineWidth: 1.5)
-                    .frame(width: boxW, height: boxH)
+                        .frame(height: max(0, h * max(0.08, engine.fill)))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 20))
             }
 
-            Text("Fill the bar completely")
-                .font(.rrCaption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var lockConfirmView: some View {
-        VStack(spacing: 24) {
-            // Compressed "locked" band with checkmark
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color(red: 0.04, green: 0.50, blue: 0.08).opacity(0.25))
-                    .frame(height: 56)
-
-                HStack(spacing: 12) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(Color(red: 0.2, green: 0.85, blue: 0.35))
-                    Text("Knee locked straight!")
-                        .font(.rrTitle)
-                        .foregroundStyle(.primary)
+            if let linePos = verticalLineNormalized() {
+                GeometryReader { g in
+                    let boxHeight = g.size.height
+                    let yPosition = boxHeight * (1.0 - linePos)
+                    Rectangle()
+                        .fill(Color.brandDarkBlue)
+                        .frame(width: g.size.width * 0.9)
+                        .frame(height: 3)
+                        .position(x: g.size.width / 2, y: yPosition)
+                    let xNorm = imuHorizontalNormalized()
+                    let xPosition = g.size.width * 0.05 + (g.size.width * 0.9 * xNorm)
+                    Circle()
+                        .fill(Color.brandDarkBlue)
+                        .frame(width: 14, height: 14)
+                        .position(x: xPosition, y: yPosition)
                 }
             }
-            .padding(.horizontal, 20)
-            .transition(.scale(scale: 1.0, anchor: .top).combined(with: .opacity))
 
-            Text("Now raise your leg!")
-                .font(.rrHeadline)
-                .foregroundStyle(Color.brandDarkBlue)
-                .transition(.opacity)
-        }
-    }
-
-    private var raiseView: some View {
-        VStack(spacing: 20) {
-            Text(hasIMUWarning ? "Stabilize your hip!" : "Raise your leg — keep it straight!")
-                .font(.rrTitle)
-                .foregroundStyle(hasIMUWarning ? Color.orange : Color.primary)
-                .multilineTextAlignment(.center)
-                .animation(.easeInOut(duration: 0.2), value: hasIMUWarning)
-
-            ZStack {
-                // Outer arc ring
-                Circle()
-                    .stroke(Color.gray.opacity(0.15), lineWidth: 5)
-                    .frame(width: circleSize + 16, height: circleSize + 16)
-
-                Circle()
-                    .trim(from: 0, to: raiseArcProgress)
-                    .stroke(Color(red: 0.2, green: 0.85, blue: 0.35), style: StrokeStyle(lineWidth: 5, lineCap: .round))
-                    .frame(width: circleSize + 16, height: circleSize + 16)
-                    .rotationEffect(.degrees(-90))
-                    .animation(.linear(duration: 0.08), value: raiseArcProgress)
-
-                // Inner circle
-                Circle()
-                    .fill(Color.gray.opacity(0.1))
-                    .frame(width: circleSize, height: circleSize)
-                    .overlay(Circle().stroke(Color.brandDarkBlue.opacity(0.2), lineWidth: 1.5))
-
-                // Position dot
-                Circle()
-                    .fill(dotInBounds ? Color(red: 0.2, green: 0.85, blue: 0.35) : Color.orange)
-                    .frame(width: 22, height: 22)
-                    .shadow(color: (dotInBounds ? Color.green : Color.orange).opacity(0.4), radius: 4)
-                    .offset(x: dotX, y: dotY)
-                    .animation(.linear(duration: 0.05), value: dotX)
-                    .animation(.linear(duration: 0.05), value: dotY)
-            }
-
-            Text(dotInBounds ? "Knee straight — hold it!" : "Keep knee straight!")
-                .font(.rrBody)
-                .foregroundStyle(dotInBounds ? Color.secondary : Color.orange)
-                .animation(.easeInOut(duration: 0.2), value: dotInBounds)
-        }
-    }
-
-    private var restView: some View {
-        VStack(spacing: 20) {
-            Text("Rep \(completedReps) of \(reps) done!")
-                .font(.rrTitle)
-                .foregroundStyle(Color(red: 0.2, green: 0.85, blue: 0.35))
-
-            Text("Rest")
+            Text(mainDisplayText())
                 .font(.rrHeadline)
                 .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
 
-            ZStack {
-                Circle()
-                    .stroke(Color.gray.opacity(0.15), lineWidth: 6)
-                    .frame(width: 160, height: 160)
-
-                Circle()
-                    .trim(from: 0, to: restRingProgress)
-                    .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                    .frame(width: 160, height: 160)
-                    .rotationEffect(.degrees(-90))
-                    .animation(.linear(duration: 0.1), value: restRingProgress)
-
-                Text("\(restSecondsRemaining)")
-                    .font(.system(size: 44, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.brandDarkBlue)
-                    .contentTransition(.numericText())
-                    .animation(.spring, value: restSecondsRemaining)
+            VStack {
+                HStack(spacing: 6) {
+                    Image(systemName: ACLJourneyModels.lessonIconSystemName(for: lessonTitle))
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("LIFT")
+                        .font(.rrCaption.bold())
+                        .tracking(1.5)
+                }
+                .foregroundStyle(Color.brandDarkBlue.opacity(0.65))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.brandDarkBlue.opacity(0.07))
+                .clipShape(Capsule())
+                .padding(.top, 14)
+                Spacer()
             }
+        }
+    }
 
-            Text("Next rep in \(restSecondsRemaining)s")
-                .font(.rrBody)
-                .foregroundStyle(.secondary)
+    private func mainCardBackground() -> Color {
+        if engine.phase == .incorrectHold {
+            return Color.red.opacity(0.04)
+        }
+        if engine.phase == .idle {
+            return Color.gray.opacity(0.12)
+        }
+        return Color.brandDarkBlue.opacity(0.05)
+    }
+
+    private func mainDisplayText() -> String {
+        if engine.isFullyComplete { return "You're Done!" }
+        switch engine.phase {
+        case .idle: return "Get ready…"
+        case .incorrectHold: return "Not Quite!"
+        case .holding: return "Hold It! \(engine.holdSecondsRemaining)s"
+        case .upstroke: return "Lift Your Leg!"
+        case .downstroke: return "Lower Slowly"
+        case .setRest: return "Rest"
         }
     }
 
@@ -358,15 +459,11 @@ struct BenchmarkSLRLessonView: View {
                     .font(.system(size: 56, weight: .bold))
                     .foregroundStyle(Color(red: 0.2, green: 0.85, blue: 0.35))
             }
-
             Text("Benchmark Complete!")
                 .font(.rrHeadline)
-                .foregroundStyle(.primary)
-
             Text("All \(reps) raises completed.")
                 .font(.rrBody)
                 .foregroundStyle(.secondary)
-
             PrimaryButton(title: "Continue", useLargeFont: true) {
                 router.go(.assessment(lessonId: lessonId))
             }
@@ -377,148 +474,186 @@ struct BenchmarkSLRLessonView: View {
 
     private func startBenchmark() {
         hasStarted = true
-        if !testMode { ble.zeroIMUValue() }
-        completedReps = 0
-        subPhase = .extend
+        phase = .extend
         startSensorTimer()
-        if testMode { startTestSimulation() }
+        if testMode { startTestSimulationExtend() }
     }
 
-    private func updateSensorState() {
+    private func updateExtendSensor() {
+        guard phase == .extend else { return }
         let newFill = sensorFill
         withAnimation(.linear(duration: 0.08)) { fill = newFill }
+        if fill >= 0.92 {
+            testSimTimer?.invalidate()
+            testSimTimer = nil
+            beginPrepCountdown()
+        }
+    }
 
-        switch subPhase {
-        case .extend:
-            if fill >= 0.92 {
-                beginLockConfirm()
+    private func beginPrepCountdown() {
+        guard phase == .extend else { return }
+        sensorTimer?.invalidate()
+        sensorTimer = nil
+        showPrepCountdownContent = false
+        phase = .prepCountdown
+
+        // Let the box expansion animation finish before showing content
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
+            if self.phase == .prepCountdown {
+                withAnimation(.easeIn(duration: 0.18)) {
+                    self.showPrepCountdownContent = true
+                }
             }
-        case .raise:
-            updateRaiseArc()
-        default:
-            break
         }
-    }
 
-    private func beginLockConfirm() {
-        guard subPhase == .extend else { return }
-        subPhase = .lockConfirm
-        lockConfirmTimer?.invalidate()
-        lockConfirmTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { _ in
-            self.subPhase = .raise
-            self.raiseArcProgress = 0.0
-            self.raiseStartTime = Date()
-        }
-    }
-
-    private func updateRaiseArc() {
-        guard subPhase == .raise, let start = raiseStartTime else { return }
-        // Arc fills only while leg is straight and IMU in bounds
-        if fill >= 0.80 && dotInBounds {
+        prepSecondsRemaining = prepTotalSeconds
+        let start = Date()
+        prepTimer?.invalidate()
+        prepTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
             let elapsed = Date().timeIntervalSince(start)
-            let newProgress = Swift.min(1.0, elapsed / raiseDuration)
-            raiseArcProgress = newProgress
-            if newProgress >= 1.0 {
-                countRep()
-            }
-        } else {
-            // Reset arc if they lose straight
-            raiseStartTime = Date()
-            withAnimation(.linear(duration: 0.1)) { raiseArcProgress = 0.0 }
-        }
-    }
-
-    private func countRep() {
-        guard subPhase == .raise else { return }
-        completedReps += 1
-        if completedReps >= reps {
-            finishBenchmark()
-        } else {
-            startRest()
-        }
-    }
-
-    private func startRest() {
-        subPhase = .rest
-        restSecondsRemaining = restSec
-        restRingProgress = 1.0
-        let totalDuration = Double(restSec)
-        let startTime = Date()
-
-        restTimer?.invalidate()
-        restTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            let elapsed = Date().timeIntervalSince(startTime)
-            let remaining = max(0, totalDuration - elapsed)
-            self.restSecondsRemaining = Int(ceil(remaining))
-            self.restRingProgress = remaining / totalDuration
-            if remaining <= 0 {
-                self.restTimer?.invalidate()
-                self.restTimer = nil
-                self.fill = 0
-                self.testSimFill = 0
-                self.raiseArcProgress = 0.0
-                self.raiseStartTime = nil
-                self.subPhase = .extend
-                if testMode { self.startTestSimulation() }
+            let rem = max(0, prepTotalSeconds - elapsed)
+            prepSecondsRemaining = rem
+            if rem <= 0 {
+                prepTimer?.invalidate()
+                prepTimer = nil
+                enterMainExercise()
             }
         }
+        RunLoop.main.add(prepTimer!, forMode: .common)
+    }
+
+    private func enterMainExercise() {
+        phase = .mainExercise
+        if !testMode {
+            ble.zeroIMUValue()
+        }
+        engine.shouldCountRepCallback = {
+            if testMode { return true }
+            return self.lastRepWasValid
+        }
+        engine.startGuidedSimulation(skipInitialWait: true)
+        startElapsedTimer()
+        Task { await startInsights() }
+    }
+
+    private func validatePeakIMU() {
+        if testMode {
+            lastRepWasValid = true
+            return
+        }
+        guard let v = ble.currentIMUVertical else {
+            lastRepWasValid = true
+            return
+        }
+        let expected = Float((engine.fill - 0.5) * 14.0)
+        lastRepWasValid = abs(v - expected) < 5.0
     }
 
     private func finishBenchmark() {
-        subPhase = .completed
+        guard phase != .completed else { return }
+        phase = .completed
         stopAll()
+        engine.stopGuidedSimulation()
+        finishInsights()
         persistProgress()
+    }
+
+    private func persistDraftProgress() {
+        LocalLessonProgressStore.shared.saveDraft(
+            lessonId: lessonId,
+            repsCompleted: engine.repCount,
+            repsTarget: engine.repTarget,
+            elapsedSeconds: currentElapsedSeconds(),
+            status: engine.isFullyComplete ? "completed" : "inProgress"
+        )
     }
 
     private func persistProgress() {
         LocalLessonProgressStore.shared.saveDraft(
-            lessonId: lessonId, repsCompleted: reps, repsTarget: reps,
-            elapsedSeconds: reps * (restSec + 3), status: "completed"
+            lessonId: lessonId,
+            repsCompleted: reps,
+            repsTarget: reps,
+            elapsedSeconds: currentElapsedSeconds(),
+            status: "completed"
         )
+        LocalLessonProgressStore.shared.clearDraft(lessonId: lessonId)
         Task {
-            guard let profile = try? await AuthService.myProfile(),
-                  let patientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id) else { return }
-            OutboxSyncManager.shared.enqueueLessonProgress(
-                patientProfileId: patientProfileId, lessonId: lessonId,
-                repsCompleted: reps, repsTarget: reps,
-                elapsedSeconds: reps * (restSec + 3), status: "completed"
-            )
-            await OutboxSyncManager.shared.processQueueIfOnline()
-            await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
-            await CacheService.shared.invalidate(CacheKey.completionDates(patientProfileId: patientProfileId))
+            await syncProgress(repsCompleted: reps, status: "completed")
         }
+    }
+
+    private func syncProgress(repsCompleted: Int, status: String) async {
+        guard let profile = try? await AuthService.myProfile(),
+              let patientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id) else { return }
+        OutboxSyncManager.shared.enqueueLessonProgress(
+            patientProfileId: patientProfileId,
+            lessonId: lessonId,
+            repsCompleted: repsCompleted,
+            repsTarget: reps,
+            elapsedSeconds: currentElapsedSeconds(),
+            status: status
+        )
+        await OutboxSyncManager.shared.processQueueIfOnline()
+        await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
+        await CacheService.shared.invalidate(CacheKey.completionDates(patientProfileId: patientProfileId))
     }
 
     private func startSensorTimer() {
         sensorTimer?.invalidate()
         sensorTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            self.updateSensorState()
+            self.updateExtendSensor()
         }
+        RunLoop.main.add(sensorTimer!, forMode: .common)
+    }
+
+    private func startElapsedTimer() {
+        elapsedTimer?.invalidate()
+        elapsedReferenceTime = Date()
+        elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            elapsedDisplaySeconds = currentElapsedSeconds()
+        }
+        RunLoop.main.add(elapsedTimer!, forMode: .common)
+        elapsedDisplaySeconds = 0
+    }
+
+    private func currentElapsedSeconds() -> Int {
+        guard let ref = elapsedReferenceTime else { return elapsedBaseSeconds }
+        return elapsedBaseSeconds + Int(Date().timeIntervalSince(ref))
+    }
+
+    private func formatElapsed(_ seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return String(format: "%dm %ds", m, s)
     }
 
     private func stopAll() {
-        sensorTimer?.invalidate(); sensorTimer = nil
-        restTimer?.invalidate(); restTimer = nil
-        lockConfirmTimer?.invalidate(); lockConfirmTimer = nil
-        testSimTimer?.invalidate(); testSimTimer = nil
+        sensorTimer?.invalidate()
+        sensorTimer = nil
+        prepTimer?.invalidate()
+        prepTimer = nil
+        testSimTimer?.invalidate()
+        testSimTimer = nil
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
     }
 
-    /// Test mode: ramp fill 0 → 1 over 2.5s to simulate the patient extending their leg for each rep.
-    private func startTestSimulation() {
+    private func startTestSimulationExtend() {
         testSimTimer?.invalidate()
         testSimFill = 0
         let start = Date()
         let rampDuration: Double = 2.5
-        testSimTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [self] _ in
+        testSimTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
             let elapsed = Date().timeIntervalSince(start)
             let newFill = Swift.min(1.0, elapsed / rampDuration)
             testSimFill = newFill
-            updateSensorState()
+            updateExtendSensor()
             if newFill >= 1.0 {
                 testSimTimer?.invalidate()
                 testSimTimer = nil
             }
         }
+        RunLoop.main.add(testSimTimer!, forMode: .common)
     }
 
     private func loadCalibration() {
@@ -548,5 +683,29 @@ struct BenchmarkSLRLessonView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Insights
+
+    private func startInsights() async {
+        guard let profile = try? await AuthService.myProfile(),
+              let patientProfileId = try? await PatientService.myPatientProfileId(profileId: profile.id),
+              let ptProfileId = try? await PatientService.getPTProfileId(patientProfileId: patientProfileId) else { return }
+        await MainActor.run {
+            LessonSensorInsightsCollector.shared.start(
+                lessonId: lessonId,
+                patientProfileId: patientProfileId,
+                ptProfileId: ptProfileId,
+                repsTarget: engine.repTarget
+            )
+        }
+    }
+
+    private func finishInsights() {
+        LessonSensorInsightsCollector.shared.updateProgress(
+            repsCompleted: engine.repCount,
+            totalDurationSec: currentElapsedSeconds()
+        )
+        LessonSensorInsightsCollector.shared.finishAndSaveDraft(completed: true)
     }
 }

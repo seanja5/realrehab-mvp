@@ -11,7 +11,10 @@ final class BluetoothManager: NSObject, ObservableObject {
     @Published var lastError: String?
     @Published var connectedPeripheral: CBPeripheral? = nil
     @Published var currentFlexSensorValue: Int? = nil // Current flex sensor reading (2 digits)
+    /// Horizontal / in-plane IMU (left–right drift), characteristic 2A57 first float when payload is 4 or 8 bytes.
     @Published var currentIMUValue: Float? = nil // Current IMU reading (float, zeroed)
+    /// Vertical / leg lift axis: second float when firmware sends 8-byte payload; nil if only 4 bytes.
+    @Published var currentIMUVertical: Float? = nil
     
     // Computed property for connected device name
     var connectedDeviceName: String? {
@@ -39,8 +42,10 @@ final class BluetoothManager: NSObject, ObservableObject {
     private var imuCharacteristic: CBCharacteristic?
     private var flexSensorReadTimer: Timer?
     private var imuReadTimer: Timer?
-    private var rawIMUValue: Float? = nil // Raw IMU value before offset
-    private var imuZeroOffset: Float = 0.0 // Offset to zero IMU when lesson begins
+    private var rawIMUValue: Float? = nil // Raw horizontal IMU before offset
+    private var rawIMUVertical: Float? = nil // Raw vertical IMU before offset (8-byte payload)
+    private var imuZeroOffset: Float = 0.0 // Offset to zero horizontal IMU when lesson begins
+    private var imuVerticalZeroOffset: Float = 0.0
     private var isIMUZeroed: Bool = false // Flag to track if IMU has been zeroed
 
     override init() {
@@ -101,14 +106,22 @@ final class BluetoothManager: NSObject, ObservableObject {
         if let rawValue = rawIMUValue {
             imuZeroOffset = rawValue
             isIMUZeroed = true
-            // Update current IMU value to be zero (or close to zero)
             currentIMUValue = rawValue - imuZeroOffset
-            debugLog("📊 BluetoothManager: Zeroing IMU value ONCE. Raw value: \(rawValue), offset set to: \(imuZeroOffset), zeroed value: \(currentIMUValue ?? 0)")
+            if let rawV = rawIMUVertical {
+                imuVerticalZeroOffset = rawV
+                currentIMUVertical = rawV - imuVerticalZeroOffset
+            } else {
+                imuVerticalZeroOffset = 0.0
+                currentIMUVertical = nil
+            }
+            debugLog("📊 BluetoothManager: Zeroing IMU. H raw: \(rawValue), V raw: \(String(describing: rawIMUVertical)), zeroed H: \(currentIMUValue ?? 0), zeroed V: \(String(describing: currentIMUVertical))")
         } else {
             imuZeroOffset = 0.0
+            imuVerticalZeroOffset = 0.0
             currentIMUValue = 0.0
+            currentIMUVertical = rawIMUVertical != nil ? 0.0 : nil
             isIMUZeroed = true
-            debugLog("📊 BluetoothManager: Zeroing IMU value ONCE. No current value, offset set to 0")
+            debugLog("📊 BluetoothManager: Zeroing IMU value ONCE. No horizontal raw, offset set to 0")
         }
     }
     
@@ -116,8 +129,11 @@ final class BluetoothManager: NSObject, ObservableObject {
         // Reset zero flag (for when lesson ends or resets)
         isIMUZeroed = false
         imuZeroOffset = 0.0
+        imuVerticalZeroOffset = 0.0
         rawIMUValue = nil
+        rawIMUVertical = nil
         currentIMUValue = nil
+        currentIMUVertical = nil
     }
 }
 
@@ -316,22 +332,20 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
         }
         // Check if this is the IMU characteristic
         else if characteristic.uuid == imuCharacteristicUUID {
-            // Parse IMU data (expecting float)
-            if let imuValue = parseIMUData(data) {
-                // Always store raw value (needed for zeroing calculation)
-                rawIMUValue = imuValue
-                
-                // Apply zero offset only if IMU has been zeroed
-                // This happens once when "Begin Lesson" is clicked
-                // After that, we just subtract the fixed offset from each new reading (fast!)
+            if let payload = parseIMUPayload(data) {
+                rawIMUValue = payload.horizontal
+                rawIMUVertical = payload.vertical
                 if isIMUZeroed {
-                    currentIMUValue = imuValue - imuZeroOffset
+                    currentIMUValue = payload.horizontal - imuZeroOffset
+                    if let v = payload.vertical {
+                        currentIMUVertical = v - imuVerticalZeroOffset
+                    } else {
+                        currentIMUVertical = nil
+                    }
                 } else {
-                    // Before zeroing, just store the raw value
-                    currentIMUValue = imuValue
+                    currentIMUValue = payload.horizontal
+                    currentIMUVertical = payload.vertical
                 }
-                // Reduced logging for performance - only log occasionally
-                // debugLog("📊 BluetoothManager: IMU raw: \(imuValue), zeroed: \(currentIMUValue ?? 0)")
             } else {
                 debugLog("⚠️ BluetoothManager: Failed to parse IMU data. Raw data: \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
             }
@@ -408,35 +422,37 @@ extension BluetoothManager: CBCentralManagerDelegate, CBPeripheralDelegate {
     
     // MARK: - IMU Data Reading
     
-    private func parseIMUData(_ data: Data) -> Float? {
-        // IMU sends float (4 bytes)
+    /// First float: horizontal (left/right); optional second float (8-byte payload): vertical (leg lift).
+    private func parseIMUPayload(_ data: Data) -> (horizontal: Float, vertical: Float?)? {
         guard data.count >= 4 else {
             debugLog("⚠️ BluetoothManager: IMU data too short: \(data.count) bytes")
             return nil
         }
-        
-        // Try parsing as little-endian float (common for Arduino)
+        guard let horizontal = parseFloatLE(Data(data.prefix(4))) else { return nil }
+        if data.count >= 8 {
+            let v = parseFloatLE(Data(data.subdata(in: 4..<8)))
+            return (horizontal, v)
+        }
+        return (horizontal, nil)
+    }
+
+    private func parseFloatLE(_ data: Data) -> Float? {
+        guard data.count >= 4 else { return nil }
         var floatValue: Float = 0.0
         let littleEndianData = Data(data.prefix(4))
         _ = withUnsafeMutableBytes(of: &floatValue) { buffer in
             littleEndianData.copyBytes(to: buffer)
         }
-        
-        // Check if value is valid (not NaN or infinite)
         if floatValue.isNaN || floatValue.isInfinite {
-            // Try big-endian instead
             let bigEndianData = Data(littleEndianData.reversed())
             _ = withUnsafeMutableBytes(of: &floatValue) { buffer in
                 bigEndianData.copyBytes(to: buffer)
             }
         }
-        
-        // Validate the float value
         if floatValue.isNaN || floatValue.isInfinite {
             debugLog("⚠️ BluetoothManager: Invalid IMU float value (NaN or Infinite)")
             return nil
         }
-        
         return floatValue
     }
     

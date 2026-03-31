@@ -66,9 +66,8 @@ public enum ACLPhase: Int, CaseIterable {
             return [
                 "Quad Sets",
                 "Short Arc Quad",
-                "Heel Slides",
-                "Straight Leg Raise",
-                "Ankle Pumps"
+                "Knee Extension",
+                "Heel Slides"
             ]
         case .two:
             return [
@@ -197,10 +196,10 @@ struct LessonNode: Identifiable {
             node.kneeBendAngle = 120
             node.timeHoldingPosition = 30
         } else if t.contains("quad set") {
-            // restSec = repetition tempo (default 6s total → 3s up / 3s down in LessonEngine). timeHoldingPosition = hold at contraction.
+            // restSec = repetition tempo (default 5s total → 2.5s up / 2.5s down in LessonEngine). timeHoldingPosition = hold at contraction.
             node.enableRestBetweenReps = true
             node.enableTimeHoldingPosition = true
-            node.restSec = 6
+            node.restSec = 5
             node.timeHoldingPosition = 5
         } else if t.contains("ankle pump") {
             // Ankle pumps: reps only, rest is not meaningful
@@ -277,6 +276,7 @@ extension ACLJourneyModels {
         "Short Arc Quad": "Starting at 45°, extend your knee to straight and hold briefly to strengthen the terminal range of the quad.",
         "Short Arc Quad — Control Focus": "Extend from 45° to full extension with slow, precise control to improve motor accuracy at end-range.",
         "Heel Slides": "Slide your heel toward your body while lying down to gently bend the knee and improve range of motion.",
+        "Knee Extension": "Slowly straighten your knee while seated, focusing on fully extending the leg and engaging your thigh muscle.",
         "Seated Knee Extensions": "Slowly straighten your knee while seated, focusing on fully extending the leg and engaging your thigh muscle.",
         "Seated Knee Extensions — Strength": "Extend your knee fully and hold at the top to challenge both quad strength and isometric endurance.",
         // Phase 1 — legacy titles (kept for backward compatibility)
@@ -327,10 +327,10 @@ enum ACLJourneyModels {
     /// For Quad Sets, restSec is repetition temp (lift+lower); hold uses timeHoldingPosition (set in lesson factory).
     /// Progressive reps/sets across rounds are defined in the Supabase plan template migration.
     private static let phase1Defaults: [String: (reps: Int, restSec: Int)] = [
-        "Quad Sets":         (reps: 10, restSec: 6),
-        "Short Arc Quad":    (reps: 10, restSec: 6),
-        "Heel Slides":       (reps: 10, restSec: 6),
-        "Straight Leg Raise":(reps: 10, restSec: 6),
+        "Quad Sets":         (reps: 10, restSec: 5),
+        "Short Arc Quad":    (reps: 10, restSec: 5),
+        "Knee Extension":    (reps: 10, restSec: 5),
+        "Heel Slides":       (reps: 10, restSec: 5),
     ]
 
     static func defaultACLPlanNodes() -> [LessonNode] {
@@ -341,7 +341,7 @@ enum ACLJourneyModels {
             let exercises = phaseCase.exercises
             let lessonCount: Int
             switch phaseCase {
-            case .one: lessonCount = 20  // 5 × 4
+            case .one: lessonCount = 16  // 4 × 4
             case .two: lessonCount = 40  // 5 × 8
             case .three: lessonCount = 60 // 5 × 12
             case .four: lessonCount = 80 // 5 × 16

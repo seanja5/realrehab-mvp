@@ -142,24 +142,40 @@ struct LessonView: View {
     
     let sets: Int?
     let setRestSec: Int?
+    /// Quad Sets: seconds to hold contraction (from plan); ignored for other lessons.
+    let holdDurationSec: Int?
 
-    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, sets: Int? = nil, setRestSec: Int? = nil) {
+    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, sets: Int? = nil, setRestSec: Int? = nil, holdDurationSec: Int? = nil) {
         self.reps = reps
         self.restSec = restSec
         self.lessonId = lessonId
         self.lessonTitle = lessonTitle
         self.sets = sets
         self.setRestSec = setRestSec
+        self.holdDurationSec = holdDurationSec
         let exerciseType = ExerciseType.from(lessonTitle: lessonTitle)
         let targets = LessonTargets.defaults(for: exerciseType, lessonTitle: lessonTitle)
         let setTotal = sets ?? 1
         let setRestDuration = TimeInterval(setRestSec ?? 60)
+        let isometricHold: TimeInterval? = {
+            if case .isometricHold = exerciseType {
+                return TimeInterval(holdDurationSec ?? 5)
+            }
+            return nil
+        }()
         if let reps = reps, let restSec = restSec {
-            let engine = LessonEngine(repTarget: reps, restDuration: TimeInterval(restSec), exerciseType: exerciseType, setTotal: setTotal, setRestDuration: setRestDuration)
+            let engine = LessonEngine(
+                repTarget: reps,
+                restDuration: TimeInterval(restSec),
+                exerciseType: exerciseType,
+                setTotal: setTotal,
+                setRestDuration: setRestDuration,
+                isometricHoldDurationSec: isometricHold
+            )
             engine.targets = targets
             _engine = StateObject(wrappedValue: engine)
         } else {
-            let engine = LessonEngine(exerciseType: exerciseType, setTotal: setTotal, setRestDuration: setRestDuration)
+            let engine = LessonEngine(exerciseType: exerciseType, setTotal: setTotal, setRestDuration: setRestDuration, isometricHoldDurationSec: isometricHold)
             engine.targets = targets
             _engine = StateObject(wrappedValue: engine)
         }

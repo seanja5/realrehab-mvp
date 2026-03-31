@@ -89,9 +89,15 @@ enum RehabService {
           node.kneeBendAngle = 120
           node.timeHoldingPosition = dto.timeHoldingPosition ?? 30
         } else if t.contains("quad set") {
-          node.enableRestBetweenReps = false
+          node.enableRestBetweenReps = true
           node.enableTimeHoldingPosition = true
-          node.timeHoldingPosition = dto.timeHoldingPosition ?? node.restSec
+          if let th = dto.timeHoldingPosition {
+            node.timeHoldingPosition = th
+            node.restSec = dto.restSec
+          } else {
+            node.timeHoldingPosition = dto.restSec
+            node.restSec = 6
+          }
         } else if t.contains("ankle pump") {
           node.enableRestBetweenReps = false
         }

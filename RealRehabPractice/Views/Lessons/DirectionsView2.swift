@@ -13,14 +13,16 @@ struct DirectionsView2: View {
     let lessonTitle: String?
     let sets: Int?
     let setRestSec: Int?
+    let holdDurationSec: Int?
 
-    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, sets: Int? = nil, setRestSec: Int? = nil) {
+    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, sets: Int? = nil, setRestSec: Int? = nil, holdDurationSec: Int? = nil) {
         self.reps = reps
         self.restSec = restSec
         self.lessonId = lessonId
         self.lessonTitle = lessonTitle
         self.sets = sets
         self.setRestSec = setRestSec
+        self.holdDurationSec = holdDurationSec
     }
 
     private var instructionText: String {
@@ -64,7 +66,7 @@ struct DirectionsView2: View {
                 title: "Next",
                 useLargeFont: true
             ) {
-                router.go(.lesson(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle, sets: sets, setRestSec: setRestSec))
+                router.go(.lesson(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle, sets: sets, setRestSec: setRestSec, holdDurationSec: holdDurationSec))
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 24)

@@ -146,10 +146,13 @@ final class LessonEngine: ObservableObject {
     @Published private(set) var isFullyComplete: Bool = false
 
     let repTarget: Int
-    let restDuration: TimeInterval  // total cycle time (extension); hold duration (isometric)
+    /// Total seconds for lift + lower (50/50). For Quad Sets, does not include isometric hold.
+    let restDuration: TimeInterval
     let exerciseType: ExerciseType
     let setTotal: Int
     let setRestDuration: TimeInterval
+    /// Hold seconds at contraction for Quad Sets only; `nil` uses `restDuration` (legacy).
+    private let isometricHoldDurationSec: TimeInterval?
 
     private var inCooldown = false
     private var simulationTimer: Timer?
@@ -165,12 +168,20 @@ final class LessonEngine: ObservableObject {
 
     // MARK: Init
 
-    init(repTarget: Int = 20, restDuration: TimeInterval = 6.0, exerciseType: ExerciseType = .kneeExtension, setTotal: Int = 1, setRestDuration: TimeInterval = 60) {
+    init(
+        repTarget: Int = 20,
+        restDuration: TimeInterval = 6.0,
+        exerciseType: ExerciseType = .kneeExtension,
+        setTotal: Int = 1,
+        setRestDuration: TimeInterval = 60,
+        isometricHoldDurationSec: TimeInterval? = nil
+    ) {
         self.repTarget = repTarget
         self.restDuration = restDuration
         self.exerciseType = exerciseType
         self.setTotal = max(1, setTotal)
         self.setRestDuration = setRestDuration
+        self.isometricHoldDurationSec = isometricHoldDurationSec
     }
 
     // MARK: Reset / Restore
@@ -243,7 +254,7 @@ final class LessonEngine: ObservableObject {
     /// Duration of the upstroke animation.
     private var upstrokeDuration: TimeInterval {
         switch exerciseType {
-        case .isometricHold:    return 1.5
+        case .isometricHold:    return restDuration / 2.0
         case .anklePumps:       return 0.8   // fast 1.6 s total cycle
         case .kneeExtension, .kneeFlex, .straightLegRaise: return restDuration / 2.0
         }
@@ -252,16 +263,16 @@ final class LessonEngine: ObservableObject {
     /// Duration of the downstroke animation.
     private var downstrokeDuration: TimeInterval {
         switch exerciseType {
-        case .isometricHold:    return 2.0
+        case .isometricHold:    return restDuration / 2.0
         case .anklePumps:       return 0.8
         case .kneeExtension, .kneeFlex, .straightLegRaise: return restDuration / 2.0
         }
     }
 
-    /// Hold duration for isometricHold type. Uses `restDuration` (set from PT's restSec param).
+    /// Hold duration for isometric hold (Quad Sets): from time holding position, not repetition tempo.
     private var holdDuration: TimeInterval {
         switch exerciseType {
-        case .isometricHold:    return restDuration  // PT's restSec = hold seconds
+        case .isometricHold:    return isometricHoldDurationSec ?? restDuration
         case .kneeExtension, .kneeFlex, .straightLegRaise, .anklePumps: return 0
         }
     }
@@ -304,7 +315,7 @@ final class LessonEngine: ObservableObject {
         holdTimer?.invalidate()
         holdTimer = nil
         isPaused = false
-        fill = 0.1
+        fill = 0.0
         runUpstroke(token: token)
     }
 
@@ -340,11 +351,11 @@ final class LessonEngine: ObservableObject {
         phase = .upstroke
         statusText = upstrokeStatusText
         lastEvaluation = .init(isCorrect: true, reason: nil)
-        fill = 0.1
+        fill = 0.0
 
         let startTime = Date()
         let duration = upstrokeDuration
-        let startFill: Double = 0.1
+        let startFill: Double = 0.0
         let endFill: Double = 1.0
 
         animationTimer?.invalidate()

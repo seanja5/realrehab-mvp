@@ -197,10 +197,11 @@ struct LessonNode: Identifiable {
             node.kneeBendAngle = 120
             node.timeHoldingPosition = 30
         } else if t.contains("quad set") {
-            // restSec IS the isometric hold duration — surface it as "time holding position"
-            node.enableRestBetweenReps = false
+            // restSec = repetition tempo (default 6s total → 3s up / 3s down in LessonEngine). timeHoldingPosition = hold at contraction.
+            node.enableRestBetweenReps = true
             node.enableTimeHoldingPosition = true
-            node.timeHoldingPosition = node.restSec
+            node.restSec = 6
+            node.timeHoldingPosition = 5
         } else if t.contains("ankle pump") {
             // Ankle pumps: reps only, rest is not meaningful
             node.enableRestBetweenReps = false
@@ -323,10 +324,10 @@ enum ACLJourneyModels {
     }
     
     /// Per-exercise default reps and restSec for Phase 1 exercises (Round 1 values).
-    /// restSec for Quad Sets is the isometric hold duration (not rest between reps).
+    /// For Quad Sets, restSec is repetition temp (lift+lower); hold uses timeHoldingPosition (set in lesson factory).
     /// Progressive reps/sets across rounds are defined in the Supabase plan template migration.
     private static let phase1Defaults: [String: (reps: Int, restSec: Int)] = [
-        "Quad Sets":         (reps: 10, restSec: 5),
+        "Quad Sets":         (reps: 10, restSec: 6),
         "Short Arc Quad":    (reps: 10, restSec: 6),
         "Heel Slides":       (reps: 10, restSec: 6),
         "Straight Leg Raise":(reps: 10, restSec: 6),

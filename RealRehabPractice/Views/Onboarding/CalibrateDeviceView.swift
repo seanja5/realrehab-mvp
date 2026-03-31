@@ -12,6 +12,7 @@ struct CalibrateDeviceView: View {
     let onFinish: (() -> Void)?
     let sets: Int?
     let setRestSec: Int?
+    let holdDurationSec: Int?
     @EnvironmentObject var router: Router
 
     /// 45 for Short Arc Quad, 90 for all other exercises.
@@ -30,7 +31,7 @@ struct CalibrateDeviceView: View {
         return nil
     }
 
-    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, fromUnpause: Bool = false, onFinish: (() -> Void)? = nil, sets: Int? = nil, setRestSec: Int? = nil) {
+    init(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, fromUnpause: Bool = false, onFinish: (() -> Void)? = nil, sets: Int? = nil, setRestSec: Int? = nil, holdDurationSec: Int? = nil) {
         self.reps = reps
         self.restSec = restSec
         self.lessonId = lessonId
@@ -39,6 +40,7 @@ struct CalibrateDeviceView: View {
         self.onFinish = onFinish
         self.sets = sets
         self.setRestSec = setRestSec
+        self.holdDurationSec = holdDurationSec
     }
 
     @StateObject private var ble = BluetoothManager.shared
@@ -224,7 +226,7 @@ struct CalibrateDeviceView: View {
                         if let finish = onFinish {
                             finish()
                         } else if lessonId != nil {
-                            router.go(.directionsView1(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle, sets: sets, setRestSec: setRestSec))
+                            router.go(.directionsView1(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle, sets: sets, setRestSec: setRestSec, holdDurationSec: holdDurationSec))
                         } else {
                             router.go(.journeyMap)
                         }

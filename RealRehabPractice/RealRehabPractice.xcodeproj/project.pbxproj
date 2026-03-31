@@ -74,6 +74,7 @@
 		C8D677F12EBA932000829144 /* PatientListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EC2EBA932000829144 /* PatientListView.swift */; };
 		C8D677F32EBA932000829144 /* CategorySelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EA2EBA932000829144 /* CategorySelectView.swift */; };
 		C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */; };
+		C9F1E2D32F301011004D934B /* PTLessonParameterHelpSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F1E2D32F301010004D934A /* PTLessonParameterHelpSheet.swift */; };
 		C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */; };
 		C8D678002EBB095E00829144 /* PTDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FF2EBB095E00829144 /* PTDetailView.swift */; };
 		C8E1A0022ED00001004D9348 /* PendingLinkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1A0012ED00001004D9347 /* PendingLinkStore.swift */; };
@@ -187,6 +188,7 @@
 		C8D677EB2EBA932000829144 /* InjurySelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjurySelectView.swift; sourceTree = "<group>"; };
 		C8D677EC2EBA932000829144 /* PatientListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientListView.swift; sourceTree = "<group>"; };
 		C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJourneyMapView.swift; sourceTree = "<group>"; };
+		C9F1E2D32F301010004D934A /* PTLessonParameterHelpSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLessonParameterHelpSheet.swift; sourceTree = "<group>"; };
 		C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDetailView.swift; sourceTree = "<group>"; };
 		C8D677FF2EBB095E00829144 /* PTDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDetailView.swift; sourceTree = "<group>"; };
 		C8E1A0012ED00001004D9347 /* PendingLinkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingLinkStore.swift; sourceTree = "<group>"; };
@@ -466,6 +468,7 @@
 				C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */,
 				C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */,
 				C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */,
+				C9F1E2D32F301010004D934A /* PTLessonParameterHelpSheet.swift */,
 				C8D677EA2EBA932000829144 /* CategorySelectView.swift */,
 				C8D677EB2EBA932000829144 /* InjurySelectView.swift */,
 				C8D677EC2EBA932000829144 /* PatientListView.swift */,
@@ -637,6 +640,7 @@
 				C8A1B2C32ED00001004D9348 /* ACLJourneyModels.swift in Sources */,
 				C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */,
 				C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */,
+				C9F1E2D32F301011004D934B /* PTLessonParameterHelpSheet.swift in Sources */,
 				C8A9B3E22ED0010A004D9348 /* AnalyticsView.swift in Sources */,
 				C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */,
 				C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */,

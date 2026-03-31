@@ -358,7 +358,8 @@ struct JourneyMapView: View {
                                 let holdDuration = node.timeHoldingPosition ?? 8
                                 router.go(.benchmarkCalibrateDevice(holdDuration: holdDuration, reps: nReps, restSec: nRest, lessonId: nId, lessonTitle: nTitle))
                             } else {
-                                router.go(.calibrateDevice(reps: nReps, restSec: nRest, lessonId: nId, lessonTitle: nTitle, sets: nSets, setRestSec: nSetRest))
+                                let quadHold: Int? = nTitle.lowercased().contains("quad set") ? node.timeHoldingPosition : nil
+                                router.go(.calibrateDevice(reps: nReps, restSec: nRest, lessonId: nId, lessonTitle: nTitle, sets: nSets, setRestSec: nSetRest, holdDurationSec: quadHold))
                             }
                             withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                                 showCallout = false

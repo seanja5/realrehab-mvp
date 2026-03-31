@@ -52,6 +52,7 @@ struct PTJourneyMapView: View {
     @State private var keyboardHeight: CGFloat = 0
     @State private var showingCompletedLessonPopover = false
     @State private var completedLessonNode: LessonNode? = nil
+    @State private var showingPTParameterHelp = false
     
     /// Pop-up center Y as fraction of (visible) height. 0.5 = vertically centered.
     private static let popupCenterYRatio: CGFloat = 0.5
@@ -129,6 +130,11 @@ struct PTJourneyMapView: View {
             }
         }
         .rrJourneyBackground()
+        .sheet(isPresented: $showingPTParameterHelp) {
+            PTLessonParameterHelpSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
         .onPreferenceChange(StickyHeaderBottomPreferenceKey.self) { value in
             headerBottomGlobal = value
         }
@@ -627,9 +633,19 @@ struct PTJourneyMapView: View {
     
     private func addLessonContent(scrollProxy: ScrollViewProxy) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Add a Lesson")
-                .font(.rrTitle)
-                .foregroundStyle(.primary)
+            HStack(alignment: .top) {
+                Text("Add a Lesson")
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 8)
+                Button {
+                    showingPTParameterHelp = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 22))
+                        .foregroundStyle(.secondary)
+                }
+            }
             
             VStack(alignment: .leading, spacing: 8) {
                 Text("Exercise Type")
@@ -692,7 +708,7 @@ struct PTJourneyMapView: View {
                 }
                 
                 HStack {
-                    Text("Time in between repetitions")
+                    Text("Repetition temp")
                         .font(.rrBody)
                     Spacer()
                     Toggle("", isOn: $enableRestBetweenReps)
@@ -834,6 +850,16 @@ struct PTJourneyMapView: View {
             .clipShape(RoundedRectangle(cornerRadius: 24))
             .shadow(color: .black.opacity(0.08), radius: 32, x: 0, y: 12)
             .shadow(color: Color.brandDarkBlue.opacity(0.08), radius: 8, x: 0, y: 4)
+            .overlay(alignment: .topTrailing) {
+                Button {
+                    showingPTParameterHelp = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 22))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(12)
+            }
             .padding(.horizontal, 24)
             Spacer()
         }
@@ -858,9 +884,19 @@ struct PTJourneyMapView: View {
     // Editor content view
     private var editorContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(selectedNodeTitle)
-                .font(.rrTitle)
-                .foregroundStyle(.primary)
+            HStack(alignment: .top) {
+                Text(selectedNodeTitle)
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 8)
+                Button {
+                    showingPTParameterHelp = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 22))
+                        .foregroundStyle(.secondary)
+                }
+            }
             
             if let desc = selectedNodeDescription {
                 Text(desc)
@@ -887,7 +923,7 @@ struct PTJourneyMapView: View {
                 
                 if node.enableRestBetweenReps {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Time in between repetitions (sec)")
+                        Text("Repetition temp (sec)")
                             .font(.rrBody)
                         
                         HStack(spacing: 8) {
@@ -1129,7 +1165,11 @@ struct PTJourneyMapView: View {
             if enableSets { added.sets = 4 }
             if enableRestBetweenSets { added.restBetweenSets = 20 }
             if enableKneeBendAngle { added.kneeBendAngle = 120 }
-            if enableTimeHoldingPosition { added.timeHoldingPosition = 30 }
+            if enableTimeHoldingPosition {
+                if !title.lowercased().contains("quad set") {
+                    added.timeHoldingPosition = 30
+                }
+            }
         }
         let insertIndex: Int
         if phase == activePhaseId {

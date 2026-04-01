@@ -1959,104 +1959,101 @@ private struct MiniCircleAnimationView: View {
 }
 
 // MARK: - Scripted Bar Animation (info sheet only)
-/// Plays a fixed 19-second sequence demonstrating correct movement, then 3 error scenarios.
-/// Phase A (0–8 s):  2 correct up/down cycles — green box, dot centred.
-/// Phase B (8–11 s): starts normally, then bar shoots up too fast → box turns red.
-/// Phase C (11–15 s): starts normally, then bar slows to a crawl → box turns red.
-/// Phase D (15–19 s): bar rises normally, then dot drifts right, exits boundary → box turns red.
+/// 20 s scripted sequence. Green fill = target pace. Blue bar = user's position.
+/// Phase A (0–8 s):   2 correct cycles — fill, bar, and dot move together.
+/// Phase B (8–12 s):  bar shoots ahead of fill (too fast) → box red when gap > 0.30.
+/// Phase C (12–17 s): fill pulls ahead of bar (too slow) → box red when gap > 0.35.
+/// Phase D (17–20 s): bar and fill rise together; dot drifts right AS bar goes up → red at boundary.
 private struct ScriptedBarAnimationView: View {
     var startDate: Date
     let width: CGFloat
     let height: CGFloat
 
-    private let totalCycle: Double = 19.0
+    private let totalCycle: Double = 20.0
+    private let normalRate: Double = 0.625   // fill per second at correct speed
 
     private struct SState {
-        var fill: CGFloat
-        var dotFrac: CGFloat   // -1…1; pixel offset = dotFrac * (width / 2)
+        var fillFrac: CGFloat   // green fill height (target pace)
+        var barFrac: CGFloat    // blue bar + dot y position (user's position)
+        var dotXFrac: CGFloat   // dot x offset: 0 = centre, 1.0 = right boundary
         var isRed: Bool
     }
 
-    // Standard fill: t is 0–1 fraction of a 4 s cycle
     private func stdFill(_ t: Double) -> CGFloat {
         let tc = max(0, min(1, t))
         if tc < 0.40       { return CGFloat(tc / 0.40) }
-        else if tc < 0.50   { return 1.0 }
-        else if tc < 0.90   { return CGFloat(1.0 - (tc - 0.50) / 0.40) }
-        else                { return 0 }
+        else if tc < 0.50  { return 1.0 }
+        else if tc < 0.90  { return CGFloat(1.0 - (tc - 0.50) / 0.40) }
+        else               { return 0 }
     }
 
     private func computeState(elapsed: Double) -> SState {
         let t = elapsed.truncatingRemainder(dividingBy: totalCycle)
 
-        // ── Phase A: 0–8 s — two correct 4-second cycles ─────────────────────
+        // ── Phase A: 0–8 s — two correct 4 s cycles ─────────────────────────
         if t < 8.0 {
-            let cycleT = t.truncatingRemainder(dividingBy: 4.0) / 4.0
-            return SState(fill: stdFill(cycleT), dotFrac: 0, isRed: false)
+            let f = stdFill(t.truncatingRemainder(dividingBy: 4.0) / 4.0)
+            return SState(fillFrac: f, barFrac: f, dotXFrac: 0, isRed: false)
         }
 
-        // ── Phase B: 8–11 s — too fast ────────────────────────────────────────
-        // 0–0.5 s: normal speed rise (fill 0 → 0.30)
-        // 0.5–0.7 s: shoots up very fast (0.30 → 1.0)
-        // 0.7 s+:    box turns red
-        if t < 11.0 {
+        // ── Phase B: 8–12 s — bar too fast ───────────────────────────────────
+        // First 0.8 s: fill and bar rise together at normal speed (reach 0.50)
+        // After 0.8 s: fill keeps normal pace; bar accelerates to 5× speed
+        // Box red once (bar – fill) > 0.30 or bar is capped at 1.0
+        if t < 12.0 {
             let p = t - 8.0
-            if p < 0.5 {
-                return SState(fill: CGFloat(p / 0.5 * 0.30), dotFrac: 0, isRed: false)
-            } else if p < 0.7 {
-                let pct = (p - 0.5) / 0.2
-                return SState(fill: CGFloat(0.30 + pct * 0.70), dotFrac: 0, isRed: false)
-            } else {
-                return SState(fill: 1.0, dotFrac: 0, isRed: true)
-            }
-        }
-
-        // ── Phase C: 11–15 s — too slow ──────────────────────────────────────
-        // 0–0.8 s: normal speed (fill 0 → 0.50)
-        // 0.8–3.0 s: crawls (fill 0.50 → 0.55 — barely moves)
-        // 3.0 s+:    box turns red at fill = 0.55
-        if t < 15.0 {
-            let p = t - 11.0
             if p < 0.8 {
-                return SState(fill: CGFloat(p / 0.8 * 0.50), dotFrac: 0, isRed: false)
-            } else if p < 3.0 {
-                let slow = CGFloat(0.50 + (p - 0.8) / 2.2 * 0.05)
-                return SState(fill: slow, dotFrac: 0, isRed: false)
+                let f = CGFloat(normalRate * p)
+                return SState(fillFrac: f, barFrac: f, dotXFrac: 0, isRed: false)
             } else {
-                return SState(fill: 0.55, dotFrac: 0, isRed: true)
+                let fillFrac = CGFloat(min(1.0, 0.5 + normalRate * (p - 0.8)))
+                let barFrac  = CGFloat(min(1.0, 0.5 + 5.0 * (p - 0.8)))
+                let isRed = barFrac >= 1.0 || (barFrac - fillFrac) > 0.30
+                return SState(fillFrac: fillFrac, barFrac: barFrac, dotXFrac: 0, isRed: isRed)
             }
         }
 
-        // ── Phase D: 15–19 s — dot out of bounds ─────────────────────────────
-        // 0–1.5 s: bar rises normally (fill 0 → 1), dot centred
-        // 1.5–2.3 s: fill stays at 1, dot drifts right 0 → 1.2
-        //            red triggered the moment dotFrac ≥ 1.0 (≈ t=2.17 s into phase)
-        // 2.17 s+:   box red
-        if t < 19.0 {
-            let p = t - 15.0
-            if p < 1.5 {
-                return SState(fill: CGFloat(p / 1.5), dotFrac: 0, isRed: false)
-            } else if p < 2.3 {
-                let drift = CGFloat((p - 1.5) / 0.8 * 1.2)
-                if drift < 1.0 {
-                    return SState(fill: 1.0, dotFrac: drift, isRed: false)
-                } else {
-                    return SState(fill: 1.0, dotFrac: drift, isRed: true)
-                }
+        // ── Phase C: 12–17 s — bar too slow ─────────────────────────────────
+        // First 0.8 s: together at normal speed
+        // After 0.8 s: fill keeps normal pace; bar slows to 1/5 speed
+        // Box red once (fill – bar) > 0.35
+        if t < 17.0 {
+            let p = t - 12.0
+            if p < 0.8 {
+                let f = CGFloat(normalRate * p)
+                return SState(fillFrac: f, barFrac: f, dotXFrac: 0, isRed: false)
             } else {
-                return SState(fill: 1.0, dotFrac: 1.2, isRed: true)
+                let fillFrac = CGFloat(min(1.0, 0.5 + normalRate * (p - 0.8)))
+                let barFrac  = CGFloat(min(1.0, 0.5 + (normalRate / 5.0) * (p - 0.8)))
+                // Latch red: gap = (normalRate * 0.8) * (p - 0.8) until fillFrac caps.
+                // Threshold 0.35 crossed at (p - 0.8) > 0.35/(normalRate*0.8) = 0.7 → p > 1.5.
+                // After fillFrac caps the gap shrinks, but p only grows — so the latch stays.
+                let isRed = (p - 0.8) > (0.35 / (normalRate * 0.8))
+                return SState(fillFrac: fillFrac, barFrac: barFrac, dotXFrac: 0, isRed: isRed)
             }
         }
-        return SState(fill: 0, dotFrac: 0, isRed: false)
+
+        // ── Phase D: 17–20 s — dot drifts right WHILE bar is rising ─────────
+        // bar and fill rise together normally (both = p / 2.0, reaching 1 in 2 s)
+        // dot starts drifting at p = 0.3 s (while bar is still going up)
+        // red the moment dotXFrac ≥ 1.0 (boundary crossed)
+        if t < 20.0 {
+            let p = t - 17.0
+            let f = CGFloat(min(1.0, p / 2.0))
+            let dotFrac: CGFloat = p < 0.3 ? 0 : CGFloat(min(1.2, (p - 0.3) / 1.5))
+            return SState(fillFrac: f, barFrac: f, dotXFrac: dotFrac, isRed: dotFrac >= 1.0)
+        }
+
+        return SState(fillFrac: 0, barFrac: 0, dotXFrac: 0, isRed: false)
     }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
             let elapsed = max(0, ctx.date.timeIntervalSince(startDate))
             let s = computeState(elapsed: elapsed)
-            let lineY = height * s.fill
+            let barY = height * s.barFrac    // bar line y offset (user position)
 
-            let fillH: CGFloat = s.isRed ? height : max(height * 0.05, height * s.fill)
+            let fillH: CGFloat = s.isRed ? height : max(height * 0.05, height * s.fillFrac)
             let fillColors: [Color] = s.isRed
                 ? [Color(red: 0.85, green: 0.10, blue: 0.10).opacity(0.55),
                    Color(red: 0.65, green: 0.06, blue: 0.06).opacity(0.75)]
@@ -2076,12 +2073,12 @@ private struct ScriptedBarAnimationView: View {
                 Rectangle()
                     .fill(Color.brandDarkBlue.opacity(0.75))
                     .frame(width: width, height: 2)
-                    .offset(y: -lineY)
+                    .offset(y: -barY)
 
                 Circle()
                     .fill(Color.brandDarkBlue)
                     .frame(width: 8, height: 8)
-                    .offset(x: s.dotFrac * (width / 2), y: -lineY)
+                    .offset(x: s.dotXFrac * (width / 2), y: -barY)
 
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(border, lineWidth: 1.5)
@@ -2170,11 +2167,116 @@ struct BarAnimationInfoSheet: View {
     }
 }
 
+// MARK: - Scripted Circle Animation (info sheet only)
+/// 12 s scripted sequence showing the benchmark-1 hold circle.
+/// Phase A (0–3 s):   Green dot orbits near centre.
+/// Phase B (3–7 s):   Dot slides right; dot+ring turn red only when dot hits inner ring edge.
+/// Phase C (7–9 s):   Green, small orbit again.
+/// Phase D (9–12 s):  Dot slides down; dot+ring turn red only when it hits the bottom edge.
+private struct ScriptedCircleAnimationView: View {
+    var startDate: Date
+    let size: CGFloat
+
+    private let dotD: CGFloat = 18
+    private let totalCycle: Double = 12.0
+
+    // Max radius before the dot's edge touches the inner ring wall
+    private var triggerR: CGFloat { ((size - 14) / 2) - (dotD / 2) }
+
+    private struct CState {
+        var dotX: CGFloat
+        var dotY: CGFloat
+        var isRed: Bool   // dot + inner ring turn red
+    }
+
+    private func smallOrbit(elapsed: Double) -> (CGFloat, CGFloat) {
+        let angle = (elapsed.truncatingRemainder(dividingBy: 3.0) / 3.0) * 2.0 * Double.pi
+        let r = triggerR * 0.25
+        return (CGFloat(cos(angle)) * r, CGFloat(sin(angle)) * r)
+    }
+
+    private func computeState(elapsed: Double) -> CState {
+        let t = elapsed.truncatingRemainder(dividingBy: totalCycle)
+
+        // Phase A: 0–3 s — small green orbit
+        if t < 3.0 {
+            let (x, y) = smallOrbit(elapsed: elapsed)
+            return CState(dotX: x, dotY: y, isRed: false)
+        }
+
+        // Phase B: 3–7 s — slide right; red only when dot hits inner ring edge
+        if t < 7.0 {
+            let p = t - 3.0  // 0–4 s
+            if p < 2.5 {
+                let dotX = CGFloat(p / 2.5) * triggerR * 1.05
+                return CState(dotX: dotX, dotY: 0, isRed: dotX >= triggerR)
+            } else {
+                return CState(dotX: triggerR * 1.05, dotY: 0, isRed: true)
+            }
+        }
+
+        // Phase C: 7–9 s — small green orbit
+        if t < 9.0 {
+            let (x, y) = smallOrbit(elapsed: elapsed)
+            return CState(dotX: x, dotY: y, isRed: false)
+        }
+
+        // Phase D: 9–12 s — slide down; red only when dot hits bottom edge
+        if t < 12.0 {
+            let p = t - 9.0  // 0–3 s
+            if p < 2.5 {
+                let dotY = CGFloat(p / 2.5) * triggerR * 1.05
+                return CState(dotX: 0, dotY: dotY, isRed: dotY >= triggerR)
+            } else {
+                return CState(dotX: 0, dotY: triggerR * 1.05, isRed: true)
+            }
+        }
+
+        return CState(dotX: 0, dotY: 0, isRed: false)
+    }
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
+            let elapsed = max(0, ctx.date.timeIntervalSince(startDate))
+            let s = computeState(elapsed: elapsed)
+            let ringT = CGFloat(elapsed.truncatingRemainder(dividingBy: 5.0) / 5.0)
+            let dotColor: Color    = s.isRed ? .red : Color(red: 0.10, green: 0.78, blue: 0.15)
+            let innerStroke: Color = s.isRed ? Color.red.opacity(0.55) : Color.brandDarkBlue.opacity(0.22)
+
+            ZStack {
+                Circle()
+                    .stroke(Color.gray.opacity(0.15), lineWidth: 5)
+                    .frame(width: size, height: size)
+
+                Circle()
+                    .trim(from: 0, to: 1.0 - ringT)
+                    .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                    .frame(width: size, height: size)
+                    .rotationEffect(.degrees(-90))
+
+                Circle()
+                    .fill(Color.gray.opacity(0.10))
+                    .frame(width: size - 14, height: size - 14)
+
+                Circle()
+                    .stroke(innerStroke, lineWidth: 1.5)
+                    .frame(width: size - 14, height: size - 14)
+
+                Circle()
+                    .fill(dotColor)
+                    .frame(width: dotD, height: dotD)
+                    .offset(x: s.dotX, y: s.dotY)
+                    .shadow(color: dotColor.opacity(0.35), radius: 4)
+            }
+            .frame(width: size, height: size)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
 // MARK: - Circle Animation Info Sheet
 struct CircleAnimationInfoSheet: View {
-    @State private var isRed: Bool = false
     @State private var animStartDate: Date = Date()
-    @State private var cycleTimer: Timer? = nil
 
     private let green    = Color(red: 0.04, green: 0.45, blue: 0.08)
     private let greenDot = Color(red: 0.04, green: 0.55, blue: 0.08)
@@ -2193,70 +2295,59 @@ struct CircleAnimationInfoSheet: View {
                     .foregroundStyle(.primary)
                     .padding(.bottom, 20)
 
-                MiniCircleAnimationView(startDate: animStartDate, isRed: isRed, size: 180)
+                ScriptedCircleAnimationView(startDate: animStartDate, size: 180)
                     .padding(.bottom, 16)
 
-                // Always-visible legend
+                // Legend — always visible
                 VStack(alignment: .leading, spacing: 10) {
                     Label("Dot moves up/down as your leg rises or drops", systemImage: "arrow.up.arrow.down")
-                        .font(.rrBody)
-                        .foregroundStyle(.secondary)
+                        .font(.rrBody).foregroundStyle(.secondary)
                     Label("Dot moves left/right when your leg or hip rotates sideways", systemImage: "arrow.left.arrow.right")
-                        .font(.rrBody)
-                        .foregroundStyle(.secondary)
+                        .font(.rrBody).foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 28)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.bottom, 20)
 
-                Divider()
-                    .padding(.horizontal, 28)
-                    .padding(.bottom, 16)
+                Divider().padding(.horizontal, 28).padding(.bottom, 16)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    if isRed {
-                        HStack(spacing: 6) {
-                            Circle().fill(Color.red).frame(width: 10, height: 10)
-                            Text("Incorrect").font(.rrCallout.bold()).foregroundStyle(.red)
-                        }
-                        .padding(.bottom, 4)
-
-                        Label("Dot reaches the edge — leg has drifted or dropped", systemImage: "xmark.circle.fill")
-                            .foregroundStyle(.red).font(.rrBody)
-                        Label("Leg is not held at full extension", systemImage: "xmark.circle.fill")
-                            .foregroundStyle(.red).font(.rrBody)
-                        Label("Too much left/right rotation in the hip or leg", systemImage: "xmark.circle.fill")
-                            .foregroundStyle(.red).font(.rrBody)
-                    } else {
-                        HStack(spacing: 6) {
-                            Circle().fill(greenDot).frame(width: 10, height: 10)
-                            Text("Correct").font(.rrCallout.bold()).foregroundStyle(green)
-                        }
-                        .padding(.bottom, 4)
-
-                        Label("Dot stays near the center of the circle", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(green).font(.rrBody)
-                        Label("Leg is held fully extended at maximum height", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(green).font(.rrBody)
-                        Label("Minimal left/right movement — hip stays steady", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(green).font(.rrBody)
+                // Correct bullets — always visible
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Circle().fill(greenDot).frame(width: 10, height: 10)
+                        Text("Correct").font(.rrCallout.bold()).foregroundStyle(green)
                     }
+                    Label("Dot stays near the center of the circle", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(green).font(.rrBody)
+                    Label("Leg is held fully extended at maximum height", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(green).font(.rrBody)
+                    Label("Minimal left/right movement — hip stays steady", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(green).font(.rrBody)
                 }
                 .padding(.horizontal, 28)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .animation(.easeInOut(duration: 0.3), value: isRed)
+                .padding(.bottom, 16)
+
+                // Incorrect bullets — always visible
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Circle().fill(Color.red).frame(width: 10, height: 10)
+                        Text("Incorrect").font(.rrCallout.bold()).foregroundStyle(.red)
+                    }
+                    Label("Dot reaches the edge — leg has drifted or dropped", systemImage: "xmark.circle.fill")
+                        .foregroundStyle(.red).font(.rrBody)
+                    Label("Leg is not held at full extension", systemImage: "xmark.circle.fill")
+                        .foregroundStyle(.red).font(.rrBody)
+                    Label("Too much left/right rotation in the hip or leg", systemImage: "xmark.circle.fill")
+                        .foregroundStyle(.red).font(.rrBody)
+                }
+                .padding(.horizontal, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 Spacer(minLength: 32)
             }
         }
-        .onAppear {
-            animStartDate = Date()
-            cycleTimer = Timer.scheduledTimer(withTimeInterval: 3.5, repeats: true) { _ in
-                animStartDate = Date()
-                withAnimation(.easeInOut(duration: 0.35)) { isRed.toggle() }
-            }
-        }
-        .onDisappear { cycleTimer?.invalidate(); cycleTimer = nil }
+        .onAppear { animStartDate = Date() }
     }
 }
 

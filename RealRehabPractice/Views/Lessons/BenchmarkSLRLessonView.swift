@@ -244,6 +244,8 @@ struct BenchmarkSLRLessonView: View {
                     .font(.rrBody)
                     .foregroundStyle(.secondary)
             } else {
+                BarAnimationPreviewWidget(lessonTitle: lessonTitle)
+
                 Text("For this benchmark, lie down and extend your leg as far as you comfortably can. Once you’re there, you’ll be prompted to raise your leg up and down along with the animation. Keep your leg straight the entire time.")
                     .font(.rrHeadline)
                     .multilineTextAlignment(.center)

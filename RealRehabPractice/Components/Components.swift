@@ -1817,6 +1817,520 @@ struct FormMenuField: View {
     }
 }
 
+// MARK: - Mini Bar Animation (lesson preview)
+/// Looping bar animation anchored to `startDate` so it always begins at the bottom.
+/// `isRed`: entire box fills red, bar+dot stay blue (matches real lesson failure state).
+/// `isHeelSlides`: starts at top (leg starts straight). `isShortArc`: faster 3.5 s cycle.
+private struct MiniBarAnimationView: View {
+    var startDate: Date = Date()
+    var isRed: Bool = false
+    var isQuadSet: Bool = false
+    var isHeelSlides: Bool = false
+    var isShortArc: Bool = false
+    let width: CGFloat
+    let height: CGFloat
+
+    private var cycle: Double {
+        if isQuadSet  { return 7.5 }
+        if isShortArc { return 3.5 }
+        return 5.0
+    }
+
+    private func normalFill(elapsed: Double) -> CGFloat {
+        let t = elapsed.truncatingRemainder(dividingBy: cycle) / cycle
+        if isQuadSet {
+            // 1.5 s rise, 3.5 s hold, 1.5 s fall, 1 s rest (fractions of 7.5 s)
+            if t < 0.200       { return CGFloat(t / 0.200) }
+            else if t < 0.667  { return 1.0 }
+            else if t < 0.867  { return CGFloat(1.0 - (t - 0.667) / 0.200) }
+            else               { return 0 }
+        } else {
+            // 2 s rise, 0.5 s hold, 2 s fall, 0.5 s rest (fractions of cycle)
+            if t < 0.40        { return CGFloat(t / 0.40) }
+            else if t < 0.50   { return 1.0 }
+            else if t < 0.90   { return CGFloat(1.0 - (t - 0.50) / 0.40) }
+            else               { return 0 }
+        }
+    }
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
+            let elapsed = max(0, ctx.date.timeIntervalSince(startDate))
+            let base = normalFill(elapsed: elapsed)
+            // Heel slides: bar starts at top and falls first
+            let fill: CGFloat = isHeelSlides ? 1.0 - base : base
+            let lineY: CGFloat = height * fill
+
+            // Red state: entire box turns red; bar+dot remain blue
+            let fillH: CGFloat = isRed ? height : max(height * 0.05, height * fill)
+            let fillColors: [Color] = isRed
+                ? [Color(red: 0.85, green: 0.10, blue: 0.10).opacity(0.55),
+                   Color(red: 0.65, green: 0.06, blue: 0.06).opacity(0.75)]
+                : [Color(red: 0.10, green: 0.80, blue: 0.15).opacity(0.38),
+                   Color(red: 0.04, green: 0.50, blue: 0.08).opacity(0.60)]
+            let borderColor: Color = isRed ? Color.red.opacity(0.40) : Color.brandDarkBlue.opacity(0.22)
+
+            ZStack(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.gray.opacity(0.12))
+                    .frame(width: width, height: height)
+
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(LinearGradient(colors: fillColors, startPoint: .bottom, endPoint: .top))
+                    .frame(width: width, height: fillH)
+
+                Rectangle()
+                    .fill(Color.brandDarkBlue.opacity(0.75))
+                    .frame(width: width, height: 2)
+                    .offset(y: -lineY)
+
+                Circle()
+                    .fill(Color.brandDarkBlue)
+                    .frame(width: 8, height: 8)
+                    .offset(y: -lineY)
+
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(borderColor, lineWidth: 1.5)
+                    .frame(width: width, height: height)
+            }
+        }
+        .frame(width: width, height: height)
+    }
+}
+
+// MARK: - Mini Circle Animation (benchmark-1 preview)
+/// Looping ring + moving dot anchored to `startDate`.
+private struct MiniCircleAnimationView: View {
+    var startDate: Date = Date()
+    var isRed: Bool = false
+    let size: CGFloat
+
+    private let dotD: CGFloat = 18
+
+    private func dotOffset(elapsed: Double) -> CGPoint {
+        let innerR = Double((size / 2) - dotD / 2 - 5)
+        if isRed {
+            let fraction = elapsed.truncatingRemainder(dividingBy: 4.0) / 4.0
+            let sweep = sin(fraction * 2.0 * Double.pi)
+            return CGPoint(x: sweep * innerR * 0.96, y: 0)
+        } else {
+            let angle = (elapsed.truncatingRemainder(dividingBy: 4.0) / 4.0) * 2.0 * Double.pi
+            return CGPoint(x: cos(angle) * innerR * 0.25, y: sin(angle) * innerR * 0.25)
+        }
+    }
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
+            let elapsed = max(0, ctx.date.timeIntervalSince(startDate))
+            let ringT = CGFloat(elapsed.truncatingRemainder(dividingBy: 5.0) / 5.0)
+            let pos = dotOffset(elapsed: elapsed)
+            let dotColor: Color = isRed ? .red : Color(red: 0.10, green: 0.78, blue: 0.15)
+            let strokeColor: Color = isRed ? Color.red.opacity(0.45) : Color.brandDarkBlue.opacity(0.22)
+
+            ZStack {
+                Circle()
+                    .stroke(Color.gray.opacity(0.15), lineWidth: 5)
+                    .frame(width: size, height: size)
+
+                Circle()
+                    .trim(from: 0, to: 1.0 - ringT)
+                    .stroke(Color.brandDarkBlue, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                    .frame(width: size, height: size)
+                    .rotationEffect(.degrees(-90))
+
+                Circle()
+                    .fill(Color.gray.opacity(0.10))
+                    .frame(width: size - 14, height: size - 14)
+
+                Circle()
+                    .stroke(strokeColor, lineWidth: 1.5)
+                    .frame(width: size - 14, height: size - 14)
+
+                Circle()
+                    .fill(dotColor)
+                    .frame(width: dotD, height: dotD)
+                    .offset(x: CGFloat(pos.x), y: CGFloat(pos.y))
+                    .shadow(color: dotColor.opacity(0.35), radius: 4)
+            }
+            .frame(width: size, height: size)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+// MARK: - Scripted Bar Animation (info sheet only)
+/// Plays a fixed 19-second sequence demonstrating correct movement, then 3 error scenarios.
+/// Phase A (0–8 s):  2 correct up/down cycles — green box, dot centred.
+/// Phase B (8–11 s): starts normally, then bar shoots up too fast → box turns red.
+/// Phase C (11–15 s): starts normally, then bar slows to a crawl → box turns red.
+/// Phase D (15–19 s): bar rises normally, then dot drifts right, exits boundary → box turns red.
+private struct ScriptedBarAnimationView: View {
+    var startDate: Date
+    let width: CGFloat
+    let height: CGFloat
+
+    private let totalCycle: Double = 19.0
+
+    private struct SState {
+        var fill: CGFloat
+        var dotFrac: CGFloat   // -1…1; pixel offset = dotFrac * (width / 2)
+        var isRed: Bool
+    }
+
+    // Standard fill: t is 0–1 fraction of a 4 s cycle
+    private func stdFill(_ t: Double) -> CGFloat {
+        let tc = max(0, min(1, t))
+        if tc < 0.40       { return CGFloat(tc / 0.40) }
+        else if tc < 0.50   { return 1.0 }
+        else if tc < 0.90   { return CGFloat(1.0 - (tc - 0.50) / 0.40) }
+        else                { return 0 }
+    }
+
+    private func computeState(elapsed: Double) -> SState {
+        let t = elapsed.truncatingRemainder(dividingBy: totalCycle)
+
+        // ── Phase A: 0–8 s — two correct 4-second cycles ─────────────────────
+        if t < 8.0 {
+            let cycleT = t.truncatingRemainder(dividingBy: 4.0) / 4.0
+            return SState(fill: stdFill(cycleT), dotFrac: 0, isRed: false)
+        }
+
+        // ── Phase B: 8–11 s — too fast ────────────────────────────────────────
+        // 0–0.5 s: normal speed rise (fill 0 → 0.30)
+        // 0.5–0.7 s: shoots up very fast (0.30 → 1.0)
+        // 0.7 s+:    box turns red
+        if t < 11.0 {
+            let p = t - 8.0
+            if p < 0.5 {
+                return SState(fill: CGFloat(p / 0.5 * 0.30), dotFrac: 0, isRed: false)
+            } else if p < 0.7 {
+                let pct = (p - 0.5) / 0.2
+                return SState(fill: CGFloat(0.30 + pct * 0.70), dotFrac: 0, isRed: false)
+            } else {
+                return SState(fill: 1.0, dotFrac: 0, isRed: true)
+            }
+        }
+
+        // ── Phase C: 11–15 s — too slow ──────────────────────────────────────
+        // 0–0.8 s: normal speed (fill 0 → 0.50)
+        // 0.8–3.0 s: crawls (fill 0.50 → 0.55 — barely moves)
+        // 3.0 s+:    box turns red at fill = 0.55
+        if t < 15.0 {
+            let p = t - 11.0
+            if p < 0.8 {
+                return SState(fill: CGFloat(p / 0.8 * 0.50), dotFrac: 0, isRed: false)
+            } else if p < 3.0 {
+                let slow = CGFloat(0.50 + (p - 0.8) / 2.2 * 0.05)
+                return SState(fill: slow, dotFrac: 0, isRed: false)
+            } else {
+                return SState(fill: 0.55, dotFrac: 0, isRed: true)
+            }
+        }
+
+        // ── Phase D: 15–19 s — dot out of bounds ─────────────────────────────
+        // 0–1.5 s: bar rises normally (fill 0 → 1), dot centred
+        // 1.5–2.3 s: fill stays at 1, dot drifts right 0 → 1.2
+        //            red triggered the moment dotFrac ≥ 1.0 (≈ t=2.17 s into phase)
+        // 2.17 s+:   box red
+        if t < 19.0 {
+            let p = t - 15.0
+            if p < 1.5 {
+                return SState(fill: CGFloat(p / 1.5), dotFrac: 0, isRed: false)
+            } else if p < 2.3 {
+                let drift = CGFloat((p - 1.5) / 0.8 * 1.2)
+                if drift < 1.0 {
+                    return SState(fill: 1.0, dotFrac: drift, isRed: false)
+                } else {
+                    return SState(fill: 1.0, dotFrac: drift, isRed: true)
+                }
+            } else {
+                return SState(fill: 1.0, dotFrac: 1.2, isRed: true)
+            }
+        }
+        return SState(fill: 0, dotFrac: 0, isRed: false)
+    }
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
+            let elapsed = max(0, ctx.date.timeIntervalSince(startDate))
+            let s = computeState(elapsed: elapsed)
+            let lineY = height * s.fill
+
+            let fillH: CGFloat = s.isRed ? height : max(height * 0.05, height * s.fill)
+            let fillColors: [Color] = s.isRed
+                ? [Color(red: 0.85, green: 0.10, blue: 0.10).opacity(0.55),
+                   Color(red: 0.65, green: 0.06, blue: 0.06).opacity(0.75)]
+                : [Color(red: 0.10, green: 0.80, blue: 0.15).opacity(0.38),
+                   Color(red: 0.04, green: 0.50, blue: 0.08).opacity(0.60)]
+            let border: Color = s.isRed ? Color.red.opacity(0.40) : Color.brandDarkBlue.opacity(0.22)
+
+            ZStack(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.gray.opacity(0.12))
+                    .frame(width: width, height: height)
+
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(LinearGradient(colors: fillColors, startPoint: .bottom, endPoint: .top))
+                    .frame(width: width, height: fillH)
+
+                Rectangle()
+                    .fill(Color.brandDarkBlue.opacity(0.75))
+                    .frame(width: width, height: 2)
+                    .offset(y: -lineY)
+
+                Circle()
+                    .fill(Color.brandDarkBlue)
+                    .frame(width: 8, height: 8)
+                    .offset(x: s.dotFrac * (width / 2), y: -lineY)
+
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(border, lineWidth: 1.5)
+                    .frame(width: width, height: height)
+            }
+        }
+        .frame(width: width, height: height)
+    }
+}
+
+// MARK: - Bar Animation Info Sheet
+struct BarAnimationInfoSheet: View {
+    var isQuadSet: Bool = false
+    @State private var animStartDate: Date = Date()
+
+    private let green    = Color(red: 0.04, green: 0.45, blue: 0.08)
+    private let greenDot = Color(red: 0.04, green: 0.55, blue: 0.08)
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                Capsule()
+                    .fill(Color.gray.opacity(0.4))
+                    .frame(width: 40, height: 4)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
+
+                Text("How the Animation Works")
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+                    .padding(.bottom, 20)
+
+                ScriptedBarAnimationView(startDate: animStartDate, width: 130, height: 190)
+                    .padding(.bottom, 16)
+
+                // Legend — always visible
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Horizontal bar = your leg's current position", systemImage: "minus")
+                        .font(.rrBody).foregroundStyle(.secondary)
+                    Label("Positioning dot = left/right leg alignment", systemImage: "circle.fill")
+                        .font(.rrBody).foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 20)
+
+                Divider().padding(.horizontal, 28).padding(.bottom, 16)
+
+                // Correct bullets — always visible
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Circle().fill(greenDot).frame(width: 10, height: 10)
+                        Text("Correct").font(.rrCallout.bold()).foregroundStyle(green)
+                    }
+                    Label("Horizontal bar stays on pace with the animation at the correct speed", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(green).font(.rrBody)
+                    Label("Horizontal bar reaches the top of the box with the animation", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(green).font(.rrBody)
+                    Label("Positioning dot stays within the box, doesn't drift too far left or right", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(green).font(.rrBody)
+                }
+                .padding(.horizontal, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 16)
+
+                // Incorrect bullets — always visible
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Circle().fill(Color.red).frame(width: 10, height: 10)
+                        Text("Incorrect").font(.rrCallout.bold()).foregroundStyle(.red)
+                    }
+                    Label("Horizontal bar moves too fast or too slow for the animation", systemImage: "xmark.circle.fill")
+                        .foregroundStyle(.red).font(.rrBody)
+                    Label("Horizontal bar doesn't reach the top of the box with the animation", systemImage: "xmark.circle.fill")
+                        .foregroundStyle(.red).font(.rrBody)
+                    Label("Positioning dot moves too far out of bounds left or right", systemImage: "xmark.circle.fill")
+                        .foregroundStyle(.red).font(.rrBody)
+                }
+                .padding(.horizontal, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer(minLength: 32)
+            }
+        }
+        .onAppear { animStartDate = Date() }
+    }
+}
+
+// MARK: - Circle Animation Info Sheet
+struct CircleAnimationInfoSheet: View {
+    @State private var isRed: Bool = false
+    @State private var animStartDate: Date = Date()
+    @State private var cycleTimer: Timer? = nil
+
+    private let green    = Color(red: 0.04, green: 0.45, blue: 0.08)
+    private let greenDot = Color(red: 0.04, green: 0.55, blue: 0.08)
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                Capsule()
+                    .fill(Color.gray.opacity(0.4))
+                    .frame(width: 40, height: 4)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
+
+                Text("How the Animation Works")
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+                    .padding(.bottom, 20)
+
+                MiniCircleAnimationView(startDate: animStartDate, isRed: isRed, size: 180)
+                    .padding(.bottom, 16)
+
+                // Always-visible legend
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Dot moves up/down as your leg rises or drops", systemImage: "arrow.up.arrow.down")
+                        .font(.rrBody)
+                        .foregroundStyle(.secondary)
+                    Label("Dot moves left/right when your leg or hip rotates sideways", systemImage: "arrow.left.arrow.right")
+                        .font(.rrBody)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 20)
+
+                Divider()
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 16)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    if isRed {
+                        HStack(spacing: 6) {
+                            Circle().fill(Color.red).frame(width: 10, height: 10)
+                            Text("Incorrect").font(.rrCallout.bold()).foregroundStyle(.red)
+                        }
+                        .padding(.bottom, 4)
+
+                        Label("Dot reaches the edge — leg has drifted or dropped", systemImage: "xmark.circle.fill")
+                            .foregroundStyle(.red).font(.rrBody)
+                        Label("Leg is not held at full extension", systemImage: "xmark.circle.fill")
+                            .foregroundStyle(.red).font(.rrBody)
+                        Label("Too much left/right rotation in the hip or leg", systemImage: "xmark.circle.fill")
+                            .foregroundStyle(.red).font(.rrBody)
+                    } else {
+                        HStack(spacing: 6) {
+                            Circle().fill(greenDot).frame(width: 10, height: 10)
+                            Text("Correct").font(.rrCallout.bold()).foregroundStyle(green)
+                        }
+                        .padding(.bottom, 4)
+
+                        Label("Dot stays near the center of the circle", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(green).font(.rrBody)
+                        Label("Leg is held fully extended at maximum height", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(green).font(.rrBody)
+                        Label("Minimal left/right movement — hip stays steady", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(green).font(.rrBody)
+                    }
+                }
+                .padding(.horizontal, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .animation(.easeInOut(duration: 0.3), value: isRed)
+
+                Spacer(minLength: 32)
+            }
+        }
+        .onAppear {
+            animStartDate = Date()
+            cycleTimer = Timer.scheduledTimer(withTimeInterval: 3.5, repeats: true) { _ in
+                animStartDate = Date()
+                withAnimation(.easeInOut(duration: 0.35)) { isRed.toggle() }
+            }
+        }
+        .onDisappear { cycleTimer?.invalidate(); cycleTimer = nil }
+    }
+}
+
+// MARK: - Bar Animation Preview Widget
+/// Mini bar animation + "i" info button. Drop in between video and instruction text.
+struct BarAnimationPreviewWidget: View {
+    var lessonTitle: String? = nil
+    @State private var showInfo: Bool = false
+    @State private var animStartDate: Date = Date()
+
+    private var t: String { lessonTitle?.lowercased() ?? "" }
+    private var isQuadSet:   Bool { t.contains("quad set") }
+    private var isHeelSlides: Bool { t.contains("heel slide") }
+    private var isShortArc:  Bool { t.contains("short arc") }
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            HStack {
+                Spacer()
+                MiniBarAnimationView(
+                    startDate: animStartDate,
+                    isQuadSet: isQuadSet,
+                    isHeelSlides: isHeelSlides,
+                    isShortArc: isShortArc,
+                    width: 82,
+                    height: 115
+                )
+                Spacer()
+            }
+
+            Button { showInfo = true } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Color.brandDarkBlue.opacity(0.65))
+            }
+            .padding(.trailing, 16)
+        }
+        .onAppear { animStartDate = Date() }
+        .sheet(isPresented: $showInfo) {
+            BarAnimationInfoSheet(isQuadSet: isQuadSet)
+                .presentationDetents([.medium, .large])
+        }
+    }
+}
+
+// MARK: - Circle Animation Preview Widget
+/// Mini circle animation + "i" info button. Drop in on benchmark prepare screens.
+struct CircleAnimationPreviewWidget: View {
+    @State private var showInfo: Bool = false
+    @State private var animStartDate: Date = Date()
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            HStack {
+                Spacer()
+                MiniCircleAnimationView(startDate: animStartDate, size: 110)
+                Spacer()
+            }
+
+            Button { showInfo = true } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Color.brandDarkBlue.opacity(0.65))
+            }
+            .padding(.trailing, 16)
+        }
+        .onAppear { animStartDate = Date() }
+        .sheet(isPresented: $showInfo) {
+            CircleAnimationInfoSheet()
+                .presentationDetents([.medium, .large])
+        }
+    }
+}
+
 // MARK: - Calendar Bubble Grid
 struct CalendarBubbleGrid: View {
     let completedDays: Int

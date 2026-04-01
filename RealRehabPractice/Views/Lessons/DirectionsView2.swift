@@ -67,6 +67,9 @@ struct DirectionsView2: View {
                     .clipped()
             }
 
+            BarAnimationPreviewWidget(lessonTitle: lessonTitle)
+                .padding(.top, videoName != nil ? 20 : 40)
+
             Spacer()
 
             Text(instructionText)
@@ -74,7 +77,6 @@ struct DirectionsView2: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.primary)
                 .padding(.horizontal, 24)
-                .padding(.top, videoName != nil ? 24 : 0)
 
             Spacer()
 

@@ -217,6 +217,8 @@ struct BenchmarkExtensionLessonView: View {
                     .font(.rrBody)
                     .foregroundStyle(.secondary)
             } else {
+                CircleAnimationPreviewWidget()
+
                 Text("For this benchmark, extend your leg to its maximum extension and hold the position for the duration shown.")
                     .font(.rrHeadline)
                     .multilineTextAlignment(.center)

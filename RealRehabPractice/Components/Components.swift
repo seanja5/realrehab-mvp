@@ -1836,19 +1836,25 @@ private struct MiniBarAnimationView: View {
         return 5.0
     }
 
+    /// Smoothstep: slow → fast → slow easing over [0, 1].
+    private func smoothstep(_ x: Double) -> CGFloat {
+        let c = max(0, min(1, x))
+        return CGFloat(c * c * (3.0 - 2.0 * c))
+    }
+
     private func normalFill(elapsed: Double) -> CGFloat {
         let t = elapsed.truncatingRemainder(dividingBy: cycle) / cycle
         if isQuadSet {
             // 1.5 s rise, 3.5 s hold, 1.5 s fall, 1 s rest (fractions of 7.5 s)
-            if t < 0.200       { return CGFloat(t / 0.200) }
+            if t < 0.200       { return smoothstep(t / 0.200) }
             else if t < 0.667  { return 1.0 }
-            else if t < 0.867  { return CGFloat(1.0 - (t - 0.667) / 0.200) }
+            else if t < 0.867  { return 1.0 - smoothstep((t - 0.667) / 0.200) }
             else               { return 0 }
         } else {
             // 2 s rise, 0.5 s hold, 2 s fall, 0.5 s rest (fractions of cycle)
-            if t < 0.40        { return CGFloat(t / 0.40) }
+            if t < 0.40        { return smoothstep(t / 0.40) }
             else if t < 0.50   { return 1.0 }
-            else if t < 0.90   { return CGFloat(1.0 - (t - 0.50) / 0.40) }
+            else if t < 0.90   { return 1.0 - smoothstep((t - 0.50) / 0.40) }
             else               { return 0 }
         }
     }
@@ -1979,11 +1985,17 @@ private struct ScriptedBarAnimationView: View {
         var isRed: Bool
     }
 
+    /// Smoothstep: slow → fast → slow easing over [0, 1].
+    private func smoothstep(_ x: Double) -> CGFloat {
+        let c = max(0, min(1, x))
+        return CGFloat(c * c * (3.0 - 2.0 * c))
+    }
+
     private func stdFill(_ t: Double) -> CGFloat {
         let tc = max(0, min(1, t))
-        if tc < 0.40       { return CGFloat(tc / 0.40) }
+        if tc < 0.40       { return smoothstep(tc / 0.40) }
         else if tc < 0.50  { return 1.0 }
-        else if tc < 0.90  { return CGFloat(1.0 - (tc - 0.50) / 0.40) }
+        else if tc < 0.90  { return 1.0 - smoothstep((tc - 0.50) / 0.40) }
         else               { return 0 }
     }
 
@@ -1997,13 +2009,13 @@ private struct ScriptedBarAnimationView: View {
         }
 
         // ── Phase B: 8–12 s — bar too fast ───────────────────────────────────
-        // First 0.8 s: fill and bar rise together at normal speed (reach 0.50)
+        // First 0.8 s: fill and bar rise together (smoothstepped to 0.50)
         // After 0.8 s: fill keeps normal pace; bar accelerates to 5× speed
         // Box red once (bar – fill) > 0.30 or bar is capped at 1.0
         if t < 12.0 {
             let p = t - 8.0
             if p < 0.8 {
-                let f = CGFloat(normalRate * p)
+                let f = smoothstep(p / 0.8) * 0.5   // ease into the sync start (0→0.5)
                 return SState(fillFrac: f, barFrac: f, dotXFrac: 0, isRed: false)
             } else {
                 let fillFrac = CGFloat(min(1.0, 0.5 + normalRate * (p - 0.8)))
@@ -2014,13 +2026,13 @@ private struct ScriptedBarAnimationView: View {
         }
 
         // ── Phase C: 12–17 s — bar too slow ─────────────────────────────────
-        // First 0.8 s: together at normal speed
+        // First 0.8 s: together (smoothstepped to 0.50)
         // After 0.8 s: fill keeps normal pace; bar slows to 1/5 speed
         // Box red once (fill – bar) > 0.35
         if t < 17.0 {
             let p = t - 12.0
             if p < 0.8 {
-                let f = CGFloat(normalRate * p)
+                let f = smoothstep(p / 0.8) * 0.5   // ease into the sync start (0→0.5)
                 return SState(fillFrac: f, barFrac: f, dotXFrac: 0, isRed: false)
             } else {
                 let fillFrac = CGFloat(min(1.0, 0.5 + normalRate * (p - 0.8)))
@@ -2034,12 +2046,12 @@ private struct ScriptedBarAnimationView: View {
         }
 
         // ── Phase D: 17–20 s — dot drifts right WHILE bar is rising ─────────
-        // bar and fill rise together normally (both = p / 2.0, reaching 1 in 2 s)
+        // bar and fill rise together with smoothstep easing (0→1 in 2 s)
         // dot starts drifting at p = 0.3 s (while bar is still going up)
         // red the moment dotXFrac ≥ 1.0 (boundary crossed)
         if t < 20.0 {
             let p = t - 17.0
-            let f = CGFloat(min(1.0, p / 2.0))
+            let f = smoothstep(min(1.0, p / 2.0))
             let dotFrac: CGFloat = p < 0.3 ? 0 : CGFloat(min(1.2, (p - 0.3) / 1.5))
             return SState(fillFrac: f, barFrac: f, dotXFrac: dotFrac, isRed: dotFrac >= 1.0)
         }

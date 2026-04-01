@@ -622,7 +622,7 @@ struct LessonView: View {
                         .padding(24)
                         .background(
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white)
+                                .fill(Color(uiColor: .systemBackground))
                                 .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
                         )
                     }

@@ -42,8 +42,23 @@ struct DirectionsView2: View {
         if t.contains("ankle pump") {
             return "Pump your foot upward toward your shin, then back down in a steady rhythm — one pump per cycle of the bar.\n\nMake each movement full and deliberate. These pumps promote circulation and help reduce swelling in your knee."
         }
+        if t.contains("extension control") {
+            return "When prompted, slowly straighten your knee as far as it will go and hold the position.\n\nFocus on fully locking out the joint. Keep your thigh relaxed — the contraction should come from pressing the back of your knee toward the surface."
+        }
         // Default: knee extensions
         return "Match the animation: extend your leg as the box fills, and rest as it empties.\n\nKeep your thigh centered, avoid hip rotation, and keep your foot off the ground for the entire lesson."
+    }
+
+    /// Returns the bundled mp4 filename (without extension) for this lesson, or nil if none.
+    private var videoName: String? {
+        let t = lessonTitle?.lowercased() ?? ""
+        if t.contains("quad set") { return "QuadSet" }
+        if t.contains("short arc") { return "ShortArcQuad" }
+        if t.contains("heel slide") { return "HeelSlides" }
+        if t.contains("knee extension") { return "Knee Extension" }
+        if t.contains("extension control") { return "ExtensionControl" }
+        if t.contains("straight leg raise") { return "StraightLegRaise" }
+        return nil
     }
 
     private var navTitle: String {
@@ -52,6 +67,13 @@ struct DirectionsView2: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if let name = videoName {
+                LoopingVideoView(videoName: name)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 260)
+                    .clipped()
+            }
+
             Spacer()
 
             Text(instructionText)
@@ -59,6 +81,7 @@ struct DirectionsView2: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.primary)
                 .padding(.horizontal, 24)
+                .padding(.top, videoName != nil ? 24 : 0)
 
             Spacer()
 

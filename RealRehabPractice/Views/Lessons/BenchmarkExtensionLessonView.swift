@@ -127,31 +127,42 @@ struct BenchmarkExtensionLessonView: View {
 
     var body: some View {
         GeometryReader { geo in
-            ZStack {
-                VStack(spacing: 0) {
-                    Spacer()
-
-                    switch phase {
-                    case .prepare:
-                        prepareView
-
-                    case .filling, .transitioning:
-                        fillingView
-
-                    case .holding:
-                        holdingView
-
-                    case .holdFailed:
-                        holdFailedView
-
-                    case .completed:
-                        completedView
-                    }
-
-                    Spacer()
+            VStack(spacing: 0) {
+                // Video shown on the prepare screen in place of any header
+                if phase == .prepare && restCalibrationValue != nil && maxCalibrationValue != nil && calibrationError == nil {
+                    LoopingVideoView(videoName: "ExtensionControl")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 260)
+                        .clipped()
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
+
+                ZStack {
+                    VStack(spacing: 0) {
+                        Spacer()
+
+                        switch phase {
+                        case .prepare:
+                            prepareView
+
+                        case .filling, .transitioning:
+                            fillingView
+
+                        case .holding:
+                            holdingView
+
+                        case .holdFailed:
+                            holdFailedView
+
+                        case .completed:
+                            completedView
+                        }
+
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 20)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .onAppear { geoSize = geo.size }
         }

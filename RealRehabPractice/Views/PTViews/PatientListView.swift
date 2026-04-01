@@ -118,7 +118,11 @@ struct PatientListView: View {
                         Button {
                             vm.sortOrder = order
                         } label: {
-                            Label(order.rawValue, systemImage: vm.sortOrder == order ? "checkmark" : "")
+                            if vm.sortOrder == order {
+                                Label(order.rawValue, systemImage: "checkmark")
+                            } else {
+                                Text(order.rawValue)
+                            }
                         }
                     }
                 } label: {

@@ -46,12 +46,29 @@ struct DirectionsView1: View {
         return "With your brace on, sit comfortably, and place your leg in its resting position."
     }
 
+    /// Returns the bundled mp4 filename (without extension) for this lesson, or nil if none.
+    private var videoName: String? {
+        let t = lessonTitle?.lowercased() ?? ""
+        if t.contains("quad set") { return "BraceOn" }
+        if t.contains("knee extension") { return "BraceOn" }
+        if t.contains("short arc") { return "LieDown" }
+        if t.contains("heel slide") { return "LieDown" }
+        return nil
+    }
+
     private var navTitle: String {
         lessonTitle ?? "Lesson"
     }
 
     var body: some View {
         VStack(spacing: 0) {
+            if let name = videoName {
+                LoopingVideoView(videoName: name)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 260)
+                    .clipped()
+            }
+
             Spacer()
 
             Text(instructionText)
@@ -59,6 +76,7 @@ struct DirectionsView1: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.primary)
                 .padding(.horizontal, 24)
+                .padding(.top, videoName != nil ? 24 : 0)
 
             Spacer()
 

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		531CD89157A1445E937B8CB5 /* BenchmarkSLRLessonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA8B7294C4334B5BBF2FDBC5 /* BenchmarkSLRLessonView.swift */; };
+		C287015EB99D49BE9E843E85 /* PatientStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B2B3634A734A548421B28B /* PatientStatus.swift */; };
 		C8003FA22EB42E72008DC812 /* SupabaseConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */; };
 		C8003FAD2EB441F1008DC812 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = C8003FAC2EB441F1008DC812 /* Supabase */; };
 		C8003FB52EB7FD57008DC812 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8003FB42EB7FC39008DC812 /* Components.swift */; };
@@ -20,7 +22,6 @@
 		C82D70102EBE91D3004D9347 /* LessonEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70092EBE91D3004D9347 /* LessonEngine.swift */; };
 		C82D70112EBE91D3004D9347 /* TelemetryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D700C2EBE91D3004D9347 /* TelemetryService.swift */; };
 		C82D70122EBE91D3004D9347 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70082EBE91D3004D9347 /* AuthService.swift */; };
-		C9F2E3D52F401100004D934F /* LessonRedoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F2E3D42F401100004D934E /* LessonRedoService.swift */; };
 		C82D70272EBEB10C004D9347 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70222EBEB10C004D9347 /* AuthViewModel.swift */; };
 		C82D70282EBEB10C004D9347 /* PatientDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70242EBEB10C004D9347 /* PatientDashboardViewModel.swift */; };
 		C82D70292EBEB10C004D9347 /* PTProgramEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70252EBEB10C004D9347 /* PTProgramEditorViewModel.swift */; };
@@ -35,14 +36,23 @@
 		C82D70402ED2F3B6004D9347 /* SessionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D703F2ED2F3B6004D9347 /* SessionContext.swift */; };
 		C82D70572EC15F90004D9347 /* PatientTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70552EC15F90004D9347 /* PatientTabBar.swift */; };
 		C82D70582EC15F90004D9347 /* PTTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82D70562EC15F90004D9347 /* PTTabBar.swift */; };
+		C84B701E2F7D711F0086018F /* QuadSet.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C84B701A2F7D711F0086018F /* QuadSet.mp4 */; };
+		C84B701F2F7D711F0086018F /* HeelSlides.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C84B70172F7D711F0086018F /* HeelSlides.mp4 */; };
+		C84B70202F7D711F0086018F /* ExtensionControl.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C84B70162F7D711F0086018F /* ExtensionControl.mp4 */; };
+		C84B70212F7D711F0086018F /* ShortArcQuad.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C84B701B2F7D711F0086018F /* ShortArcQuad.mp4 */; };
+		C84B70222F7D711F0086018F /* BraceOn.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C84B70152F7D711F0086018F /* BraceOn.mp4 */; };
+		C84B70232F7D711F0086018F /* Knee Extension.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C84B70182F7D711F0086018F /* Knee Extension.mp4 */; };
+		C84B70242F7D711F0086018F /* StraightLegRaise.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C84B701C2F7D711F0086018F /* StraightLegRaise.mp4 */; };
+		C84B70252F7D711F0086018F /* LieDown.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C84B70192F7D711F0086018F /* LieDown.mp4 */; };
+		C86055540D44400FB9CD57E2 /* BenchmarkExtensionLessonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35B8EB891894471A85043521 /* BenchmarkExtensionLessonView.swift */; };
 		C8A1B2C32ED00001004D9348 /* ACLJourneyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A1B2C32ED00001004D9347 /* ACLJourneyModels.swift */; };
 		C8A2B3D42ED00002004D9348 /* ScheduleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A2B3D42ED00002004D9347 /* ScheduleService.swift */; };
 		C8A2B3D52ED00003004D9348 /* ScheduleVisualizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */; };
 		C8A3B4E62ED00004004D9348 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A3B4E52ED00004004D9347 /* NotificationManager.swift */; };
 		C8A3B4E82ED00005004D9348 /* NotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A3B4E72ED00005004D9347 /* NotificationDelegate.swift */; };
-		C8D0BBBB2F300001004D9348 /* AppThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D0BBBB2F300001004D9347 /* AppThemeManager.swift */; };
-		C8E1CC1C2F300002004D9348 /* Color+Adaptive.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1CC1C2F300002004D9347 /* Color+Adaptive.swift */; };
 		C8A4B5C72ED0006004D9348 /* AnalyticsSummaryBoxesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A4B5C62ED0006004D9347 /* AnalyticsSummaryBoxesView.swift */; };
+		C8A5B6C82ED0007004D9348 /* StreakService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A5B6C72ED0007004D9347 /* StreakService.swift */; };
+		C8A6B7CA2ED0008004D9348 /* StreakIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A6B7C92ED0008004D9347 /* StreakIconView.swift */; };
 		C8A9B3E22ED0010A004D9348 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */; };
 		C8AEECB22EB2D7A200720184 /* PracticeSensorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */; };
 		C8AEECB42EB2D7A200720184 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAF2EB2D7A200720184 /* WelcomeView.swift */; };
@@ -53,8 +63,6 @@
 		C8AEECBA2EB2D7A200720184 /* RehabOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */; };
 		C8AEECBB2EB2D7A200720184 /* JourneyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */; };
 		C8AEECBC2EB2D7A200720184 /* LessonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA82EB2D7A200720184 /* LessonView.swift */; };
-		C86055540D44400FB9CD57E2 /* BenchmarkExtensionLessonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35B8EB891894471A85043521 /* BenchmarkExtensionLessonView.swift */; };
-		531CD89157A1445E937B8CB5 /* BenchmarkSLRLessonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA8B7294C4334B5BBF2FDBC5 /* BenchmarkSLRLessonView.swift */; };
 		C8AEECBF2EB2D7A200720184 /* CompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA12EB2D7A200720184 /* CompletionView.swift */; };
 		C8AEECC12EB2D7A200720184 /* RealRehabPracticeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */; };
 		C8AEECC22EB2D7A200720184 /* CalibrateDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */; };
@@ -66,6 +74,14 @@
 		C8B1B2C72ED00001004D9349 /* LocalLessonProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B1B2C62ED00001004D9349 /* LocalLessonProgressStore.swift */; };
 		C8B1B2C92ED00001004D934A /* OutboxItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B1B2C82ED00001004D934A /* OutboxItem.swift */; };
 		C8B1B2CB2ED00001004D934B /* OutboxSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B1B2CA2ED00001004D934B /* OutboxSyncManager.swift */; };
+		C8B2D0022ED00001004D9348 /* LessonSensorInsightsCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */; };
+		C8B2D0042ED00001004D9350 /* LessonSensorInsightsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */; };
+		C8B2D0062ED00001004D9352 /* LessonSensorInsightsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0052ED00001004D9351 /* LessonSensorInsightsSync.swift */; };
+		C8B2D0082ED00001004D9354 /* LessonAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */; };
+		C8C1D1E22ED00009004D9348 /* MessagingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C1D1E12ED00009004D9347 /* MessagingView.swift */; };
+		C8C1D1E42ED0000A004D9348 /* MessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C1D1E32ED0000A004D9347 /* MessagingService.swift */; };
+		C8D0BBBB2F300001004D9348 /* AppThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D0BBBB2F300001004D9347 /* AppThemeManager.swift */; };
+		C8D1E2F42ED0000C004D9348 /* LessonSummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D1E2F32ED0000C004D9347 /* LessonSummaryService.swift */; };
 		C8D677BD2EB8285A00829144 /* PairDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677BC2EB8285A00829144 /* PairDeviceView.swift */; };
 		C8D677BE2EB8285A00829146 /* TestPairDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677BC2EB8285A00829146 /* TestPairDeviceView.swift */; };
 		C8D677C92EB839FC00829144 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677C82EB839FC00829144 /* Theme.swift */; };
@@ -75,12 +91,12 @@
 		C8D677F12EBA932000829144 /* PatientListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EC2EBA932000829144 /* PatientListView.swift */; };
 		C8D677F32EBA932000829144 /* CategorySelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677EA2EBA932000829144 /* CategorySelectView.swift */; };
 		C8D677F62EBA9C0F00829144 /* PTJourneyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */; };
-		C9F1E2D32F301011004D934B /* PTLessonParameterHelpSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F1E2D32F301010004D934A /* PTLessonParameterHelpSheet.swift */; };
 		C8D677FE2EBAF71B00829144 /* PatientDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */; };
 		C8D678002EBB095E00829144 /* PTDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D677FF2EBB095E00829144 /* PTDetailView.swift */; };
 		C8E1A0022ED00001004D9348 /* PendingLinkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1A0012ED00001004D9347 /* PendingLinkStore.swift */; };
 		C8E1A0042ED00001004D934A /* InvitedPatientsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1A0032ED00001004D9349 /* InvitedPatientsStore.swift */; };
 		C8E1A0062ED00001004D934C /* ShareSheetHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1A0052ED00001004D934B /* ShareSheetHelper.swift */; };
+		C8E1CC1C2F300002004D9348 /* Color+Adaptive.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E1CC1C2F300002004D9347 /* Color+Adaptive.swift */; };
 		C8F4A7002ED2C79A00BADF02 /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A7012ED2C79A00BADF02 /* BluetoothManager.swift */; };
 		C8F4A8202ED2F3B500BADF02 /* PTService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8212ED2F3B500BADF02 /* PTService.swift */; };
 		C8F4A8222ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8232ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift */; };
@@ -88,17 +104,9 @@
 		C8F4A8242ED2F3B600BADF04 /* NPIVerificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8252ED2F3B600BADF04 /* NPIVerificationService.swift */; };
 		C8F4A8332ED2F3B600BADF02 /* LessonProgressSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4A8322ED2F3B600BADF02 /* LessonProgressSync.swift */; };
 		C8FF08ED2ED68CB6007FE9DC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */; };
-		C8B2D0022ED00001004D9348 /* LessonSensorInsightsCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */; };
-		C8B2D0042ED00001004D9350 /* LessonSensorInsightsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */; };
-		C8B2D0062ED00001004D9352 /* LessonSensorInsightsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0052ED00001004D9351 /* LessonSensorInsightsSync.swift */; };
-		C8D1E2F42ED0000C004D9348 /* LessonSummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D1E2F32ED0000C004D9347 /* LessonSummaryService.swift */; };
-		C8A5B6C82ED0007004D9348 /* StreakService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A5B6C72ED0007004D9347 /* StreakService.swift */; };
-		C8A6B7CA2ED0008004D9348 /* StreakIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A6B7C92ED0008004D9347 /* StreakIconView.swift */; };
-		C8B2D0082ED00001004D9354 /* LessonAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */; };
-		C8C1D1E22ED00009004D9348 /* MessagingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C1D1E12ED00009004D9347 /* MessagingView.swift */; };
-		C8C1D1E42ED0000A004D9348 /* MessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C1D1E32ED0000A004D9347 /* MessagingService.swift */; };
+		C9F1E2D32F301011004D934B /* PTLessonParameterHelpSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F1E2D32F301010004D934A /* PTLessonParameterHelpSheet.swift */; };
+		C9F2E3D52F401100004D934F /* LessonRedoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F2E3D42F401100004D934E /* LessonRedoService.swift */; };
 		D1E2F3A52ED0000B004D9348 /* PatientLessonScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A42ED0000B004D9347 /* PatientLessonScore.swift */; };
-		C287015EB99D49BE9E843E85 /* PatientStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B2B3634A734A548421B28B /* PatientStatus.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -119,6 +127,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		35B8EB891894471A85043521 /* BenchmarkExtensionLessonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkExtensionLessonView.swift; sourceTree = "<group>"; };
+		A3B2B3634A734A548421B28B /* PatientStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientStatus.swift; sourceTree = "<group>"; };
 		C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SupabaseConfig.plist; sourceTree = "<group>"; };
 		C8003FB42EB7FC39008DC812 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		C825376F2F2B12C300465343 /* CacheEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheEntry.swift; sourceTree = "<group>"; };
@@ -127,7 +137,6 @@
 		C82537812F2B12D400465343 /* PhaseHeaderPreferenceKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseHeaderPreferenceKey.swift; sourceTree = "<group>"; };
 		C826BD3E2ECC23CB00B500DC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C82D70082EBE91D3004D9347 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
-		C9F2E3D42F401100004D934E /* LessonRedoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonRedoService.swift; sourceTree = "<group>"; };
 		C82D70092EBE91D3004D9347 /* LessonEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonEngine.swift; sourceTree = "<group>"; };
 		C82D700A2EBE91D3004D9347 /* RehabService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RehabService.swift; sourceTree = "<group>"; };
 		C82D700B2EBE91D3004D9347 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
@@ -147,6 +156,14 @@
 		C82D70552EC15F90004D9347 /* PatientTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientTabBar.swift; sourceTree = "<group>"; };
 		C82D70562EC15F90004D9347 /* PTTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTabBar.swift; sourceTree = "<group>"; };
 		C82D707D2EC17F97004D9347 /* info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = info.plist; sourceTree = "<group>"; };
+		C84B70152F7D711F0086018F /* BraceOn.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = BraceOn.mp4; sourceTree = "<group>"; };
+		C84B70162F7D711F0086018F /* ExtensionControl.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ExtensionControl.mp4; sourceTree = "<group>"; };
+		C84B70172F7D711F0086018F /* HeelSlides.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = HeelSlides.mp4; sourceTree = "<group>"; };
+		C84B70182F7D711F0086018F /* Knee Extension.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Knee Extension.mp4"; sourceTree = "<group>"; };
+		C84B70192F7D711F0086018F /* LieDown.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = LieDown.mp4; sourceTree = "<group>"; };
+		C84B701A2F7D711F0086018F /* QuadSet.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = QuadSet.mp4; sourceTree = "<group>"; };
+		C84B701B2F7D711F0086018F /* ShortArcQuad.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ShortArcQuad.mp4; sourceTree = "<group>"; };
+		C84B701C2F7D711F0086018F /* StraightLegRaise.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = StraightLegRaise.mp4; sourceTree = "<group>"; };
 		C89A84B12EB138150074B855 /* RealRehab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RealRehab.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C89A84BE2EB138170074B855 /* RealRehabPracticeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C89A84C82EB138170074B855 /* RealRehabPracticeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealRehabPracticeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -155,9 +172,9 @@
 		C8A2B3D52ED00003004D9347 /* ScheduleVisualizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleVisualizerView.swift; sourceTree = "<group>"; };
 		C8A3B4E52ED00004004D9347 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		C8A3B4E72ED00005004D9347 /* NotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationDelegate.swift; sourceTree = "<group>"; };
-		C8D0BBBB2F300001004D9347 /* AppThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppThemeManager.swift; sourceTree = "<group>"; };
-		C8E1CC1C2F300002004D9347 /* Color+Adaptive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Adaptive.swift"; sourceTree = "<group>"; };
 		C8A4B5C62ED0006004D9347 /* AnalyticsSummaryBoxesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsSummaryBoxesView.swift; sourceTree = "<group>"; };
+		C8A5B6C72ED0007004D9347 /* StreakService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakService.swift; sourceTree = "<group>"; };
+		C8A6B7C92ED0008004D9347 /* StreakIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakIconView.swift; sourceTree = "<group>"; };
 		C8A9B3E12ED0010A004D9347 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		C8AEEC9E2EB2D7A200720184 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		C8AEECA02EB2D7A200720184 /* CalibrateDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrateDeviceView.swift; sourceTree = "<group>"; };
@@ -167,8 +184,6 @@
 		C8AEECA32EB2D7A200720184 /* CreateAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateAccount.swift; sourceTree = "<group>"; };
 		C8AEECA62EB2D7A200720184 /* JourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyMapView.swift; sourceTree = "<group>"; };
 		C8AEECA82EB2D7A200720184 /* LessonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonView.swift; sourceTree = "<group>"; };
-		35B8EB891894471A85043521 /* BenchmarkExtensionLessonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkExtensionLessonView.swift; sourceTree = "<group>"; };
-		CA8B7294C4334B5BBF2FDBC5 /* BenchmarkSLRLessonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkSLRLessonView.swift; sourceTree = "<group>"; };
 		C8AEECAB2EB2D7A200720184 /* PracticeSensorSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeSensorSimulator.swift; sourceTree = "<group>"; };
 		C8AEECAC2EB2D7A200720184 /* RealRehabPracticeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealRehabPracticeApp.swift; sourceTree = "<group>"; };
 		C8AEECAD2EB2D7A200720184 /* RehabOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RehabOverviewView.swift; sourceTree = "<group>"; };
@@ -181,6 +196,14 @@
 		C8B1B2C62ED00001004D9349 /* LocalLessonProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLessonProgressStore.swift; sourceTree = "<group>"; };
 		C8B1B2C82ED00001004D934A /* OutboxItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutboxItem.swift; sourceTree = "<group>"; };
 		C8B1B2CA2ED00001004D934B /* OutboxSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutboxSyncManager.swift; sourceTree = "<group>"; };
+		C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsCollector.swift; sourceTree = "<group>"; };
+		C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsService.swift; sourceTree = "<group>"; };
+		C8B2D0052ED00001004D9351 /* LessonSensorInsightsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsSync.swift; sourceTree = "<group>"; };
+		C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonAnalyticsView.swift; sourceTree = "<group>"; };
+		C8C1D1E12ED00009004D9347 /* MessagingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingView.swift; sourceTree = "<group>"; };
+		C8C1D1E32ED0000A004D9347 /* MessagingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingService.swift; sourceTree = "<group>"; };
+		C8D0BBBB2F300001004D9347 /* AppThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppThemeManager.swift; sourceTree = "<group>"; };
+		C8D1E2F32ED0000C004D9347 /* LessonSummaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSummaryService.swift; sourceTree = "<group>"; };
 		C8D677BC2EB8285A00829144 /* PairDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceView.swift; sourceTree = "<group>"; };
 		C8D677BC2EB8285A00829146 /* TestPairDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestPairDeviceView.swift; sourceTree = "<group>"; };
 		C8D677C82EB839FC00829144 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -190,14 +213,12 @@
 		C8D677EB2EBA932000829144 /* InjurySelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjurySelectView.swift; sourceTree = "<group>"; };
 		C8D677EC2EBA932000829144 /* PatientListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientListView.swift; sourceTree = "<group>"; };
 		C8D677F52EBA9C0F00829144 /* PTJourneyMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJourneyMapView.swift; sourceTree = "<group>"; };
-		C9F1E2D32F301010004D934A /* PTLessonParameterHelpSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLessonParameterHelpSheet.swift; sourceTree = "<group>"; };
 		C8D677FD2EBAF71B00829144 /* PatientDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientDetailView.swift; sourceTree = "<group>"; };
 		C8D677FF2EBB095E00829144 /* PTDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDetailView.swift; sourceTree = "<group>"; };
 		C8E1A0012ED00001004D9347 /* PendingLinkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingLinkStore.swift; sourceTree = "<group>"; };
 		C8E1A0032ED00001004D9349 /* InvitedPatientsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvitedPatientsStore.swift; sourceTree = "<group>"; };
 		C8E1A0052ED00001004D934B /* ShareSheetHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheetHelper.swift; sourceTree = "<group>"; };
-		D1E2F3A42ED0000B004D9347 /* PatientLessonScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientLessonScore.swift; sourceTree = "<group>"; };
-		A3B2B3634A734A548421B28B /* PatientStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientStatus.swift; sourceTree = "<group>"; };
+		C8E1CC1C2F300002004D9347 /* Color+Adaptive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Adaptive.swift"; sourceTree = "<group>"; };
 		C8F4A7012ED2C79A00BADF02 /* BluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 		C8F4A8212ED2F3B500BADF02 /* PTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTService.swift; sourceTree = "<group>"; };
 		C8F4A8232ED2F3B600BADF03 /* PTSessionCompleteNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSessionCompleteNotifier.swift; sourceTree = "<group>"; };
@@ -205,15 +226,10 @@
 		C8F4A8252ED2F3B600BADF04 /* NPIVerificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPIVerificationService.swift; sourceTree = "<group>"; };
 		C8F4A8322ED2F3B600BADF02 /* LessonProgressSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonProgressSync.swift; sourceTree = "<group>"; };
 		C8FF08EB2ED68CB6007FE9DC /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
-		C8B2D0012ED00001004D9347 /* LessonSensorInsightsCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsCollector.swift; sourceTree = "<group>"; };
-		C8B2D0032ED00001004D9349 /* LessonSensorInsightsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsService.swift; sourceTree = "<group>"; };
-		C8B2D0052ED00001004D9351 /* LessonSensorInsightsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSensorInsightsSync.swift; sourceTree = "<group>"; };
-		C8D1E2F32ED0000C004D9347 /* LessonSummaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonSummaryService.swift; sourceTree = "<group>"; };
-		C8A5B6C72ED0007004D9347 /* StreakService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakService.swift; sourceTree = "<group>"; };
-		C8A6B7C92ED0008004D9347 /* StreakIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakIconView.swift; sourceTree = "<group>"; };
-		C8B2D0072ED00001004D9353 /* LessonAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonAnalyticsView.swift; sourceTree = "<group>"; };
-		C8C1D1E12ED00009004D9347 /* MessagingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingView.swift; sourceTree = "<group>"; };
-		C8C1D1E32ED0000A004D9347 /* MessagingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingService.swift; sourceTree = "<group>"; };
+		C9F1E2D32F301010004D934A /* PTLessonParameterHelpSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLessonParameterHelpSheet.swift; sourceTree = "<group>"; };
+		C9F2E3D42F401100004D934E /* LessonRedoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonRedoService.swift; sourceTree = "<group>"; };
+		CA8B7294C4334B5BBF2FDBC5 /* BenchmarkSLRLessonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkSLRLessonView.swift; sourceTree = "<group>"; };
+		D1E2F3A42ED0000B004D9347 /* PatientLessonScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientLessonScore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -309,6 +325,21 @@
 				C82D703B2ED0B4BE004D9347 /* PatientSettingsView.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		C84B701D2F7D711F0086018F /* Direction Videos */ = {
+			isa = PBXGroup;
+			children = (
+				C84B70152F7D711F0086018F /* BraceOn.mp4 */,
+				C84B70162F7D711F0086018F /* ExtensionControl.mp4 */,
+				C84B70172F7D711F0086018F /* HeelSlides.mp4 */,
+				C84B70182F7D711F0086018F /* Knee Extension.mp4 */,
+				C84B70192F7D711F0086018F /* LieDown.mp4 */,
+				C84B701A2F7D711F0086018F /* QuadSet.mp4 */,
+				C84B701B2F7D711F0086018F /* ShortArcQuad.mp4 */,
+				C84B701C2F7D711F0086018F /* StraightLegRaise.mp4 */,
+			);
+			path = "Direction Videos";
 			sourceTree = "<group>";
 		};
 		C89A84A82EB138150074B855 = {
@@ -408,6 +439,7 @@
 			children = (
 				C826BD3E2ECC23CB00B500DC /* Assets.xcassets */,
 				C8003FA12EB42E72008DC812 /* SupabaseConfig.plist */,
+				C84B701D2F7D711F0086018F /* Direction Videos */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -606,6 +638,14 @@
 				C8FF08ED2ED68CB6007FE9DC /* LaunchScreen.storyboard in Resources */,
 				C826BD3F2ECC23CB00B500DC /* Assets.xcassets in Resources */,
 				C8003FA22EB42E72008DC812 /* SupabaseConfig.plist in Resources */,
+				C84B701E2F7D711F0086018F /* QuadSet.mp4 in Resources */,
+				C84B701F2F7D711F0086018F /* HeelSlides.mp4 in Resources */,
+				C84B70202F7D711F0086018F /* ExtensionControl.mp4 in Resources */,
+				C84B70212F7D711F0086018F /* ShortArcQuad.mp4 in Resources */,
+				C84B70222F7D711F0086018F /* BraceOn.mp4 in Resources */,
+				C84B70232F7D711F0086018F /* Knee Extension.mp4 in Resources */,
+				C84B70242F7D711F0086018F /* StraightLegRaise.mp4 in Resources */,
+				C84B70252F7D711F0086018F /* LieDown.mp4 in Resources */,
 			);
 		};
 		C89A84BC2EB138170074B855 /* Resources */ = {

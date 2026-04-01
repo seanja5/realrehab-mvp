@@ -7,6 +7,53 @@
 
 import SwiftUI
 import Combine
+import AVFoundation
+
+// MARK: - Looping Video Player
+/// Muted, auto-playing, looping video from the app bundle. Pass the filename without extension.
+struct LoopingVideoView: UIViewRepresentable {
+    let videoName: String
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = PlayerView()
+        configure(view: view, coordinator: context.coordinator)
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        guard let playerView = uiView as? PlayerView else { return }
+        playerView.playerLayer.frame = uiView.bounds
+    }
+
+    private func configure(view: PlayerView, coordinator: Coordinator) {
+        let ext = "mp4"
+        guard let url = Bundle.main.url(forResource: videoName, withExtension: ext) else { return }
+        let item = AVPlayerItem(url: url)
+        let player = AVQueuePlayer(playerItem: item)
+        player.isMuted = true
+        coordinator.player = player
+        coordinator.looper = AVPlayerLooper(player: player, templateItem: item)
+        view.playerLayer.player = player
+        view.playerLayer.videoGravity = .resizeAspectFill
+        player.play()
+    }
+
+    class Coordinator {
+        var player: AVQueuePlayer?
+        var looper: AVPlayerLooper?
+    }
+
+    class PlayerView: UIView {
+        override class var layerClass: AnyClass { AVPlayerLayer.self }
+        var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            playerLayer.frame = bounds
+        }
+    }
+}
 
 // MARK: - Brand Colors (shared)
 extension Color {

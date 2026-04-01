@@ -110,9 +110,18 @@ struct BenchmarkSLRLessonView: View {
     var body: some View {
         GeometryReader { geo in
             VStack(alignment: .center, spacing: 0) {
-                // Progress header (match LessonView style/positioning)
-                progressHeader
-                    .padding(.top, 4)
+                // Progress header — hidden on the prepare screen so the video can take that spot
+                if phase == .prepare {
+                    if restCalibrationValue != nil && maxCalibrationValue != nil && calibrationError == nil {
+                        LoopingVideoView(videoName: "StraightLegRaise")
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 260)
+                            .clipped()
+                    }
+                } else {
+                    progressHeader
+                        .padding(.top, 4)
+                }
 
                 // Main card (same size/feel as LessonView)
                 ZStack {

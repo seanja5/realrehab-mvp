@@ -268,16 +268,16 @@ extension ACLJourneyModels {
 
     private static let lessonDescriptions: [String: String] = [
         // Phase 1 — benchmarks
-        "Extension Control": "Straighten your leg completely and hold the position. Pass criteria: hold full extension without movement — a key gate before Phase 2.",
-        "Straight Leg Raise Control": "Lift your straight leg while keeping the knee fully straight. Pass criteria: knee stays fully straight throughout each rep — confirms your quad can stabilize independently.",
+        "Extension Control": "Extend your leg to its maximum and hold it steady for the full duration shown. Tests your ability to reach and maintain full knee extension — a required test before Phase 1 part 2.",
+        "Straight Leg Raise Control": "While lying down with your leg fully extended, raise it upward along the animation and lower it with control. Tests quad strength and your ability to keep the knee straight throughout the range. A required test before progressing into Phase 2 exercises.",
         // Phase 1 — exercises
-        "Quad Sets": "Tighten your thigh muscle while keeping your leg flat, holding the contraction for the full duration shown.",
+        "Quad Sets": "Sit down with your leg relaxed and extend it as the bar fills, then hold the position for the duration shown before lowering. Builds quad activation and isometric strength.",
         "Quad Sets — Extended Holds": "Hold a thigh contraction for an extended duration to build isometric endurance in the quadriceps.",
-        "Short Arc Quad": "Starting at 45°, extend your knee to straight and hold briefly to strengthen the terminal range of the quad.",
+        "Short Arc Quad": "Lie down with your knee bent over a foam roller and extend your leg to full straightness as the bar fills, then lower back to rest. Targets the last degrees of knee extension.",
         "Short Arc Quad — Control Focus": "Extend from 45° to full extension with slow, precise control to improve motor accuracy at end-range.",
-        "Heel Slides": "Slide your heel toward your body while lying down to gently bend the knee and improve range of motion.",
-        "Knee Extension": "Slowly straighten your knee while seated, focusing on fully extending the leg and engaging your thigh muscle.",
-        "Seated Knee Extensions": "Slowly straighten your knee while seated, focusing on fully extending the leg and engaging your thigh muscle.",
+        "Heel Slides": "Lie down, start with your knee bent, and straighten your leg as the bar fills, then slide your heel back toward your body as it empties. Helps restore knee range of motion.",
+        "Knee Extension": "Sit and extend your leg to full straightness as the bar fills, then lower it as it empties. Builds quadricep strength and full knee extension range.",
+        "Seated Knee Extensions": "Sit and extend your leg to full straightness as the bar fills, then lower it as it empties. Builds quadricep strength and full knee extension range.",
         "Seated Knee Extensions — Strength": "Extend your knee fully and hold at the top to challenge both quad strength and isometric endurance.",
         // Phase 1 — legacy titles (kept for backward compatibility)
         "Quad Sets (Isometric)": "Tighten your thigh muscle while keeping your leg straight, holding the contraction without moving the knee.",

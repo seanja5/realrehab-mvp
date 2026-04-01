@@ -20,6 +20,36 @@ struct CalibrateDeviceView: View {
         (lessonTitle?.lowercased().contains("short arc") == true) ? 45 : 90
     }
 
+    private var t: String { lessonTitle?.lowercased() ?? "" }
+
+    /// Instruction text shown before the "Set Starting Position" button.
+    private var startingPositionText: String {
+        if t.contains("quad set") || t.contains("knee extension") {
+            return "While sitting, relax your leg until your knee is comfortably bent in its resting position. When you're ready, tap Set Starting Position."
+        }
+        if t.contains("short arc") {
+            return "While lying down, rest your leg over the foam roller with the back of your knee resting directly on top of it. Once your leg is relaxed in position, tap Set Starting Position."
+        }
+        if t.contains("heel slide") {
+            return "While lying down, bend your leg with your foot still touching the surface until your knee is roughly at a 90-degree angle. When you're ready, tap Set Starting Position."
+        }
+        if t.contains("extension control") {
+            return "While sitting with your brace on, relax your leg until it's comfortably bent in its resting position. When you're ready, tap Set Starting Position."
+        }
+        if t.contains("straight leg raise") {
+            return "While lying down, relax your leg until your knee is bent roughly at a 90-degree angle. When you're ready, tap Set Starting Position."
+        }
+        return "Relax your leg until your knee is bent at roughly a \(startingAngleDeg)-degree angle. When you're ready, tap Set Starting Position."
+    }
+
+    /// Instruction text shown before the "Set Maximum Position" button.
+    private var maxPositionText: String {
+        if t.contains("short arc") {
+            return "Now, with the back of your knee still resting on the roller, extend your leg as far as you comfortably can, then tap Set Maximum Position."
+        }
+        return "Now slowly extend your leg as far as you comfortably can, then tap Set Maximum Position."
+    }
+
     /// Brief context line shown below the test mode banner.
     private var exerciseContextLine: String? {
         guard let t = lessonTitle?.lowercased() else { return nil }
@@ -138,7 +168,7 @@ struct CalibrateDeviceView: View {
                             }
                         }
 
-                        Text("Relax your leg until your knee is bent at roughly a \(startingAngleDeg)-degree angle. When you're ready, tap Set Starting Position.")
+                        Text(startingPositionText)
                             .font(.rrBody)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.leading)
@@ -170,7 +200,7 @@ struct CalibrateDeviceView: View {
                             .padding(.leading, 4)
                         }
 
-                        Text("Now slowly extend your leg as far as you comfortably can, then tap Set Maximum Position.")
+                        Text(maxPositionText)
                             .font(.rrBody)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.leading)
@@ -226,7 +256,7 @@ struct CalibrateDeviceView: View {
                         if let finish = onFinish {
                             finish()
                         } else if lessonId != nil {
-                            router.go(.directionsView1(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle, sets: sets, setRestSec: setRestSec, holdDurationSec: holdDurationSec))
+                            router.go(.directionsView2(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle, sets: sets, setRestSec: setRestSec, holdDurationSec: holdDurationSec))
                         } else {
                             router.go(.journeyMap)
                         }

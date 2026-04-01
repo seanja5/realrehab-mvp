@@ -354,12 +354,13 @@ struct JourneyMapView: View {
                             let nTitle = node.title
                             let nSets = node.sets
                             let nSetRest = node.restBetweenSets
+                            // All lessons and benchmarks start at DirectionsView1 first
                             if node.nodeType == .benchmark {
                                 let holdDuration = node.timeHoldingPosition ?? 8
-                                router.go(.benchmarkCalibrateDevice(holdDuration: holdDuration, reps: nReps, restSec: nRest, lessonId: nId, lessonTitle: nTitle))
+                                router.go(.directionsView1(reps: nReps, restSec: nRest, lessonId: nId, lessonTitle: nTitle, sets: nSets, setRestSec: nSetRest, holdDurationSec: holdDuration))
                             } else {
                                 let quadHold: Int? = nTitle.lowercased().contains("quad set") ? node.timeHoldingPosition : nil
-                                router.go(.calibrateDevice(reps: nReps, restSec: nRest, lessonId: nId, lessonTitle: nTitle, sets: nSets, setRestSec: nSetRest, holdDurationSec: quadHold))
+                                router.go(.directionsView1(reps: nReps, restSec: nRest, lessonId: nId, lessonTitle: nTitle, sets: nSets, setRestSec: nSetRest, holdDurationSec: quadHold))
                             }
                             withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                                 showCallout = false

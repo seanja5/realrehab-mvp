@@ -214,13 +214,8 @@ struct BenchmarkExtensionLessonView: View {
                     .font(.rrBody)
                     .foregroundStyle(.secondary)
             } else {
-                Text("Straighten your leg fully and hold it steady.")
-                    .font(.rrTitle)
-                    .multilineTextAlignment(.center)
-
-                Text("Fill the bar by extending your leg, then hold when prompted.")
-                    .font(.rrBody)
-                    .foregroundStyle(.secondary)
+                Text("For this benchmark, extend your leg to its maximum extension and hold the position for the duration shown.")
+                    .font(.rrHeadline)
                     .multilineTextAlignment(.center)
 
                 PrimaryButton(title: "Begin Benchmark", useLargeFont: true) {

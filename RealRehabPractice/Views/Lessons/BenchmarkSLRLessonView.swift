@@ -241,11 +241,8 @@ struct BenchmarkSLRLessonView: View {
                     .font(.rrBody)
                     .foregroundStyle(.secondary)
             } else {
-                Text("Straight Leg Raise")
+                Text("For this benchmark, lie down and extend your leg as far as you comfortably can. Once you’re there, you’ll be prompted to raise your leg up and down along with the animation. Keep your leg straight the entire time.")
                     .font(.rrHeadline)
-                Text("Straighten your leg fully, then you’ll get a short countdown before the guided raises begin.")
-                    .font(.rrBody)
-                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                 PrimaryButton(title: "Begin Benchmark", useLargeFont: true) {
                     startBenchmark()

@@ -25,16 +25,17 @@ struct DirectionsView2: View {
         self.holdDurationSec = holdDurationSec
     }
 
+    private var t: String { lessonTitle?.lowercased() ?? "" }
+
     private var instructionText: String {
-        let t = lessonTitle?.lowercased() ?? ""
         if t.contains("quad set") {
-            return "When the bar fills, tighten your thigh muscle and hold your leg still for the duration shown.\n\nKeep your leg flat and avoid any lifting — the goal is muscle contraction, not movement."
+            return "Follow the animation on screen. Extend your leg as the bar fills and rest it as it empties. When the bar reaches the top, hold your leg in the extended position for the duration shown."
         }
         if t.contains("short arc") {
-            return "Match the animation: extend your leg to straight as the bar fills, then lower it slowly as it empties.\n\nStart from the 45° position and focus on controlled extension through the final range."
+            return "Match the animation: extend your leg to straight as the bar fills, then lower it back to rest as it empties. Keep your knee rested on the roller the entire time."
         }
         if t.contains("heel slide") {
-            return "Match the animation: slide your heel toward your body as the bar fills, then slowly straighten back out as it empties.\n\nKeep your heel on the surface and move at a steady, controlled pace."
+            return "Start with your knee bent and match the animation: straighten your leg out as the bar fills, then slowly slide your heel back toward your body as it empties. Keep your heel on the surface the whole time."
         }
         if t.contains("straight leg raise") {
             return "As the bar fills, slowly lift your straight leg about 12–18 inches off the ground. Lower it with control as the bar empties.\n\nKeep your knee completely straight the entire time — do not let it bend at any point."
@@ -42,28 +43,20 @@ struct DirectionsView2: View {
         if t.contains("ankle pump") {
             return "Pump your foot upward toward your shin, then back down in a steady rhythm — one pump per cycle of the bar.\n\nMake each movement full and deliberate. These pumps promote circulation and help reduce swelling in your knee."
         }
-        if t.contains("extension control") {
-            return "When prompted, slowly straighten your knee as far as it will go and hold the position.\n\nFocus on fully locking out the joint. Keep your thigh relaxed — the contraction should come from pressing the back of your knee toward the surface."
-        }
         // Default: knee extensions
-        return "Match the animation: extend your leg as the box fills, and rest as it empties.\n\nKeep your thigh centered, avoid hip rotation, and keep your foot off the ground for the entire lesson."
+        return "Match the animation: extend your leg as the bar fills, and rest as it empties.\n\nKeep your thigh centered, avoid hip rotation, and keep your foot off the ground for the entire lesson."
     }
 
     /// Returns the bundled mp4 filename (without extension) for this lesson, or nil if none.
     private var videoName: String? {
-        let t = lessonTitle?.lowercased() ?? ""
         if t.contains("quad set") { return "QuadSet" }
         if t.contains("short arc") { return "ShortArcQuad" }
         if t.contains("heel slide") { return "HeelSlides" }
         if t.contains("knee extension") { return "Knee Extension" }
-        if t.contains("extension control") { return "ExtensionControl" }
-        if t.contains("straight leg raise") { return "StraightLegRaise" }
         return nil
     }
 
-    private var navTitle: String {
-        lessonTitle ?? "Lesson"
-    }
+    private var navTitle: String { lessonTitle ?? "Lesson" }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -85,10 +78,7 @@ struct DirectionsView2: View {
 
             Spacer()
 
-            PrimaryButton(
-                title: "Next",
-                useLargeFont: true
-            ) {
+            PrimaryButton(title: "Next", useLargeFont: true) {
                 router.go(.lesson(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle, sets: sets, setRestSec: setRestSec, holdDurationSec: holdDurationSec))
             }
             .padding(.horizontal, 24)

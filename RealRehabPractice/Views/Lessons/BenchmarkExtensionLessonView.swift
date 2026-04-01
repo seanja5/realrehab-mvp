@@ -171,7 +171,10 @@ struct BenchmarkExtensionLessonView: View {
         .navigationTitle(lessonTitle)
         .navigationBarBackButtonHidden(true)
         .swipeToGoBack()
-        .toolbar { ToolbarItem(placement: .topBarLeading) { BackButton() } }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) { BackButton() }
+            ToolbarItem(placement: .topBarTrailing) { BluetoothStatusIndicator() }
+        }
         .onAppear {
             loadCalibration()
         }

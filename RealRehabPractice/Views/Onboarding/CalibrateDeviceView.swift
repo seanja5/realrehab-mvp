@@ -274,6 +274,7 @@ struct CalibrateDeviceView: View {
         .swipeToGoBack()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) { BackButton() }
+            ToolbarItem(placement: .topBarTrailing) { BluetoothStatusIndicator() }
         }
         .onAppear {
             if testMode {

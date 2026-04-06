@@ -321,17 +321,23 @@ enum PatientService {
     return result
   }
   
-  // Get PT info (name, email, phone) by PT profile ID (with caching)
+  // Get PT info (name, email, phone, practice) by PT profile ID (with caching)
   struct PTInfo: Codable {
     let id: UUID
     let email: String?
     let first_name: String?
     let last_name: String?
     let phone: String?
+    let practice_name: String?
+    let practice_address: String?
+    let specialization: String?
+    let pt_credential_type: String?
+    let license_number: String?
+    let npi_number: String?
   }
   
   static func getPTInfo(ptProfileId: UUID) async throws -> PTInfo? {
-    let actualKey = "pt_info_by_id:\(ptProfileId.uuidString)"
+    let actualKey = "pt_info_by_id_v3:\(ptProfileId.uuidString)"
     
     // Check cache first (disk persistence for offline/tab switching)
     if let cached = await CacheService.shared.getCached(actualKey, as: PTInfo?.self, useDisk: true) {
@@ -346,18 +352,36 @@ enum PatientService {
       let first_name: String?
       let last_name: String?
       let phone: String?
+      let practice_name: String?
+      let practice_address: String?
+      let specialization: String?
+      let license_number: String?
+      let npi_number: String?
+      let pt_credential_type: String?
     }
-    
+
     let ptRows: [PTRow] = try await client
       .schema("accounts")
       .from("pt_profiles")
-      .select("id,email,first_name,last_name,phone")
+      .select("id,email,first_name,last_name,phone,practice_name,practice_address,specialization,license_number,npi_number,pt_credential_type")
       .eq("id", value: ptProfileId.uuidString)
       .limit(1)
       .decoded()
-    
+
     let result = ptRows.first.map { pt in
-      PTInfo(id: pt.id, email: pt.email, first_name: pt.first_name, last_name: pt.last_name, phone: pt.phone)
+      PTInfo(
+        id: pt.id,
+        email: pt.email,
+        first_name: pt.first_name,
+        last_name: pt.last_name,
+        phone: pt.phone,
+        practice_name: pt.practice_name,
+        practice_address: pt.practice_address,
+        specialization: pt.specialization,
+        pt_credential_type: pt.pt_credential_type,
+        license_number: pt.license_number,
+        npi_number: pt.npi_number
+      )
     }
     
     // Cache the result (disk persistence for offline/tab switching)

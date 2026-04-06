@@ -132,9 +132,10 @@ struct LessonAnalyticsView: View {
                 }
                 .padding(.bottom, RRSpace.section)
 
-                // Section 1: Dynamic Valgus
+                // Section 1: Leg Drift
                 analyticsSection(
                     title: "Leg Drift",
+                    description: "Measures lateral deviation of the knee during extension. High drift may indicate quad imbalance or poor motor control.",
                     visual: {
                         DriftGraphView(dataPoints: driftData, totalDuration: totalDuration)
                     },
@@ -144,9 +145,10 @@ struct LessonAnalyticsView: View {
                     countValue: "\(driftCount)"
                 )
 
-                // Section 2: Leg Shakes
+                // Section 2: Leg Shake / Tremor
                 analyticsSection(
                     title: "Leg Shake / Tremor",
+                    description: "Detects involuntary tremors during movement. Excessive shaking can indicate fatigue or neuromuscular instability.",
                     visual: {
                         ShakeGraphView(dataPoints: shakeData, totalDuration: totalDuration)
                     },
@@ -156,9 +158,10 @@ struct LessonAnalyticsView: View {
                     countValue: "\(shakeCount)"
                 )
 
-                // Section 3: Too fast
+                // Section 3: Too Fast
                 eventTimelineSection(
                     title: "Too Fast",
+                    description: "Flags reps where the extension was completed too quickly. Controlled tempo is critical for proper muscle activation and tissue loading.",
                     events: tooFastEvents,
                     totalDuration: totalDuration,
                     percentLabel: "pace correct",
@@ -167,9 +170,10 @@ struct LessonAnalyticsView: View {
                     countValue: "\(tooFastEvents.count)"
                 )
 
-                // Section 4: Too slow
+                // Section 4: Too Slow
                 eventTimelineSection(
                     title: "Too Slow",
+                    description: "Flags reps completed too slowly. May indicate pain avoidance, weakness, or difficulty with the prescribed tempo.",
                     events: tooSlowEvents,
                     totalDuration: totalDuration,
                     percentLabel: "pace correct",
@@ -178,26 +182,16 @@ struct LessonAnalyticsView: View {
                     countValue: "\(tooSlowEvents.count)"
                 )
 
-                // Section 5: Max not reached
+                // Section 5: Max Not Reached
                 eventTimelineSection(
                     title: "Max Not Reached",
+                    description: "Tracks reps where full knee extension was not achieved. Incomplete range of motion can delay recovery milestones.",
                     events: maxNotReachedEvents,
                     totalDuration: totalDuration,
                     percentLabel: "full extension",
                     percentValue: "\(Int(maxNotReachedPercent))%",
                     countLabel: "times extend further",
                     countValue: "\(maxNotReachedEvents.count)"
-                )
-
-                // Section 6: Anterior knee migration (hardcoded - no hardware)
-                eventTimelineSection(
-                    title: "Anterior Knee Migration (Knee Over Toe)",
-                    events: [],
-                    totalDuration: totalDuration,
-                    percentLabel: "knee behind toe",
-                    percentValue: "100%",
-                    countLabel: "times knee over toe",
-                    countValue: "0"
                 )
             }
             .padding(.bottom, 40)
@@ -236,6 +230,7 @@ struct LessonAnalyticsView: View {
 
     private func analyticsSection<V: View>(
         title: String,
+        description: String,
         @ViewBuilder visual: () -> V,
         percentLabel: String,
         percentValue: String,
@@ -243,10 +238,16 @@ struct LessonAnalyticsView: View {
         countValue: String
     ) -> some View {
         VStack(alignment: .leading, spacing: RRSpace.stack) {
-            Text(title)
-                .font(.rrTitle)
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 16)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+                Text(description)
+                    .font(.rrCaption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 16)
 
             visual()
                 .padding(.horizontal, 16)
@@ -263,6 +264,7 @@ struct LessonAnalyticsView: View {
 
     private func eventTimelineSection(
         title: String,
+        description: String,
         events: [(rep: Int, timeSec: Double)],
         totalDuration: Double,
         percentLabel: String,
@@ -271,10 +273,16 @@ struct LessonAnalyticsView: View {
         countValue: String
     ) -> some View {
         VStack(alignment: .leading, spacing: RRSpace.stack) {
-            Text(title)
-                .font(.rrTitle)
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 16)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.rrTitle)
+                    .foregroundStyle(.primary)
+                Text(description)
+                    .font(.rrCaption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 16)
 
             EventTimelineView(events: events, totalDuration: totalDuration)
                 .padding(.horizontal, 16)
@@ -302,21 +310,31 @@ struct LessonAnalyticsView: View {
     }
 
     private func statBox(main: String, caption: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(main)
-                .font(.rrHeadline)
-                .foregroundStyle(.primary)
-            Text(caption)
-                .font(.rrCaption)
-                .foregroundStyle(.secondary)
+        HStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color.brandDarkBlue.opacity(0.45))
+                .frame(width: 3)
+                .padding(.vertical, 10)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(main)
+                    .font(.rrHeadline)
+                    .foregroundStyle(.primary)
+                Text(caption)
+                    .font(.rrCaption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 10)
+            .padding(.trailing, 12)
+            .padding(.vertical, 12)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.rrSurface)
-                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                .shadow(color: Color.brandDarkBlue.opacity(0.07), radius: 8, x: 0, y: 3)
+                .shadow(color: .black.opacity(0.04), radius: 3, x: 0, y: 1)
         )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Data mapping
@@ -404,7 +422,7 @@ private struct SkeletonAnalyticsView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, 8)
 
-                ForEach(0..<6, id: \.self) { _ in
+                ForEach(0..<5, id: \.self) { _ in
                     VStack(alignment: .leading, spacing: 8) {
                         SkeletonBlock(height: 24)
                             .frame(maxWidth: 200)

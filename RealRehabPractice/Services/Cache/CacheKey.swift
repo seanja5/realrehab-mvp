@@ -17,7 +17,7 @@ enum CacheKey {
     
     // PT profile keys
     static func ptProfile(profileId: UUID) -> String {
-        "pt_profile:\(profileId.uuidString)"
+        "pt_profile_v2:\(profileId.uuidString)"
     }
     
     // PT info for patient view

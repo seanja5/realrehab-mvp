@@ -142,7 +142,9 @@ struct LessonNode: Identifiable {
     var enableRestBetweenSets: Bool = false
     var enableKneeBendAngle: Bool = false
     var enableTimeHoldingPosition: Bool = false
-    
+    /// Animation style for the lesson engine: "arc_extension" (leg arc) or "isometric_hold" (fill box).
+    var animationStyle: String = "arc_extension"
+
     /// Use when building from a saved plan (DTO) so node id matches plan and patient_lesson_progress.lesson_id.
     init(
         id: UUID,
@@ -151,7 +153,8 @@ struct LessonNode: Identifiable {
         reps: Int = 12,
         restSec: Int = 3,
         nodeType: JourneyNodeType = .lesson,
-        phase: Int = 1
+        phase: Int = 1,
+        animationStyle: String = "arc_extension"
     ) {
         self.id = id
         self.title = title
@@ -160,6 +163,7 @@ struct LessonNode: Identifiable {
         self.restSec = restSec
         self.nodeType = nodeType
         self.phase = phase
+        self.animationStyle = animationStyle
     }
 
     /// Use when creating new nodes (e.g. PT adding a lesson); generates a new id.
@@ -169,7 +173,8 @@ struct LessonNode: Identifiable {
         reps: Int = 12,
         restSec: Int = 3,
         nodeType: JourneyNodeType = .lesson,
-        phase: Int = 1
+        phase: Int = 1,
+        animationStyle: String = "arc_extension"
     ) {
         self.id = UUID()
         self.title = title
@@ -178,6 +183,7 @@ struct LessonNode: Identifiable {
         self.restSec = restSec
         self.nodeType = nodeType
         self.phase = phase
+        self.animationStyle = animationStyle
     }
     
     static func lesson(title: String, isLocked: Bool = false, reps: Int = 12, restSec: Int = 3, phase: Int) -> LessonNode {

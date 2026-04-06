@@ -1821,7 +1821,7 @@ struct FormMenuField: View {
 /// Looping bar animation anchored to `startDate` so it always begins at the bottom.
 /// `isRed`: entire box fills red, bar+dot stay blue (matches real lesson failure state).
 /// `isHeelSlides`: starts at top (leg starts straight). `isShortArc`: faster 3.5 s cycle.
-private struct MiniBarAnimationView: View {
+struct MiniBarAnimationView: View {
     var startDate: Date = Date()
     var isRed: Bool = false
     var isQuadSet: Bool = false
@@ -1906,7 +1906,7 @@ private struct MiniBarAnimationView: View {
 
 // MARK: - Mini Circle Animation (benchmark-1 preview)
 /// Looping ring + moving dot anchored to `startDate`.
-private struct MiniCircleAnimationView: View {
+struct MiniCircleAnimationView: View {
     var startDate: Date = Date()
     var isRed: Bool = false
     let size: CGFloat

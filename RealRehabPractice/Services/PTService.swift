@@ -17,6 +17,8 @@ enum PTService {
         let practice_name: String?
         let practice_address: String?
         let specialization: String?
+        /// Professional credential designation (PT, DPT, PTA, etc.)
+        let pt_credential_type: String?
         /// When true, PT receives notifications when a patient completes a lesson. Default true if column missing.
         let notify_session_complete: Bool?
         /// When true, PT receives missed-day reminders. Default false if column missing.
@@ -60,7 +62,8 @@ enum PTService {
         npiNumber: String,
         practiceName: String?,
         practiceAddress: String?,
-        specialization: String?
+        specialization: String?,
+        ptCredentialType: String? = nil
     ) async throws -> UUID {
         guard let profile = try await AuthService.myProfile() else {
             throw NSError(
@@ -100,6 +103,13 @@ enum PTService {
             payload["specialization"] = AnyEncodable(specialization)
         } else {
             payload["specialization"] = AnyEncodable(Optional<String>.none)
+        }
+
+        let trimmedCredentialType = ptCredentialType?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let credentialType = trimmedCredentialType, !credentialType.isEmpty {
+            payload["pt_credential_type"] = AnyEncodable(credentialType)
+        } else {
+            payload["pt_credential_type"] = AnyEncodable(Optional<String>.none)
         }
 
         let rows: [PTProfileRow] = try await client
@@ -156,7 +166,7 @@ enum PTService {
         let rows: [PTProfileRow] = try await client
             .schema("accounts")
             .from("pt_profiles")
-            .select("id,profile_id,email,first_name,last_name,phone,license_number,npi_number,practice_name,practice_address,specialization,notify_session_complete,notify_missed_day,notify_messages")
+            .select("id,profile_id,email,first_name,last_name,phone,license_number,npi_number,pt_credential_type,practice_name,practice_address,specialization,notify_session_complete,notify_missed_day,notify_messages")
             .eq("profile_id", value: profile.id.uuidString)
             .limit(1)
             .decoded()

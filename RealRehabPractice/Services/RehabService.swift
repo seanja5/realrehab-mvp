@@ -42,6 +42,7 @@ enum RehabService {
     let timeHoldingPosition: Int?  // seconds to hold; used by Extension Control benchmark and wall sit
     let sets: Int?          // number of sets; nil = legacy (treat as 1)
     let setRestSec: Int?    // rest between sets in seconds; nil = legacy (treat as 60)
+    let animationStyle: String?  // "arc_extension" or "isometric_hold"; nil = legacy (treat as "arc_extension")
   }
   
   struct PlanRow: Codable {
@@ -70,7 +71,8 @@ enum RehabService {
       let nodeId = UUID(uuidString: dto.id) ?? UUID()
       let nodeType: JourneyNodeType = (dto.nodeType == "benchmark") ? .benchmark : .lesson
       let phase = max(1, min(4, dto.phase ?? 1))
-      var node = LessonNode(id: nodeId, title: dto.title, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase)
+      let animationStyle = dto.animationStyle ?? "arc_extension"
+      var node = LessonNode(id: nodeId, title: dto.title, isLocked: dto.isLocked, reps: dto.reps, restSec: dto.restSec, nodeType: nodeType, phase: phase, animationStyle: animationStyle)
       node.sets = dto.sets ?? 1
       node.restBetweenSets = dto.setRestSec ?? 60
       if node.nodeType == .lesson && dto.sets != nil {
@@ -410,7 +412,8 @@ enum RehabService {
           phase: node.phase,
           timeHoldingPosition: node.timeHoldingPosition,
           sets: node.sets,
-          setRestSec: node.restBetweenSets
+          setRestSec: node.restBetweenSets,
+          animationStyle: node.animationStyle
         )
       }
       

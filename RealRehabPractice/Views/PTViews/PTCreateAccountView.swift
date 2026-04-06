@@ -10,6 +10,7 @@ struct PTCreateAccountView: View {
     @State private var phoneNumber = ""
     @State private var licenseNumber = ""
     @State private var npiNumber = ""
+    @State private var ptCredentialType = ""
     @State private var practiceName = ""
     @State private var practiceAddress = ""
     @State private var specialization = ""
@@ -21,6 +22,10 @@ struct PTCreateAccountView: View {
     @State private var errorMessage: String?
 
     private let specializationOptions = ["Orthopedics", "Sports", "Neuro", "Other"]
+    private let credentialTypeOptions = [
+        "PT", "DPT", "PTA", "MPT", "MSPT",
+        "OPT", "SCS", "NCS", "PCS", "GCS", "ECS", "WCS"
+    ]
 
     private var isFormValid: Bool {
         !firstName.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -105,6 +110,8 @@ struct PTCreateAccountView: View {
 
                             FormTextField(title: "NPI Number", placeholder: "NPI Number", text: $npiNumber)
                                 .keyboardType(.numberPad)
+
+                            FormMenuField(title: "Credential Type", selection: $ptCredentialType, options: credentialTypeOptions, showClear: true)
                         }
 
                         Divider()
@@ -179,6 +186,8 @@ struct PTCreateAccountView: View {
 
             // Capture the PT profile ID and set it in session immediately
             // This prevents "PT profile not found" errors when navigating
+            let credentialTypeValue = ptCredentialType.trimmingCharacters(in: .whitespaces).isEmpty ? nil : ptCredentialType
+
             let ptProfileId = try await PTService.ensurePTProfile(
                 firstName: firstName,
                 lastName: lastName,
@@ -188,7 +197,8 @@ struct PTCreateAccountView: View {
                 npiNumber: npiNumber,
                 practiceName: practiceNameValue,
                 practiceAddress: practiceAddressValue,
-                specialization: specializationValue
+                specialization: specializationValue,
+                ptCredentialType: credentialTypeValue
             )
             
             // Set the ptProfileId in session context immediately

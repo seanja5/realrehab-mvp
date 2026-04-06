@@ -14,8 +14,12 @@ struct PTJourneyMapView: View {
     
     @State private var showingAddPopover = false
     @State private var addSelection = 0
+    @State private var addExerciseName = ""  // selected exercise name (or "Custom")
     @State private var addPhaseSelection: Int = 0  // 0 = "Select", 1-4 = Phase 1-4
+    @State private var addAnimationStyle = "arc_extension"  // "arc_extension" or "isometric_hold"
     @State private var customLessonName = ""
+    @State private var animBarStartDate = Date()
+    @State private var animCircleStartDate = Date()
     @State private var scrollContentMinY: CGFloat = 0  // scroll offset when adding (for insert position)
     @State private var showingPhaseGoals = false
     @State private var activePhaseId: Int = 1
@@ -111,7 +115,11 @@ struct PTJourneyMapView: View {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) { showingAddPopover = true }
                         addPhaseSelection = activePhaseId
                         addSelection = 0
+                        addExerciseName = ""
+                        addAnimationStyle = "arc_extension"
                         customLessonName = ""
+                        animBarStartDate = Date()
+                        animCircleStartDate = Date()
                         enableReps = true
                         enableRestBetweenReps = true
                         enableSets = false
@@ -671,14 +679,23 @@ struct PTJourneyMapView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            
+
+            // MARK: Exercise Type (phase-grouped)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Exercise Type")
                     .font(.rrBody)
-                
-                Picker("Exercise Type", selection: $addSelection) {
-                    ForEach(0..<exerciseTypes.count, id: \.self) { index in
-                        Text(exerciseTypes[index]).tag(index)
+
+                Picker("Exercise Type", selection: $addExerciseName) {
+                    Text("Select an exercise").tag("")
+                    ForEach(ACLPhase.allCases, id: \.rawValue) { phase in
+                        Section(header: Text("Phase \(phase.rawValue) — \(phaseShortLabel(phase))")) {
+                            ForEach(phase.exercises, id: \.self) { exercise in
+                                Text(exercise).tag(exercise)
+                            }
+                        }
+                    }
+                    Section {
+                        Text("Custom").tag("Custom")
                     }
                 }
                 .pickerStyle(.menu)
@@ -686,11 +703,12 @@ struct PTJourneyMapView: View {
                 .background(Color(uiColor: .secondarySystemFill))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
-            
+
+            // MARK: Phase picker
             VStack(alignment: .leading, spacing: 8) {
                 Text("Phase #")
                     .font(.rrBody)
-                
+
                 Picker("Phase #", selection: $addPhaseSelection) {
                     Text("Select").tag(0)
                     Text("Phase 1").tag(1)
@@ -703,12 +721,19 @@ struct PTJourneyMapView: View {
                 .background(Color(uiColor: .secondarySystemFill))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
-            
-            if addSelection == exerciseTypes.count - 1 {
+
+            // MARK: Phase aggressiveness note
+            if addPhaseSelection >= 1 {
+                phaseAggressivenessNote(phase: addPhaseSelection)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            // MARK: Custom lesson name
+            if addExerciseName == "Custom" {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Custom Lesson")
+                    Text("Custom Lesson Name")
                         .font(.rrBody)
-                    
+
                     TextField("Enter custom lesson name", text: $customLessonName)
                         .font(.rrBody)
                         .padding(14)
@@ -718,11 +743,31 @@ struct PTJourneyMapView: View {
                         .id("customLessonField")
                 }
             }
-            
+
+            // MARK: Animation Style
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Exercise Animation Style")
+                    .font(.rrHeadline)
+
+                Picker("Animation Style", selection: $addAnimationStyle) {
+                    Text("Filling Bar").tag("arc_extension")
+                    Text("Circle Hold").tag("isometric_hold")
+                }
+                .pickerStyle(.menu)
+                .padding(14)
+                .background(Color(uiColor: .secondarySystemFill))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                animationStylePreview(style: addAnimationStyle)
+                    .transition(.opacity)
+            }
+            .animation(.easeInOut(duration: 0.2), value: addAnimationStyle)
+
+            // MARK: Parameter toggles
             Text("Types of Parameters")
                 .font(.rrHeadline)
                 .padding(.top, 8)
-            
+
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("Number of repetitions")
@@ -731,15 +776,15 @@ struct PTJourneyMapView: View {
                     Toggle("", isOn: $enableReps)
                         .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
                 }
-                
+
                 HStack {
-                    Text("Repetition temp")
+                    Text("Repetition tempo")
                         .font(.rrBody)
                     Spacer()
                     Toggle("", isOn: $enableRestBetweenReps)
                         .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
                 }
-                
+
                 HStack {
                     Text("Number of sets")
                         .font(.rrBody)
@@ -747,7 +792,7 @@ struct PTJourneyMapView: View {
                     Toggle("", isOn: $enableSets)
                         .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
                 }
-                
+
                 HStack {
                     Text("Rest in between sets (sec)")
                         .font(.rrBody)
@@ -755,7 +800,7 @@ struct PTJourneyMapView: View {
                     Toggle("", isOn: $enableRestBetweenSets)
                         .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
                 }
-                
+
                 HStack {
                     Text("Knee bend angle (degrees)")
                         .font(.rrBody)
@@ -763,7 +808,7 @@ struct PTJourneyMapView: View {
                     Toggle("", isOn: $enableKneeBendAngle)
                         .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
                 }
-                
+
                 HStack {
                     Text("Time holding position (sec)")
                         .font(.rrBody)
@@ -772,13 +817,21 @@ struct PTJourneyMapView: View {
                         .toggleStyle(SwitchToggleStyle(tint: Color.brandDarkBlue))
                 }
             }
-            
+
             PrimaryButton(title: "Add Lesson") {
-                let newTitle = (addSelection == exerciseTypes.count - 1 && !customLessonName.isEmpty) ? customLessonName : exerciseTypes[addSelection]
+                let resolvedName: String
+                if addExerciseName == "Custom" {
+                    resolvedName = customLessonName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Custom Lesson" : customLessonName
+                } else if !addExerciseName.isEmpty {
+                    resolvedName = addExerciseName
+                } else {
+                    resolvedName = exerciseTypes[addSelection]
+                }
                 let phase = addPhaseSelection >= 1 ? addPhaseSelection : activePhaseId
                 addNode(
-                    with: newTitle,
+                    with: resolvedName,
                     phase: phase,
+                    animationStyle: addAnimationStyle,
                     enableReps: enableReps,
                     enableRestBetweenReps: enableRestBetweenReps,
                     enableSets: enableSets,
@@ -790,7 +843,7 @@ struct PTJourneyMapView: View {
                     showingAddPopover = false
                 }
             }
-            
+
             SecondaryButton(title: "Close") {
                 withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                     showingAddPopover = false
@@ -798,8 +851,23 @@ struct PTJourneyMapView: View {
             }
         }
         .padding(20)
-        .onChange(of: addSelection) { _, newValue in
-            if newValue == exerciseTypes.count - 1 {
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: addPhaseSelection)
+        .onChange(of: addExerciseName) { _, newValue in
+            // Auto-populate phase when exercise selected from grouped picker
+            if newValue != "Custom" && !newValue.isEmpty {
+                for phase in ACLPhase.allCases where phase.exercises.contains(newValue) {
+                    addPhaseSelection = phase.rawValue
+                    break
+                }
+                // Auto-set animation style based on exercise type
+                let lower = newValue.lowercased()
+                if lower.contains("wall sit") || lower.contains("quad set") || lower.contains("isometric") {
+                    addAnimationStyle = "isometric_hold"
+                } else {
+                    addAnimationStyle = "arc_extension"
+                }
+            }
+            if newValue == "Custom" {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     scrollProxy.scrollTo("customLessonField", anchor: .center)
                 }
@@ -811,6 +879,137 @@ struct PTJourneyMapView: View {
                     scrollProxy.scrollTo("customLessonField", anchor: .center)
                 }
             }
+        }
+    }
+
+    // MARK: - Phase aggressiveness note card
+
+    private func phaseAggressivenessNote(phase: Int) -> some View {
+        let info = phaseAggressivenessInfo(phase: phase)
+        return HStack(alignment: .top, spacing: 10) {
+            Circle()
+                .fill(info.color)
+                .frame(width: 9, height: 9)
+                .padding(.top, 5)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Phase \(phase) · \(info.intensity)")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(info.color)
+                Text(info.description)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(info.color.opacity(0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(info.color.opacity(0.20), lineWidth: 1)
+                )
+        )
+    }
+
+    private struct PhaseAggressivenessInfo {
+        let intensity: String
+        let description: String
+        let color: Color
+    }
+
+    private func phaseAggressivenessInfo(phase: Int) -> PhaseAggressivenessInfo {
+        switch phase {
+        case 1:
+            return PhaseAggressivenessInfo(
+                intensity: "Very Low Intensity",
+                description: "Isometric and low-load movements safe for the acute post-op window. Ideal for early quad activation.",
+                color: Color.brandDarkBlue
+            )
+        case 2:
+            return PhaseAggressivenessInfo(
+                intensity: "Moderate Intensity",
+                description: "Early weight-bearing with controlled range of motion. Monitor patient's pain response closely.",
+                color: Color(red: 0.90, green: 0.65, blue: 0.10)
+            )
+        case 3:
+            return PhaseAggressivenessInfo(
+                intensity: "High Intensity",
+                description: "Single-leg loading and balance challenges. Requires a stable functional foundation before progressing.",
+                color: Color(red: 0.95, green: 0.45, blue: 0.10)
+            )
+        case 4:
+            return PhaseAggressivenessInfo(
+                intensity: "Maximum Load",
+                description: "Dynamic, sport-specific movements with high demand. Reserve for late-stage rehab only.",
+                color: Color(red: 0.85, green: 0.20, blue: 0.20)
+            )
+        default:
+            return PhaseAggressivenessInfo(intensity: "", description: "", color: .secondary)
+        }
+    }
+
+    private func phaseShortLabel(_ phase: ACLPhase) -> String {
+        switch phase {
+        case .one: return "Acute Recovery"
+        case .two: return "Early Strength"
+        case .three: return "Functional Load"
+        case .four: return "Max Performance"
+        }
+    }
+
+    // MARK: - Animation style mini preview (uses actual lesson engine animations)
+
+    @ViewBuilder
+    private func animationStylePreview(style: String) -> some View {
+        if style == "arc_extension" {
+            HStack(alignment: .center, spacing: 14) {
+                MiniBarAnimationView(
+                    startDate: animBarStartDate,
+                    width: 46,
+                    height: 68
+                )
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Filling Bar")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.primary)
+                    Text("The bar rises as the patient extends their leg and falls as they lower it. Each rep matches one full fill-and-empty cycle. Used for most extension and strength exercises.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(uiColor: .secondarySystemBackground))
+                    .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+            )
+        } else {
+            HStack(alignment: .center, spacing: 14) {
+                MiniCircleAnimationView(
+                    startDate: animCircleStartDate,
+                    size: 68
+                )
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Circle Hold")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.primary)
+                    Text("The patient holds their extended leg inside a shrinking ring. The dot must stay centered — best for timed holds, extension benchmarks, and isometric exercises.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(uiColor: .secondarySystemBackground))
+                    .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+            )
         }
     }
     
@@ -1203,6 +1402,7 @@ struct PTJourneyMapView: View {
     private func addNode(
         with title: String,
         phase: Int,
+        animationStyle: String = "arc_extension",
         enableReps: Bool,
         enableRestBetweenReps: Bool,
         enableSets: Bool,
@@ -1212,6 +1412,7 @@ struct PTJourneyMapView: View {
     ) {
         let newNode = LessonNode.lesson(title: title, phase: phase)
         var added = newNode
+        added.animationStyle = animationStyle
         if !title.lowercased().contains("wall sit") {
             added.enableReps = enableReps
             added.enableRestBetweenReps = enableRestBetweenReps

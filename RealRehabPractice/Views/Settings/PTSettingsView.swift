@@ -188,6 +188,8 @@ struct PTSettingsView: View {
 
     private var practiceSection: some View {
         SettingsSection(title: "Practice", innerSpacing: 8) {
+            LabeledValueRow(label: "Credential Type", value: ptProfile?.pt_credential_type ?? "—")
+            Divider()
             LabeledValueRow(label: "Practice/Clinic Name", value: ptProfile?.practice_name ?? "—")
             Divider()
             LabeledValueRow(label: "Practice Address", value: ptProfile?.practice_address ?? "—")

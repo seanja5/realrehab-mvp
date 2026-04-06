@@ -31,6 +31,7 @@ struct PatientDetailView: View {
     // Outreach banner
     @State private var outreachSent = false
     @State private var outreachBannerVisible = true
+    @State private var callInitiated = false
 
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -266,6 +267,7 @@ struct PatientDetailView: View {
         }
         .onChange(of: patientStatus) { _, _ in
             outreachSent = false
+            callInitiated = false
             outreachBannerVisible = true
         }
         .onDisappear {
@@ -590,7 +592,7 @@ struct PatientDetailView: View {
                         .fill(accentColor.opacity(0.045))
                 )
 
-                // Action button
+                // Action buttons
                 Group {
                     if outreachSent {
                         HStack(spacing: 7) {
@@ -608,7 +610,76 @@ struct PatientDetailView: View {
                                 .fill(PatientStatus.onTrack.color.opacity(0.09))
                         )
                         .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .center)))
+                    } else if isUrgent {
+                        // Needs Help: show Call + Text side by side
+                        HStack(spacing: 10) {
+                            // Call button
+                            Button {
+                                guard !phone.isEmpty else { return }
+                                if let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
+                                    UIApplication.shared.open(url)
+                                }
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                                    callInitiated = true
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "phone.fill")
+                                        .font(.system(size: 13, weight: .semibold))
+                                    Text(callInitiated ? "Calling…" : "Call")
+                                        .font(.system(size: 14, weight: .semibold))
+                                }
+                                .foregroundStyle(accentColor)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(accentColor.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 11))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 11)
+                                        .strokeBorder(accentColor.opacity(0.30), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(phone.isEmpty)
+                            .opacity(phone.isEmpty ? 0.45 : 1)
+
+                            // Text button
+                            Button {
+                                guard !phone.isEmpty else { return }
+                                let encoded = message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                                if let url = URL(string: "sms:\(phone)&body=\(encoded)") {
+                                    UIApplication.shared.open(url)
+                                }
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                                    outreachSent = true
+                                }
+                                Task {
+                                    try? await Task.sleep(nanoseconds: 2_500_000_000)
+                                    withAnimation(.easeOut(duration: 0.30)) {
+                                        outreachBannerVisible = false
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "message.fill")
+                                        .font(.system(size: 13, weight: .semibold))
+                                    Text("Send Text")
+                                        .font(.system(size: 14, weight: .semibold))
+                                }
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(accentColor)
+                                .clipShape(RoundedRectangle(cornerRadius: 11))
+                                .shadow(color: accentColor.opacity(0.28), radius: 8, x: 0, y: 4)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(phone.isEmpty)
+                            .opacity(phone.isEmpty ? 0.45 : 1)
+                        }
+                        .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .center)))
                     } else {
+                        // Falling Behind: single full-width text button
                         Button {
                             guard !phone.isEmpty else { return }
                             let encoded = message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
@@ -645,6 +716,7 @@ struct PatientDetailView: View {
                     }
                 }
                 .animation(.spring(response: 0.38, dampingFraction: 0.72), value: outreachSent)
+                .animation(.spring(response: 0.38, dampingFraction: 0.72), value: callInitiated)
             }
             .padding(.leading, 22)
             .padding(.trailing, 16)

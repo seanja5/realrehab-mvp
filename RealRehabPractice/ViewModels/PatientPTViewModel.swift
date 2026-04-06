@@ -12,6 +12,12 @@ public final class PatientPTViewModel: ObservableObject {
   @Published public var hasRehabPlan: Bool = false
   @Published public var ptProfileId: UUID?
   @Published public var patientProfileId: UUID?
+  @Published public var practiceName: String = ""
+  @Published public var practiceAddress: String = ""
+  @Published public var specialization: String = ""
+  @Published public var credentialType: String = ""
+  @Published public var licenseNumber: String = ""
+  @Published public var npiNumber: String = ""
 
   private var injectedPatientProfileId: UUID?
 
@@ -69,7 +75,7 @@ public final class PatientPTViewModel: ObservableObject {
       }
       
       debugLog("✅ PatientPTViewModel: Step 2 - found PT \(ptInfo.id) for patient \(pid)")
-      self.apply(ptEmail: ptInfo.email, first: ptInfo.first_name, last: ptInfo.last_name, phone: ptInfo.phone)
+      self.apply(ptEmail: ptInfo.email, first: ptInfo.first_name, last: ptInfo.last_name, phone: ptInfo.phone, practiceName: ptInfo.practice_name, practiceAddress: ptInfo.practice_address, specialization: ptInfo.specialization, credentialType: ptInfo.pt_credential_type, licenseNumber: ptInfo.license_number, npiNumber: ptInfo.npi_number)
       
       // STEP 3: Check for active rehab plan using cached service
       debugLog("📝 PatientPTViewModel: Step 3 - checking for active rehab plan")
@@ -98,11 +104,17 @@ public final class PatientPTViewModel: ObservableObject {
   }
 
   @MainActor
-  private func apply(ptEmail: String?, first: String?, last: String?, phone: String?) {
+  private func apply(ptEmail: String?, first: String?, last: String?, phone: String?, practiceName: String? = nil, practiceAddress: String? = nil, specialization: String? = nil, credentialType: String? = nil, licenseNumber: String? = nil, npiNumber: String? = nil) {
     self.email = ptEmail ?? ""
     self.phone = phone ?? ""
     let parts = [first, last].compactMap { $0 }.filter { !$0.isEmpty }
     self.name = parts.isEmpty ? "" : parts.joined(separator: " ")
+    self.practiceName = practiceName ?? ""
+    self.practiceAddress = practiceAddress ?? ""
+    self.specialization = specialization ?? ""
+    self.credentialType = credentialType ?? ""
+    self.licenseNumber = licenseNumber ?? ""
+    self.npiNumber = npiNumber ?? ""
   }
 }
 

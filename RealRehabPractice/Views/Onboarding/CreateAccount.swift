@@ -40,6 +40,7 @@ struct CreateAccountView: View {
     // PT-only state
     @State private var licenseNumber = ""
     @State private var npiNumber = ""
+    @State private var ptCredentialType = ""
     @State private var practiceName = ""
     @State private var practiceAddress = ""
     @State private var specialization = ""
@@ -56,6 +57,10 @@ struct CreateAccountView: View {
 
     let genderOptions = ["Male", "Female", "Non-binary", "Prefer not to say"]
     private let specializationOptions = ["Orthopedics", "Sports", "Neuro", "Other"]
+    private let credentialTypeOptions = [
+        "PT", "DPT", "PTA", "MPT", "MSPT",
+        "OPT", "SCS", "NCS", "PCS", "GCS", "ECS", "WCS"
+    ]
 
     var body: some View {
         ZStack {
@@ -285,6 +290,8 @@ struct CreateAccountView: View {
                     .keyboardType(.numberPad)
                     .frame(maxWidth: .infinity)
                     .id("pt_npi")
+                CreateAccountMenuField(title: "Credential Type", selection: $ptCredentialType, options: credentialTypeOptions, hasError: false) { ptCredentialType = $0 }
+                    .frame(maxWidth: .infinity)
             }
             Divider()
             VStack(alignment: .leading, spacing: 16) {
@@ -432,6 +439,7 @@ struct CreateAccountView: View {
             let specializationValue = specialization.trimmingCharacters(in: .whitespaces).isEmpty ? nil : specialization
             let practiceNameValue = practiceName.trimmingCharacters(in: .whitespaces).isEmpty ? nil : practiceName
             let practiceAddressValue = practiceAddress.trimmingCharacters(in: .whitespaces).isEmpty ? nil : practiceAddress
+            let credentialTypeValue = ptCredentialType.trimmingCharacters(in: .whitespaces).isEmpty ? nil : ptCredentialType
             let ptProfileId = try await PTService.ensurePTProfile(
                 firstName: firstName,
                 lastName: lastName,
@@ -441,7 +449,8 @@ struct CreateAccountView: View {
                 npiNumber: npiNumber,
                 practiceName: practiceNameValue,
                 practiceAddress: practiceAddressValue,
-                specialization: specializationValue
+                specialization: specializationValue,
+                ptCredentialType: credentialTypeValue
             )
             session.ptProfileId = ptProfileId
             if let bootstrap = await AuthService.resolveSessionForLaunch() {

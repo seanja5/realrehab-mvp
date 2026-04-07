@@ -54,6 +54,21 @@ struct AssessmentView: View {
                     Divider()
                         .padding(.vertical, 4)
 
+                    // Sitting instruction
+                    HStack(spacing: 10) {
+                        Image(systemName: "chair.lounge.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(Color.brandDarkBlue)
+                        Text("While sitting down comfortably...")
+                            .font(.rrBody)
+                            .foregroundStyle(Color.brandDarkBlue)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.brandDarkBlue.opacity(0.07))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
                     VStack(alignment: .leading, spacing: RRSpace.stack) {
                         // Live knee bend angle display
                         if let degrees = currentDegrees {
@@ -82,20 +97,28 @@ struct AssessmentView: View {
                             .background(Color.gray.opacity(0.1))
                             .cornerRadius(8)
                         }
-                        
+
                         Text("Now slowly extend your leg as far as you comfortably can, then tap Set Maximum Position.")
                             .font(.rrBody)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.leading)
 
                         SecondaryButton(title: maxSet ? "Maximum Position ✓" : "Set Maximum Position") {
+                            #if DEBUG
+                            // Test mode: auto-set 180° without needing BLE sensor
+                            let degrees = 180
+                            maximumPositionValue = degrees
+                            maxSet = true
+                            debugLog("✅ AssessmentView [TEST MODE]: Auto-set maximum position to \(degrees)°")
+                            Task {
+                                await saveCalibration(stage: "maximum_position", flexValue: degrees)
+                            }
+                            #else
                             if let currentValue = ble.currentFlexSensorValue {
                                 let degrees = convertToDegrees(currentValue)
                                 maximumPositionValue = degrees
                                 maxSet = true
                                 debugLog("✅ AssessmentView: Set Maximum Position button clicked - Saved flex sensor value: \(currentValue) → \(degrees) degrees")
-                                
-                                // Save to database (save degrees, not raw value)
                                 Task {
                                     await saveCalibration(stage: "maximum_position", flexValue: degrees)
                                 }
@@ -103,6 +126,7 @@ struct AssessmentView: View {
                                 debugLog("⚠️ AssessmentView: Set Maximum Position button clicked - No flex sensor value available")
                                 errorMessage = "No flex sensor value available. Please ensure your device is connected."
                             }
+                            #endif
                         }
                         .disabled(isSavingMaximum)
                         
@@ -135,7 +159,7 @@ struct AssessmentView: View {
                     isDisabled: !maxSet,
                     useLargeFont: true,
                     action: {
-                        router.go(.completion(lessonId: lessonId))
+                        router.go(.motivational(lessonId: lessonId))
                     }
                 )
             }

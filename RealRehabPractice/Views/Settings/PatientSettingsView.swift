@@ -21,6 +21,15 @@ struct PatientSettingsView: View {
     @State private var showOfflineBanner = false
     @FocusState private var isAccessCodeFocused: Bool
 
+    // Static in-memory store — persists across tab-switch view recreations so skeleton never flashes.
+    private static var cachedProfile: PatientService.PatientProfileRow? = nil
+    private static var cachedEmail: String? = nil
+
+    static func clearSharedCache() {
+        cachedProfile = nil
+        cachedEmail = nil
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
@@ -65,6 +74,11 @@ struct PatientSettingsView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .navigationBarBackButtonHidden(true)
         .task {
+            // Pre-fill from memory store so skeleton doesn't flash on tab switch
+            if patientProfile == nil, let cached = PatientSettingsView.cachedProfile {
+                patientProfile = cached
+                email = PatientSettingsView.cachedEmail
+            }
             await loadProfile(forceRefresh: false)
             await checkIfHasPT()
         }
@@ -278,6 +292,9 @@ struct PatientSettingsView: View {
             DestructiveButton(title: "Sign out") {
                 Task {
                     try? await AuthService.signOut()
+                    PatientSettingsView.clearSharedCache()
+                    PatientPTViewModel.clearSharedCache()
+                    JourneyMapViewModel.clearSharedCache()
                     router.reset(to: .welcome)
                 }
             }
@@ -317,6 +334,9 @@ struct PatientSettingsView: View {
             let messagesEnabled = (try? await PatientService.getMessageNotificationsEnabled(patientProfileId: profile.id)) ?? true
             await MainActor.run { notifyMessages = messagesEnabled }
             self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (isStale || forceRefresh)
+            // Save to static store for instant restore on next tab switch
+            PatientSettingsView.cachedProfile = patientProfile
+            PatientSettingsView.cachedEmail = email
         } catch {
             if error is CancellationError || Task.isCancelled {
                 return

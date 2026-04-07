@@ -21,12 +21,58 @@ public final class PatientPTViewModel: ObservableObject {
 
   private var injectedPatientProfileId: UUID?
 
+  // MARK: - Static in-memory store
+  // Restored synchronously in init() so the loading skeleton never flashes on repeat tab visits.
+  private static var sharedName: String = ""
+  private static var sharedEmail: String = ""
+  private static var sharedPhone: String = ""
+  private static var sharedPracticeName: String = ""
+  private static var sharedPracticeAddress: String = ""
+  private static var sharedSpecialization: String = ""
+  private static var sharedCredentialType: String = ""
+  private static var sharedLicenseNumber: String = ""
+  private static var sharedNpiNumber: String = ""
+  private static var sharedHasRehabPlan: Bool = false
+  private static var sharedPtProfileId: UUID? = nil
+  private static var sharedPatientProfileId: UUID? = nil
+
   public init(patientProfileId: UUID? = nil) {
     self.injectedPatientProfileId = patientProfileId
+    if !Self.sharedName.isEmpty || !Self.sharedEmail.isEmpty {
+      self.name = Self.sharedName
+      self.email = Self.sharedEmail
+      self.phone = Self.sharedPhone
+      self.practiceName = Self.sharedPracticeName
+      self.practiceAddress = Self.sharedPracticeAddress
+      self.specialization = Self.sharedSpecialization
+      self.credentialType = Self.sharedCredentialType
+      self.licenseNumber = Self.sharedLicenseNumber
+      self.npiNumber = Self.sharedNpiNumber
+      self.hasRehabPlan = Self.sharedHasRehabPlan
+      self.ptProfileId = Self.sharedPtProfileId
+      self.patientProfileId = Self.sharedPatientProfileId
+      self.isLoading = false
+    }
+  }
+
+  /// Call on sign-out so a subsequent login sees a clean state.
+  public static func clearSharedCache() {
+    sharedName = ""
+    sharedEmail = ""
+    sharedPhone = ""
+    sharedPracticeName = ""
+    sharedPracticeAddress = ""
+    sharedSpecialization = ""
+    sharedCredentialType = ""
+    sharedLicenseNumber = ""
+    sharedNpiNumber = ""
+    sharedHasRehabPlan = false
+    sharedPtProfileId = nil
+    sharedPatientProfileId = nil
   }
 
   @MainActor
-  public func load() async {
+  public func load(forceRefresh: Bool = false) async {
     // Only show loading if we don't have data yet
     if name.isEmpty && email.isEmpty && phone.isEmpty {
       isLoading = true
@@ -63,6 +109,10 @@ public final class PatientPTViewModel: ObservableObject {
       self.ptProfileId = ptProfileId
       self.patientProfileId = pid
       debugLog("✅ PatientPTViewModel: Step 1 - found pt_profile_id=\(ptProfileId)")
+
+      if forceRefresh {
+        await CacheService.shared.invalidate("pt_info_by_id_v3:\(ptProfileId.uuidString)")
+      }
       
       // STEP 2: Get PT info using cached service
       debugLog("📝 PatientPTViewModel: Step 2 - getting PT info for pt_profile_id=\(ptProfileId)")
@@ -82,6 +132,20 @@ public final class PatientPTViewModel: ObservableObject {
       let plan = try await RehabService.currentPlan(ptProfileId: ptProfileId, patientProfileId: pid)
       self.hasRehabPlan = plan != nil
       debugLog("✅ PatientPTViewModel: hasRehabPlan = \(self.hasRehabPlan)")
+
+      // Persist to static store so next ViewModel init restores instantly
+      Self.sharedName = name
+      Self.sharedEmail = email
+      Self.sharedPhone = phone
+      Self.sharedPracticeName = practiceName
+      Self.sharedPracticeAddress = practiceAddress
+      Self.sharedSpecialization = specialization
+      Self.sharedCredentialType = credentialType
+      Self.sharedLicenseNumber = licenseNumber
+      Self.sharedNpiNumber = npiNumber
+      Self.sharedHasRehabPlan = hasRehabPlan
+      Self.sharedPtProfileId = ptProfileId
+      Self.sharedPatientProfileId = patientProfileId
 
       isLoading = false
     } catch {

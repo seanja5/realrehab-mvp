@@ -48,6 +48,7 @@ struct RealRehabPracticeApp: App {
                                 case .lesson(let reps, let restSec, let lessonId, let lessonTitle, let sets, let setRestSec, let holdDurationSec): LessonView(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle, sets: sets, setRestSec: setRestSec, holdDurationSec: holdDurationSec)
                                 case .assessment(let lessonId): AssessmentView(lessonId: lessonId)
                                 case .completion(let lessonId): CompletionView(lessonId: lessonId)
+                                case .motivational(let lessonId): MotivationalView(lessonId: lessonId)
                                 case .benchmarkCalibrateDevice(let holdDuration, let reps, let restSec, let lessonId, let lessonTitle):
                                     CalibrateDeviceView(reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle, onFinish: {
                                         router.go(.benchmarkLesson(holdDuration: holdDuration, reps: reps, restSec: restSec, lessonId: lessonId, lessonTitle: lessonTitle))

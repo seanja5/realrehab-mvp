@@ -706,6 +706,7 @@ struct LessonView: View {
         }
         .onChange(of: engine.fill) { oldValue, newValue in
             // Check when box reaches full for max/flexion validation
+            guard !testMode else { return }
             if newValue >= 0.99 && oldValue < 0.99 && engine.phase == .upstroke {
                 if case .kneeFlex = engine.exerciseType {
                     // Heel slides: validate flexion target was reached

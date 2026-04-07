@@ -132,6 +132,13 @@ struct PTDetailView: View {
                 unreadMessageCount = (try? await MessagingService.getUnreadCount(ptProfileId: ptId, patientProfileId: patId, isPT: false)) ?? 0
             }
         }
+        .refreshable {
+            await vm.load(forceRefresh: true)
+            await loadSchedule()
+            if let ptId = vm.ptProfileId, let patId = vm.patientProfileId {
+                unreadMessageCount = (try? await MessagingService.getUnreadCount(ptProfileId: ptId, patientProfileId: patId, isPT: false)) ?? 0
+            }
+        }
         .onAppear {
             Task { await loadSchedule() }
         }

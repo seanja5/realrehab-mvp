@@ -70,6 +70,7 @@
 		C8AEECC62EB2D7A200720186 /* DirectionsView1.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC42EB2D7A200720186 /* DirectionsView1.swift */; };
 		C8AEECC72EB2D7A200720187 /* DirectionsView2.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC52EB2D7A200720187 /* DirectionsView2.swift */; };
 		C8AEECC92EB2D7A200720188 /* AssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECC82EB2D7A200720188 /* AssessmentView.swift */; };
+		C8AEECD22EB2D7A200720190 /* MotivationalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AEECD12EB2D7A200720190 /* MotivationalView.swift */; };
 		C8B1B2C52ED00001004D9348 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B1B2C42ED00001004D9348 /* NetworkMonitor.swift */; };
 		C8B1B2C72ED00001004D9349 /* LocalLessonProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B1B2C62ED00001004D9349 /* LocalLessonProgressStore.swift */; };
 		C8B1B2C92ED00001004D934A /* OutboxItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B1B2C82ED00001004D934A /* OutboxItem.swift */; };
@@ -192,6 +193,7 @@
 		C8AEECC42EB2D7A200720186 /* DirectionsView1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectionsView1.swift; sourceTree = "<group>"; };
 		C8AEECC52EB2D7A200720187 /* DirectionsView2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectionsView2.swift; sourceTree = "<group>"; };
 		C8AEECC82EB2D7A200720188 /* AssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssessmentView.swift; sourceTree = "<group>"; };
+		C8AEECD12EB2D7A200720190 /* MotivationalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotivationalView.swift; sourceTree = "<group>"; };
 		C8B1B2C42ED00001004D9348 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		C8B1B2C62ED00001004D9349 /* LocalLessonProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLessonProgressStore.swift; sourceTree = "<group>"; };
 		C8B1B2C82ED00001004D934A /* OutboxItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutboxItem.swift; sourceTree = "<group>"; };
@@ -492,6 +494,7 @@
 				C8AEECC42EB2D7A200720186 /* DirectionsView1.swift */,
 				C8AEECC52EB2D7A200720187 /* DirectionsView2.swift */,
 				C8AEECC82EB2D7A200720188 /* AssessmentView.swift */,
+				C8AEECD12EB2D7A200720190 /* MotivationalView.swift */,
 			);
 			path = Lessons;
 			sourceTree = "<group>";
@@ -696,6 +699,7 @@
 				C8AEECC62EB2D7A200720186 /* DirectionsView1.swift in Sources */,
 				C8AEECC72EB2D7A200720187 /* DirectionsView2.swift in Sources */,
 				C8AEECC92EB2D7A200720188 /* AssessmentView.swift in Sources */,
+				C8AEECD22EB2D7A200720190 /* MotivationalView.swift in Sources */,
 				C8A4B5C72ED0006004D9348 /* AnalyticsSummaryBoxesView.swift in Sources */,
 				C8A5B6C82ED0007004D9348 /* StreakService.swift in Sources */,
 				C8A6B7CA2ED0008004D9348 /* StreakIconView.swift in Sources */,

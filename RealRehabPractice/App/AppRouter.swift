@@ -16,6 +16,7 @@ enum Route: Hashable {
     case lesson(reps: Int? = nil, restSec: Int? = nil, lessonId: UUID? = nil, lessonTitle: String? = nil, sets: Int? = nil, setRestSec: Int? = nil, holdDurationSec: Int? = nil)
     case assessment(lessonId: UUID?)
     case completion(lessonId: UUID?)
+    case motivational(lessonId: UUID?)
     case benchmarkCalibrateDevice(holdDuration: Int, reps: Int, restSec: Int, lessonId: UUID, lessonTitle: String)
     case benchmarkLesson(holdDuration: Int, reps: Int, restSec: Int, lessonId: UUID, lessonTitle: String)
     case ptSettings
@@ -37,6 +38,22 @@ final class Router: ObservableObject {   // class + ObservableObject
         path.append(r)
     }
     
+    func replace(with r: Route) {
+        guard !path.isEmpty else { go(r); return }
+        lastRouteWithoutAnimation = r
+        withAnimation(nil) {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                path.removeLast()
+                path.append(r)
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            if self.lastRouteWithoutAnimation == r { self.lastRouteWithoutAnimation = nil }
+        }
+    }
+
     func goWithoutAnimation(_ r: Route) {
         lastRouteWithoutAnimation = r
         // Use both withAnimation(nil) and withTransaction for maximum reliability

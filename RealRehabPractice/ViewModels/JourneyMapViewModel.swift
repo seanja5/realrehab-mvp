@@ -54,7 +54,34 @@ public final class JourneyMapViewModel: ObservableObject {
     /// Streak state for fire icon on header (patient side only).
     @Published public var streakState: StreakState = .hidden
 
-    public init() {}
+    // MARK: - Static in-memory store
+    // Persists across ViewModel recreations caused by tab-switching (NavigationPath pushes a fresh view each time).
+    // Restored synchronously in init() so the loading skeleton never flashes on repeat visits.
+    private static var sharedNodes: [JourneyNode] = []
+    private static var sharedLessonProgress: [UUID: LessonProgressInfo] = [:]
+    private static var sharedPlanTitle: String? = nil
+    private static var sharedIsLinkedToPT: Bool? = nil
+    private static var sharedStreakState: StreakState = .hidden
+
+    public init() {
+        if !Self.sharedNodes.isEmpty {
+            self.nodes = Self.sharedNodes
+            self.lessonProgress = Self.sharedLessonProgress
+            self.planTitle = Self.sharedPlanTitle
+            self.isLinkedToPT = Self.sharedIsLinkedToPT
+            self.streakState = Self.sharedStreakState
+            self.isLoading = false
+        }
+    }
+
+    /// Call on sign-out so a subsequent login sees a clean state.
+    public static func clearSharedCache() {
+        sharedNodes = []
+        sharedLessonProgress = [:]
+        sharedPlanTitle = nil
+        sharedIsLinkedToPT = nil
+        sharedStreakState = .hidden
+    }
     
     @MainActor
     public func load(forceRefresh: Bool = false) async {
@@ -85,7 +112,7 @@ public final class JourneyMapViewModel: ObservableObject {
                 await CacheService.shared.invalidate(CacheKey.lessonProgress(patientProfileId: patientProfileId))
                 await CacheService.shared.invalidate(CacheKey.completionDates(patientProfileId: patientProfileId))
             }
-            
+
             let ptProfileId: UUID?
             if let cached = await PatientService.getPTProfileIdForDisplay(patientProfileId: patientProfileId) {
                 ptProfileId = cached.0
@@ -101,7 +128,11 @@ public final class JourneyMapViewModel: ObservableObject {
             }
             isLinkedToPT = true
             debugLog("🔍 JourneyMapViewModel: pt_profile_id=\(ptProfileId.uuidString)")
-            
+
+            if forceRefresh {
+                await CacheService.shared.invalidate(CacheKey.rehabPlan(ptProfileId: ptProfileId, patientProfileId: patientProfileId))
+            }
+
             let (plan, planStale) = try await RehabService.currentPlanForDisplay(ptProfileId: ptProfileId, patientProfileId: patientProfileId)
             guard let plan = plan else {
                 debugLog("ℹ️ JourneyMapViewModel: no active plan found")
@@ -166,6 +197,13 @@ public final class JourneyMapViewModel: ObservableObject {
                 streakState = .hidden
             }
             showOfflineBanner = !NetworkMonitor.shared.isOnline && (anyStale || forceRefresh)
+
+            // Persist to static store so next ViewModel init restores instantly
+            Self.sharedNodes = nodes
+            Self.sharedLessonProgress = lessonProgress
+            Self.sharedPlanTitle = planTitle
+            Self.sharedIsLinkedToPT = isLinkedToPT
+            Self.sharedStreakState = streakState
         } catch {
             if error is CancellationError || Task.isCancelled {
                 isLoading = false

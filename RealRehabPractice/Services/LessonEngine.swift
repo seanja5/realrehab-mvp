@@ -270,7 +270,7 @@ final class LessonEngine: ObservableObject {
     }
 
     /// Hold duration for isometric hold (Quad Sets): from time holding position, not repetition tempo.
-    private var holdDuration: TimeInterval {
+    var holdDuration: TimeInterval {
         switch exerciseType {
         case .isometricHold:    return isometricHoldDurationSec ?? restDuration
         case .kneeExtension, .kneeFlex, .straightLegRaise, .anklePumps: return 0

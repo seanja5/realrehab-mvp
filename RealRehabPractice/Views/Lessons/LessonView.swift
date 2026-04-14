@@ -184,9 +184,50 @@ struct LessonView: View {
     // Set up rep counting callback when engine is available
     private func setupRepCountingCallback() {
         engine.shouldCountRepCallback = {
-            if testMode { return true }
+            if testMode {
+                // Every 3rd rep attempt triggers a random error state for demo purposes
+                let attempt = self.engine.repCount + self.errorCount + 1
+                if attempt % 3 == 0 {
+                    DispatchQueue.main.async { self.triggerRandomTestModeError() }
+                    return false
+                }
+                return true
+            }
             // Only count if: max was reached and no speed errors occurred during this rep
             return self.lastRepWasValid && !self.hasSpeedError
+        }
+    }
+
+    private func triggerRandomTestModeError() {
+        guard !hasIMUError, errorMessage == nil else { return }
+        let choice = Int.random(in: 0...3)
+        switch choice {
+        case 0:
+            recordSensorEvent(type: .maxNotReached, repAttempt: engine.repCount + errorCount, timeSec: Double(currentElapsedSeconds()))
+            errorCount += 1
+            showError("Extend your leg further!", duration: 3.0)
+        case 1:
+            recordSensorEvent(type: .tooSlow, repAttempt: engine.repCount + errorCount, timeSec: Double(currentElapsedSeconds()))
+            errorCount += 1
+            showError("Speed up your Rep!", duration: 3.0)
+        case 2:
+            recordSensorEvent(type: .tooFast, repAttempt: engine.repCount + errorCount, timeSec: Double(currentElapsedSeconds()))
+            errorCount += 1
+            showError("Slow down your movement!", duration: 3.0)
+        default:
+            let driftType: LessonSensorEventType = Bool.random() ? .driftLeft : .driftRight
+            recordSensorEvent(type: driftType, repAttempt: engine.repCount + errorCount, timeSec: Double(currentElapsedSeconds()))
+            errorCount += 1
+            hasIMUError = true
+            errorMessage = "Keep your thigh centered"
+            errorEndTime = Date().addingTimeInterval(3.0)
+            if phaseBeforeError == nil { phaseBeforeError = engine.phase }
+            engine.phase = .incorrectHold
+            engine.pauseAnimation()
+            // No real IMU in test mode — auto-clear after 3 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                self.clearIMUError()
+            }
         }
     }
     
@@ -409,10 +450,10 @@ struct LessonView: View {
                 }
 
                 // Isometric hold: circular countdown ring overlay (replaces plain text for holding phase)
-                if engine.phase == .holding, case .isometricHold(_, let holdDur) = engine.exerciseType {
+                if engine.phase == .holding, case .isometricHold = engine.exerciseType {
                     TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { context in
                         let elapsed = holdStartTime.map { context.date.timeIntervalSince($0) } ?? 0
-                        let progress = max(0, CGFloat(1.0 - elapsed / holdDur))
+                        let progress = max(0, CGFloat(1.0 - elapsed / engine.holdDuration))
                         ZStack {
                             Circle()
                                 .stroke(Color.primary.opacity(0.15), lineWidth: 8)

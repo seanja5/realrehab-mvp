@@ -43,6 +43,11 @@ struct ShakeSample: Codable {
     let frequency: Double
 }
 
+struct FlexAngleSample: Codable {
+    let timeMs: Int
+    let angleDeg: Double
+}
+
 // MARK: - Draft payload (matches Supabase table shape)
 
 struct LessonSensorInsightsDraft: Codable {
@@ -58,6 +63,9 @@ struct LessonSensorInsightsDraft: Codable {
     var events: [LessonSensorEventRecord]
     var imuSamples: [IMUSample]
     var shakeFrequencySamples: [ShakeSample]
+    var flexAngleSamples: [FlexAngleSample]
+    var calibrationMinDeg: Double?
+    var calibrationMaxDeg: Double?
 }
 
 // MARK: - Shake frequency calculator
@@ -117,6 +125,10 @@ final class LessonSensorInsightsCollector {
     private var sampleTimer: Timer?
     private var lessonStartTime: Date?
 
+    /// Set to true when lesson animation is in an active movement phase (upstroke/downstroke/holding).
+    /// Flex angle samples are only recorded while this is true.
+    var isInGoMode: Bool = false
+
     private init() {
         try? fileManager.createDirectory(at: draftDirectory, withIntermediateDirectories: true)
     }
@@ -126,7 +138,9 @@ final class LessonSensorInsightsCollector {
         lessonId: UUID,
         patientProfileId: UUID,
         ptProfileId: UUID,
-        repsTarget: Int
+        repsTarget: Int,
+        calibrationMinDeg: Double? = nil,
+        calibrationMaxDeg: Double? = nil
     ) {
         stop()
         let now = Date()
@@ -142,9 +156,13 @@ final class LessonSensorInsightsCollector {
             repsAttempted: repsTarget,
             events: [],
             imuSamples: [],
-            shakeFrequencySamples: []
+            shakeFrequencySamples: [],
+            flexAngleSamples: [],
+            calibrationMinDeg: calibrationMinDeg,
+            calibrationMaxDeg: calibrationMaxDeg
         )
         imuHistory = []
+        isInGoMode = false
         lessonStartTime = now
         start100msSampling()
     }
@@ -260,6 +278,12 @@ final class LessonSensorInsightsCollector {
         let elapsedMs = Int(Date().timeIntervalSince(start) * 1000)
         let imu = BluetoothManager.shared.currentIMUValue ?? 0
         sampleIMU(imuValue: imu, timeMs: elapsedMs)
+        // Only record flex angle during active movement phases (not idle/error/set-rest)
+        if isInGoMode, var d = draft, let raw = BluetoothManager.shared.currentFlexSensorValue {
+            let angleDeg = 90.0 + (Double(raw - 185) / 115.0 * 90.0)
+            d.flexAngleSamples.append(FlexAngleSample(timeMs: elapsedMs, angleDeg: angleDeg))
+            draft = d
+        }
     }
 
     private func enqueueForSync() {
@@ -273,6 +297,7 @@ final class LessonSensorInsightsCollector {
         draft = nil
         lessonStartTime = nil
         imuHistory = []
+        isInGoMode = false
     }
 
     /// Load draft from disk (e.g. for offline display or retry sync).

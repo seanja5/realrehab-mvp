@@ -744,6 +744,9 @@ struct LessonView: View {
                 lastRepWasValid = false
                 hasSpeedError = false
             }
+            // Gate flex angle sampling to active movement phases only
+            let goPhases: Set<Phase> = [.upstroke, .downstroke, .holding]
+            LessonSensorInsightsCollector.shared.isInGoMode = goPhases.contains(newPhase)
         }
         .onChange(of: engine.fill) { oldValue, newValue in
             // Check when box reaches full for max/flexion validation
@@ -1198,7 +1201,9 @@ struct LessonView: View {
                     lessonId: lessonId,
                     patientProfileId: patientProfileId,
                     ptProfileId: ptProfileId,
-                    repsTarget: engine.repTarget
+                    repsTarget: engine.repTarget,
+                    calibrationMinDeg: restCalibrationValue.map { Double($0) },
+                    calibrationMaxDeg: maxCalibrationValue.map { Double($0) }
                 )
             }
         }

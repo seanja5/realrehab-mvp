@@ -557,10 +557,190 @@ struct EventTimelineView: View {
         let step: Double = totalDuration <= 120 ? 30 : (totalDuration <= 300 ? 60 : 120)
         return stride(from: 0.0, through: totalDuration, by: step).map { $0 }
     }
-    
+
     private func formatDuration(_ seconds: Int) -> String {
         let m = seconds / 60
         let s = seconds % 60
         return "\(m):\(s < 10 ? "0" : "")\(s)"
+    }
+}
+
+// MARK: - Angular Velocity Graph (flex sensor, °/sec, per-lesson green zone)
+
+struct AngularVelocityGraphView: View {
+    let dataPoints: [(time: Double, angleDeg: Double)]
+    let totalDuration: Double
+    let calibrationMinDeg: Double?
+    let calibrationMaxDeg: Double?
+    let repMotionSec: Double?
+
+    // Derived velocity bounds from calibration + tempo
+    private var angularRange: Double {
+        guard let mn = calibrationMinDeg, let mx = calibrationMaxDeg, mx > mn else { return 40 }
+        return mx - mn
+    }
+    private var oneStrokeSec: Double { max(0.5, (repMotionSec ?? 3.0) / 2.0) }
+    private var targetVelocity: Double { angularRange / oneStrokeSec }
+    private var minGood: Double { targetVelocity * 0.5 }
+    private var maxGood: Double { targetVelocity * 1.5 }
+    private var maxDisplay: Double { targetVelocity * 2.5 }
+
+    // Compute velocity from consecutive angle pairs; nil entry = gap (don't draw line)
+    private var velocityPoints: [(time: Double, velocity: Double?)] {
+        guard dataPoints.count >= 2 else { return [] }
+        var result: [(time: Double, velocity: Double?)] = []
+        for i in 1..<dataPoints.count {
+            let p1 = dataPoints[i - 1]
+            let p2 = dataPoints[i]
+            let dt = p2.time - p1.time
+            let midTime = (p1.time + p2.time) / 2
+            if dt > 0.3 || dt <= 0 {
+                // Gap: waiting period between recording segments
+                result.append((time: midTime, velocity: nil))
+            } else {
+                let speed = min(abs(p2.angleDeg - p1.angleDeg) / dt, maxDisplay)
+                result.append((time: midTime, velocity: speed))
+            }
+        }
+        return result
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            let paddingLeft: CGFloat = 44
+            let paddingRight: CGFloat = 8
+            let paddingTop: CGFloat = 12
+            let paddingBottom: CGFloat = 28
+            let plotW = w - paddingLeft - paddingRight
+            let plotH = h - paddingTop - paddingBottom
+
+            // Y positions (bottom of plot = 0°/s, top = maxDisplay)
+            let yFor: (Double) -> CGFloat = { v in
+                paddingTop + plotH - CGFloat(v / maxDisplay) * plotH
+            }
+            let minGoodY = yFor(minGood)
+            let maxGoodY = yFor(maxGood)
+
+            ZStack(alignment: .topLeading) {
+                // Red bottom zone: too slow (0 → minGood)
+                Path { p in
+                    p.addRect(CGRect(x: paddingLeft, y: minGoodY, width: plotW,
+                                     height: paddingTop + plotH - minGoodY))
+                }
+                .fill(Color.red.opacity(0.22))
+
+                // Green zone: target range (minGood → maxGood)
+                Path { p in
+                    p.addRect(CGRect(x: paddingLeft, y: maxGoodY, width: plotW,
+                                     height: minGoodY - maxGoodY))
+                }
+                .fill(Color.green.opacity(0.38))
+
+                // Red top zone: too fast (maxGood → maxDisplay)
+                Path { p in
+                    p.addRect(CGRect(x: paddingLeft, y: paddingTop, width: plotW,
+                                     height: maxGoodY - paddingTop))
+                }
+                .fill(Color.red.opacity(0.22))
+
+                velocityAxes(plotW: plotW, plotH: plotH, paddingLeft: paddingLeft,
+                             paddingTop: paddingTop, minGoodY: minGoodY, maxGoodY: maxGoodY)
+
+                velocityLine(plotW: plotW, plotH: plotH, paddingLeft: paddingLeft, paddingTop: paddingTop)
+            }
+        }
+        .frame(height: 220)
+        .background(Color.rrSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+    }
+
+    private func velocityAxes(plotW: CGFloat, plotH: CGFloat, paddingLeft: CGFloat,
+                               paddingTop: CGFloat, minGoodY: CGFloat, maxGoodY: CGFloat) -> some View {
+        let roundedMinGood = Int((minGood / 5).rounded()) * 5
+        let roundedMaxGood = Int((maxGood / 5).rounded()) * 5
+        let roundedMax    = Int((maxDisplay / 5).rounded()) * 5
+        return Group {
+            // Axes lines
+            Path { p in
+                p.move(to: CGPoint(x: paddingLeft, y: paddingTop))
+                p.addLine(to: CGPoint(x: paddingLeft, y: paddingTop + plotH))
+                p.move(to: CGPoint(x: paddingLeft, y: paddingTop + plotH))
+                p.addLine(to: CGPoint(x: paddingLeft + plotW, y: paddingTop + plotH))
+            }
+            .stroke(Color.gray.opacity(0.6), lineWidth: 1)
+
+            // Y-axis labels
+            Text("\(roundedMax)")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(.secondary)
+                .position(x: paddingLeft - 22, y: paddingTop + 4)
+            Text("\(roundedMaxGood)")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(.secondary)
+                .position(x: paddingLeft - 22, y: maxGoodY)
+            Text("\(roundedMinGood)")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(.secondary)
+                .position(x: paddingLeft - 22, y: minGoodY)
+            Text("0")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(.secondary)
+                .position(x: paddingLeft - 22, y: paddingTop + plotH)
+
+            // Y-axis unit label (rotated)
+            Text("°/sec")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+                .fixedSize()
+                .frame(width: 60, height: 14)
+                .rotationEffect(.degrees(-90))
+                .position(x: paddingLeft - 34, y: paddingTop + plotH / 2)
+
+            // X-axis label
+            Text("Time (sec)")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+                .position(x: paddingLeft + plotW / 2, y: paddingTop + plotH + 14)
+
+            // X-axis ticks
+            ForEach(xTickValues(totalDuration: totalDuration), id: \.self) { t in
+                let x = paddingLeft + CGFloat(t / totalDuration) * plotW
+                Text("\(Int(t))")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                    .position(x: x, y: paddingTop + plotH + 6)
+            }
+        }
+    }
+
+    private func velocityLine(plotW: CGFloat, plotH: CGFloat,
+                               paddingLeft: CGFloat, paddingTop: CGFloat) -> some View {
+        let scaleX = plotW / CGFloat(totalDuration)
+        var path = Path()
+        var drawing = false
+        for point in velocityPoints {
+            let x = paddingLeft + CGFloat(point.time) * scaleX
+            if let v = point.velocity {
+                let y = paddingTop + plotH - CGFloat(v / maxDisplay) * plotH
+                if drawing {
+                    path.addLine(to: CGPoint(x: x, y: y))
+                } else {
+                    path.move(to: CGPoint(x: x, y: y))
+                    drawing = true
+                }
+            } else {
+                // Gap — lift pen
+                drawing = false
+            }
+        }
+        return path.stroke(Color.black, lineWidth: 2)
+    }
+
+    private func xTickValues(totalDuration: Double) -> [Double] {
+        let step: Double = totalDuration <= 120 ? 30 : (totalDuration <= 300 ? 60 : 120)
+        return stride(from: 0.0, through: totalDuration, by: step).map { $0 }
     }
 }

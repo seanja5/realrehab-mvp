@@ -59,6 +59,7 @@ struct LessonAnalyticsView: View {
     private func contentView(insights: LessonSensorInsightsRow) -> some View {
         let driftData = mapToDriftData(insights.imu_samples)
         let shakeData = mapToShakeData(insights.shake_frequency_samples)
+        let velocityData = mapToVelocityData(insights.flex_angle_samples)
         let tooFastEvents = filterEvents(insights.events, type: "too_fast")
         let tooSlowEvents = filterEvents(insights.events, type: "too_slow")
         let maxNotReachedEvents = filterEvents(insights.events, type: "max_not_reached")
@@ -71,6 +72,12 @@ struct LessonAnalyticsView: View {
         let tooFastPercent = percentCorrect(total: insights.reps_attempted, errors: tooFastEvents.count)
         let tooSlowPercent = percentCorrect(total: insights.reps_attempted, errors: tooSlowEvents.count)
         let maxNotReachedPercent = percentCorrect(total: insights.reps_attempted, errors: maxNotReachedEvents.count)
+        let (velocityInRangePercent, peakVelocity) = computeVelocityStats(
+            velocityData,
+            calibrationMinDeg: insights.calibration_min_deg,
+            calibrationMaxDeg: insights.calibration_max_deg,
+            repMotionSec: restSec.map { Double($0) }
+        )
 
         let repAccuracy: Double = {
             guard insights.reps_attempted > 0 else { return 100 }
@@ -158,7 +165,26 @@ struct LessonAnalyticsView: View {
                     countValue: "\(shakeCount)"
                 )
 
-                // Section 3: Too Fast
+                // Section 3: Angular Velocity
+                analyticsSection(
+                    title: "Angular Velocity",
+                    description: "Tracks how fast the knee moved during active reps (°/sec). The green band is the target speed range for this lesson based on calibration and rep tempo. Spikes into red indicate reps that were too fast or too slow.",
+                    visual: {
+                        AngularVelocityGraphView(
+                            dataPoints: velocityData,
+                            totalDuration: totalDuration,
+                            calibrationMinDeg: insights.calibration_min_deg,
+                            calibrationMaxDeg: insights.calibration_max_deg,
+                            repMotionSec: restSec.map { Double($0) }
+                        )
+                    },
+                    percentLabel: "time in target range",
+                    percentValue: "\(Int(velocityInRangePercent))%",
+                    countLabel: "peak speed (°/sec)",
+                    countValue: "\(Int(peakVelocity))"
+                )
+
+                // Section 4: Too Fast
                 eventTimelineSection(
                     title: "Too Fast",
                     description: "Flags reps where the extension was completed too quickly. Controlled tempo is critical for proper muscle activation and tissue loading.",
@@ -170,7 +196,7 @@ struct LessonAnalyticsView: View {
                     countValue: "\(tooFastEvents.count)"
                 )
 
-                // Section 4: Too Slow
+                // Section 5: Too Slow
                 eventTimelineSection(
                     title: "Too Slow",
                     description: "Flags reps completed too slowly. May indicate pain avoidance, weakness, or difficulty with the prescribed tempo.",
@@ -182,7 +208,7 @@ struct LessonAnalyticsView: View {
                     countValue: "\(tooSlowEvents.count)"
                 )
 
-                // Section 5: Max Not Reached
+                // Section 6: Max Not Reached
                 eventTimelineSection(
                     title: "Max Not Reached",
                     description: "Tracks reps where full knee extension was not achieved. Incomplete range of motion can delay recovery milestones.",
@@ -345,6 +371,44 @@ struct LessonAnalyticsView: View {
 
     private func mapToShakeData(_ samples: [ShakeSample]) -> [(time: Double, frequency: Double)] {
         samples.map { (time: Double($0.timeMs) / 1000, frequency: $0.frequency) }
+    }
+
+    private func mapToVelocityData(_ samples: [FlexAngleSample]) -> [(time: Double, angleDeg: Double)] {
+        samples.map { (time: Double($0.timeMs) / 1000, angleDeg: $0.angleDeg) }
+    }
+
+    /// Returns (percentInRange, peakVelocity) using the same gap-skip logic as AngularVelocityGraphView.
+    private func computeVelocityStats(
+        _ dataPoints: [(time: Double, angleDeg: Double)],
+        calibrationMinDeg: Double?,
+        calibrationMaxDeg: Double?,
+        repMotionSec: Double?
+    ) -> (pctInRange: Double, peak: Double) {
+        guard dataPoints.count >= 2 else { return (100, 0) }
+        let angularRange: Double = {
+            guard let mn = calibrationMinDeg, let mx = calibrationMaxDeg, mx > mn else { return 40 }
+            return mx - mn
+        }()
+        let oneStrokeSec = max(0.5, (repMotionSec ?? 3.0) / 2.0)
+        let targetVelocity = angularRange / oneStrokeSec
+        let minGood = targetVelocity * 0.5
+        let maxGood = targetVelocity * 1.5
+
+        var inRange = 0
+        var total = 0
+        var peak: Double = 0
+        for i in 1..<dataPoints.count {
+            let p1 = dataPoints[i - 1]
+            let p2 = dataPoints[i]
+            let dt = p2.time - p1.time
+            guard dt > 0 && dt <= 0.3 else { continue }
+            let speed = abs(p2.angleDeg - p1.angleDeg) / dt
+            total += 1
+            if speed >= minGood && speed <= maxGood { inRange += 1 }
+            if speed > peak { peak = speed }
+        }
+        let pct = total > 0 ? Double(inRange) / Double(total) * 100 : 100
+        return (pct, peak)
     }
 
     private func filterEvents(_ events: [LessonSensorEventRecord], type: String) -> [(rep: Int, timeSec: Double)] {

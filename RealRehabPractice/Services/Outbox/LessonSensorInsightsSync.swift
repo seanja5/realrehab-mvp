@@ -23,7 +23,10 @@ enum LessonSensorInsightsSync {
             reps_attempted: draft.repsAttempted,
             events: draft.events,
             imu_samples: draft.imuSamples,
-            shake_frequency_samples: draft.shakeFrequencySamples
+            shake_frequency_samples: draft.shakeFrequencySamples,
+            flex_angle_samples: draft.flexAngleSamples,
+            calibration_min_deg: draft.calibrationMinDeg,
+            calibration_max_deg: draft.calibrationMaxDeg
         )
         let client = SupabaseService.shared.client
         try await client
@@ -59,4 +62,7 @@ private struct LessonSensorInsightsUpsertRow: Encodable {
     let events: [LessonSensorEventRecord]
     let imu_samples: [IMUSample]
     let shake_frequency_samples: [ShakeSample]
+    let flex_angle_samples: [FlexAngleSample]
+    let calibration_min_deg: Double?
+    let calibration_max_deg: Double?
 }

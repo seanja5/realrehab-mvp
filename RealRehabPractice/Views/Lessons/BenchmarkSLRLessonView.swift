@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreBluetooth
 
-private let testMode = true
+private let testMode = false
 
 /// Benchmark 2: Straight Leg Raise — extend with flex → 10s prep countdown → guided reps (LessonEngine SLR) with IMU for line/dot.
 struct BenchmarkSLRLessonView: View {

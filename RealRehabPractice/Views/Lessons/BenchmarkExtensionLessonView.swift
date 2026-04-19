@@ -2,7 +2,7 @@ import SwiftUI
 import Combine
 import CoreBluetooth
 
-private let testMode = true
+private let testMode = false
 
 struct BenchmarkExtensionLessonView: View {
     let holdDuration: Int

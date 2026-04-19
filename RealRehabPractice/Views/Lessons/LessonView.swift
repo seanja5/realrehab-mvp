@@ -9,7 +9,7 @@ import SwiftUI
 import Combine
 import CoreBluetooth
 
-private let testMode = true
+private let testMode = false
 
 struct LessonView: View {
     @EnvironmentObject var router: Router

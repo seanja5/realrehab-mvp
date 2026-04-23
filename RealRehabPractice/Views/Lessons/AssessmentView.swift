@@ -22,11 +22,11 @@ struct AssessmentView: View {
     @State private var errorMessage: String? = nil
     
     // Calibration constants for degree conversion (same as CalibrateDeviceView)
-    private let minSensorValue: Int = 185  // 90 degrees (midpoint of 180-190 range)
-    private let maxSensorValue: Int = 300  // 180 degrees
+    private let minSensorValue: Int = 394  // 90 degrees (midpoint of 392-397 range)
+    private let maxSensorValue: Int = 462  // 180 degrees (midpoint of 460-465 range)
     private let minDegrees: Double = 90.0
     private let maxDegrees: Double = 180.0
-    private let sensorRange: Int = 115  // 300 - 185 = 115
+    private let sensorRange: Int = 68   // 462 - 394 = 68
     private let degreeRange: Double = 90.0  // 180 - 90 = 90
     
     // Convert raw flex sensor value to degrees

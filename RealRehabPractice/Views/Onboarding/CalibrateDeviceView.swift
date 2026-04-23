@@ -83,8 +83,8 @@ struct CalibrateDeviceView: View {
     @State private var errorMessage: String? = nil
 
     // Calibration constants for degree conversion
-    private let minSensorValue: Int = 185
-    private let sensorRange: Int = 115
+    private let minSensorValue: Int = 394  // 90 degrees (midpoint of 392-397 range)
+    private let sensorRange: Int = 68   // 462 - 394 = 68 (462 = midpoint of 460-465 range)
     private let minDegrees: Double = 90.0
     private let degreeRange: Double = 90.0
 

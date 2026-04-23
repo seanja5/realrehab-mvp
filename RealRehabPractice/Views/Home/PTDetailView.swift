@@ -3,6 +3,7 @@ import Combine
 
 struct PTDetailView: View {
     @EnvironmentObject var router: Router
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @StateObject private var vm = PatientPTViewModel()
     @State private var scheduleSlots: [ScheduleService.ScheduleSlot] = []
     @State private var unreadMessageCount = 0
@@ -31,8 +32,8 @@ struct PTDetailView: View {
                             } label: {
                                 RoundedRectangle(cornerRadius: 16)
                                     .fill(Color.gray.opacity(0.15))
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 240)
+                                    .frame(maxWidth: horizontalSizeClass == .regular ? 360 : .infinity)
+                                    .frame(height: horizontalSizeClass == .regular ? 160 : 240)
                                     .overlay(
                                         Image("aclrehab")
                                             .resizable()
@@ -41,6 +42,7 @@ struct PTDetailView: View {
                                     )
                             }
                             .buttonStyle(.plain)
+                            .frame(maxWidth: horizontalSizeClass == .regular ? .infinity : nil)
                             .padding(.horizontal, 16)
 
                             Text("ACL Rehab")

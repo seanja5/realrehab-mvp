@@ -37,6 +37,12 @@ enum ShareSheetHelper {
         activityVC.completionWithItemsHandler = { _, _, _, _ in
             onComplete?()
         }
+        // iPad requires a popover anchor — without it the app crashes
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = vc?.view
+            popover.sourceRect = CGRect(x: (vc?.view.bounds.midX ?? 0), y: (vc?.view.bounds.midY ?? 0), width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
         vc?.present(activityVC, animated: true)
     }
     

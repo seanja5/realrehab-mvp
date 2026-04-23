@@ -58,8 +58,8 @@ struct BenchmarkExtensionLessonView: View {
     @State private var testSimTimer: Timer? = nil
 
     // Calibration constants
-    private let minSensorValue: Int = 185
-    private let sensorRange: Int = 115
+    private let minSensorValue: Int = 385  // 90 degrees
+    private let sensorRange: Int = 80   // 465 - 385 = 80 (465 = 180 degrees)
     private let minDegrees: Double = 90.0
     private let degreeRange: Double = 90.0
 
@@ -95,6 +95,8 @@ struct BenchmarkExtensionLessonView: View {
     }
 
     private var dotY: CGFloat {
+        // During hold, Y is fixed at center — only IMU lateral tracking applies
+        if phase == .holding { return 0 }
         // Use unclamped fill so upward extension (past cal max) moves dot above center too
         let rawFill: Double
         if testMode {
@@ -185,10 +187,8 @@ struct BenchmarkExtensionLessonView: View {
         .onChange(of: ble.currentFlexSensorValue) { _, _ in
             if phase == .filling || phase == .transitioning {
                 updateFill()
-            } else if phase == .holding {
-                updateFill()
-                checkHoldBounds()
             }
+            // During hold, flex sensor is intentionally ignored — only IMU drives bounds
         }
         .onChange(of: ble.currentIMUValue) { _, newVal in
             guard let val = newVal else { return }

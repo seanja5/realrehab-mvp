@@ -11,6 +11,7 @@ struct PatientDetailView: View {
     let patientProfileId: UUID
     @EnvironmentObject var router: Router
     @EnvironmentObject var session: SessionContext
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @StateObject private var vm = PTPatientsViewModel()
     @State private var notes: String = ""
@@ -74,8 +75,8 @@ struct PatientDetailView: View {
                                     } label: {
                                         RoundedRectangle(cornerRadius: 16)
                                             .fill(Color.gray.opacity(0.15))
-                                            .frame(maxWidth: .infinity)
-                                            .frame(height: 240)
+                                            .frame(maxWidth: horizontalSizeClass == .regular ? 360 : .infinity)
+                                            .frame(height: horizontalSizeClass == .regular ? 160 : 240)
                                             .overlay(
                                                 Image("aclrehab")
                                                     .resizable()
@@ -84,6 +85,7 @@ struct PatientDetailView: View {
                                             )
                                     }
                                     .buttonStyle(.plain)
+                                    .frame(maxWidth: horizontalSizeClass == .regular ? .infinity : nil)
                                     .padding(.horizontal, 16)
 
                                     Text("\(plan.injury) Rehab")

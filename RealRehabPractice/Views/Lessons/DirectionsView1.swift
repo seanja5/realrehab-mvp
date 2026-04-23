@@ -33,28 +33,28 @@ struct DirectionsView1: View {
 
     private var instructionText: String {
         if t.contains("quad set") {
-            return "Put your brace on and sit comfortably with your leg in its natural resting position to prepare for calibration."
+            return "Put your brace on as shown in the video above, ensuring the hole of the brace is centered over your kneecap. Then sit comfortably with your leg in its natural resting position to prepare for calibration."
         }
         if t.contains("short arc") {
-            return "Put on your brace and lie down on a comfortable surface to prepare for calibration. You will also need a foam roller for this exercise."
+            return "Put your brace on as shown in the video above, ensuring the hole of the brace is centered over your kneecap. Then lie down on a comfortable surface. You will also need a foam roller for this exercise."
         }
         if t.contains("heel slide") {
-            return "Put on your brace and lie down on a comfortable surface to prepare for calibration."
+            return "Put your brace on as shown in the video above, ensuring the hole of the brace is centered over your kneecap. Then lie down on a comfortable surface to prepare for calibration."
         }
         if t.contains("extension control") {
-            return "Sit down comfortably and put on your brace to prepare for calibration."
+            return "Put your brace on as shown in the video above, ensuring the hole of the brace is centered over your kneecap. Then sit down comfortably to prepare for calibration."
         }
         if t.contains("straight leg raise control") {
-            return "Put on your brace and lie down on a comfortable surface to prepare for calibration."
+            return "Put your brace on as shown in the video above, ensuring the hole of the brace is centered over your kneecap. Then lie down on a comfortable surface to prepare for calibration."
         }
         if t.contains("straight leg raise") {
-            return "Lie flat on your back with your brace on. Keep your surgical leg completely straight and let your foot relax naturally."
+            return "Put your brace on as shown in the video above, ensuring the hole of the brace is centered over your kneecap. Then lie flat on your back, keep your surgical leg completely straight, and let your foot relax naturally."
         }
         if t.contains("ankle pump") {
-            return "Sit or lie comfortably with your brace on. Your foot should be free to move up and down without restriction."
+            return "Put your brace on as shown in the video above, ensuring the hole of the brace is centered over your kneecap. Then sit or lie comfortably with your foot free to move up and down without restriction."
         }
         // Default: knee extensions
-        return "Put your brace on and sit comfortably with your leg in its natural resting position to prepare for calibration."
+        return "Put your brace on as shown in the video above, ensuring the hole of the brace is centered over your kneecap. Then sit comfortably with your leg in its natural resting position to prepare for calibration."
     }
 
     /// Returns the bundled mp4 filename (without extension) for this lesson, or nil if none.

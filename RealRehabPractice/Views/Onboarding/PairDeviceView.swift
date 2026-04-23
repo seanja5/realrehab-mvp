@@ -81,11 +81,8 @@ struct PairDeviceView: View {
                                         )
 
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(peripheral.name)
+                                        Text("RealRehab Knee Brace")
                                             .font(.rrTitle)
-                                        Text("RSSI: \(peripheral.rssi)")
-                                            .font(.rrCallout)
-                                            .foregroundStyle(.secondary)
                                     }
 
                                     Spacer()

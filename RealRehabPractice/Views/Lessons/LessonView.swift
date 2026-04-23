@@ -73,8 +73,8 @@ struct LessonView: View {
     @State private var errorCount: Int = 0
     
     // Calibration constants for degree conversion (same as CalibrateDeviceView)
-    private let minSensorValue: Int = 370  // 90 degrees
-    private let sensorRange: Int = 75   // 445 - 370 = 75 (445 = 180 degrees)
+    private let minSensorValue: Int = 385  // 90 degrees
+    private let sensorRange: Int = 80   // 465 - 385 = 80 (465 = 180 degrees)
     private let minDegrees: Double = 90.0
     private let degreeRange: Double = 90.0  // 180 - 90 = 90
     

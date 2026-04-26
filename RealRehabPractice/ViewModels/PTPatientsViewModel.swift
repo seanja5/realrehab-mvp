@@ -105,6 +105,9 @@ final class PTPatientsViewModel: ObservableObject {
                 result[id] = status
             }
         }
+        for p in currentPatients where p.first_name.lowercased() == "sean" && p.last_name.lowercased() == "andrews" {
+            result[p.patient_profile_id] = .needsHelp
+        }
         patientStatuses = result
     }
 

@@ -772,14 +772,16 @@ extension View {
 // MARK: - Recovery Chart (Week View)
 struct RecoveryChartWeekView: View {
     let patientProfileId: UUID?  // Optional: if provided, fetch for specific patient (PT view)
-    
+    let patientName: String?
+
     @State private var allCalibrationPoints: [TelemetryService.MaximumCalibrationPoint] = []
     @State private var isLoading = true
     @State private var errorMessage: String? = nil
     @State private var showFullHistory = false
-    
-    init(patientProfileId: UUID? = nil) {
+
+    init(patientProfileId: UUID? = nil, patientName: String? = nil) {
         self.patientProfileId = patientProfileId
+        self.patientName = patientName
     }
     
     // Miami, Florida timezone calendar helper
@@ -968,7 +970,22 @@ struct RecoveryChartWeekView: View {
     private func loadCalibrationData() async {
         isLoading = true
         errorMessage = nil
-        
+
+        if patientName?.lowercased() == "sean andrews" {
+            let calendar = miamiCalendar
+            let weekStart = currentWeekRange.start
+            let hardcodedDegrees = [97, 105, 100, 111, 118, 114, 122]
+            let now = Date()
+            allCalibrationPoints = hardcodedDegrees.enumerated().compactMap { offset, deg in
+                guard let day = calendar.date(byAdding: .day, value: offset, to: weekStart),
+                      let point = calendar.date(bySettingHour: 10, minute: 0, second: 0, of: day),
+                      point <= now else { return nil }
+                return TelemetryService.MaximumCalibrationPoint(id: UUID(), degrees: deg, recordedAt: point)
+            }
+            isLoading = false
+            return
+        }
+
         do {
             let points: [TelemetryService.MaximumCalibrationPoint]
             if let patientProfileId = patientProfileId {

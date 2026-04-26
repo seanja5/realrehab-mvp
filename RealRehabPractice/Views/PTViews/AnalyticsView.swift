@@ -716,24 +716,65 @@ struct AngularVelocityGraphView: View {
         }
     }
 
+    // Weighted moving-average over velocityPoints to suppress sensor noise.
+    // Nil entries (gaps between reps) are preserved so the pen lifts correctly.
+    private var smoothedVelocityPoints: [(time: Double, velocity: Double?)] {
+        let raw = velocityPoints
+        guard raw.count >= 3 else { return raw }
+        var result = raw
+        let r = 6
+        for i in 0..<raw.count {
+            guard raw[i].velocity != nil else { continue }
+            var sum = 0.0; var wt = 0.0
+            for j in max(0, i - r)...min(raw.count - 1, i + r) {
+                if let v = raw[j].velocity {
+                    let w = 1.0 - Double(abs(j - i)) / Double(r + 1)
+                    sum += v * w; wt += w
+                }
+            }
+            if wt > 0 { result[i] = (time: raw[i].time, velocity: sum / wt) }
+        }
+        return result
+    }
+
     private func velocityLine(plotW: CGFloat, plotH: CGFloat,
                                paddingLeft: CGFloat, paddingTop: CGFloat) -> some View {
         let scaleX = plotW / CGFloat(totalDuration)
-        var path = Path()
-        var drawing = false
-        for point in velocityPoints {
+
+        // Split smoothed data into contiguous segments at nil gaps
+        var segments: [[CGPoint]] = []
+        var current: [CGPoint] = []
+        for point in smoothedVelocityPoints {
             let x = paddingLeft + CGFloat(point.time) * scaleX
             if let v = point.velocity {
-                let y = paddingTop + plotH - CGFloat(v / maxDisplay) * plotH
-                if drawing {
-                    path.addLine(to: CGPoint(x: x, y: y))
-                } else {
-                    path.move(to: CGPoint(x: x, y: y))
-                    drawing = true
-                }
+                let y = paddingTop + plotH - CGFloat(min(v, maxDisplay) / maxDisplay) * plotH
+                current.append(CGPoint(x: x, y: y))
             } else {
-                // Gap — lift pen
-                drawing = false
+                if current.count >= 2 { segments.append(current) }
+                current = []
+            }
+        }
+        if current.count >= 2 { segments.append(current) }
+
+        // Render each segment with Catmull-Rom → cubic Bezier for a smooth curve
+        var path = Path()
+        for pts in segments {
+            guard pts.count >= 2 else { continue }
+            path.move(to: pts[0])
+            if pts.count == 2 {
+                path.addLine(to: pts[1])
+            } else {
+                for i in 1..<pts.count {
+                    let p0 = pts[max(0, i - 2)]
+                    let p1 = pts[i - 1]
+                    let p2 = pts[i]
+                    let p3 = pts[min(pts.count - 1, i + 1)]
+                    let cp1 = CGPoint(x: p1.x + (p2.x - p0.x) / 6,
+                                      y: p1.y + (p2.y - p0.y) / 6)
+                    let cp2 = CGPoint(x: p2.x - (p3.x - p1.x) / 6,
+                                      y: p2.y - (p3.y - p1.y) / 6)
+                    path.addCurve(to: p2, control1: cp1, control2: cp2)
+                }
             }
         }
         return path.stroke(Color.black, lineWidth: 2)

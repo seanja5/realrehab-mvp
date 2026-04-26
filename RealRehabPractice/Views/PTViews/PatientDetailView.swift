@@ -108,7 +108,7 @@ struct PatientDetailView: View {
 
                             // — Progress this week + exercise performance
                             if let plan = currentPlan, let nodes = plan.nodes, !nodes.isEmpty {
-                                RecoveryChartWeekView(patientProfileId: patientProfileId)
+                                RecoveryChartWeekView(patientProfileId: patientProfileId, patientName: patientName)
                                     .padding(.top, 16)
 
                                 ActivityConsistencyCard(completedDays: 0)
@@ -831,7 +831,8 @@ struct PatientDetailView: View {
             self.notes = plan?.notes ?? ""
             self.showOfflineBanner = !NetworkMonitor.shared.isOnline && (patientStale || planStale || forceRefresh)
             let dates = (try? await RehabService.getCompletionDates(patientProfileId: patientProfileId)) ?? []
-            self.patientStatus = PatientStatus.compute(from: dates)
+            let computedStatus = PatientStatus.compute(from: dates)
+            self.patientStatus = computedStatus
             // Load lesson performance scores
             isLoadingScores = true
             isLoading = false

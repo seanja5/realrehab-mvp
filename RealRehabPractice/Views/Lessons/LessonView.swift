@@ -63,6 +63,7 @@ struct LessonView: View {
     
     // IMU state
     @State private var hasIMUError: Bool = false
+    @State private var imuClearTimer: Timer? = nil
 
     // Countdown ring: wall-clock start time for smooth continuous progress
     @State private var holdStartTime: Date? = nil
@@ -822,6 +823,8 @@ struct LessonView: View {
         stopElapsedTimer()
         countdownTimer?.invalidate()
         countdownTimer = nil
+        imuClearTimer?.invalidate()
+        imuClearTimer = nil
         stopSensorValidation()
         engine.pauseAnimation()
         persistLessonDraft(enqueueForSync: true)
@@ -877,6 +880,8 @@ struct LessonView: View {
         stopSensorValidation()
         countdownTimer?.invalidate()
         countdownTimer = nil
+        imuClearTimer?.invalidate()
+        imuClearTimer = nil
         stopElapsedTimer()
         engine.reset()
         hasStarted = false
@@ -885,6 +890,10 @@ struct LessonView: View {
         elapsedReferenceTime = nil
         elapsedDisplaySeconds = 0
         errorCount = 0
+        hasIMUError = false
+        errorMessage = nil
+        errorEndTime = nil
+        phaseBeforeError = nil
         lastUnpauseTime = nil
         resumedFromJourneyMap = false
         if let lessonId = lessonId {
@@ -1071,32 +1080,32 @@ struct LessonView: View {
     }
     
     private func validateIMU() {
-        // Stop IMU validation if all reps are completed
-        guard engine.repCount < engine.repTarget else {
-            return
-        }
-        
+        guard engine.repCount < engine.repTarget else { return }
         guard let imuValue = currentIMUValue else { return }
-        
+
         let absIMUValue = abs(imuValue)
-        let threshold: Float = 7.0  // Range is now -7 to +7
-        
-        // Check if IMU is out of range
+        let threshold: Float = 7.0
+
         if absIMUValue > threshold {
-            // Trigger error if not already showing
+            // Out of bounds: cancel any pending clear, trigger error
+            imuClearTimer?.invalidate()
+            imuClearTimer = nil
             if !hasIMUError {
                 showIMUError()
             }
-        } else {
-            // Clear error immediately if back in range
-            if hasIMUError {
-                clearIMUError()
+        } else if hasIMUError && imuClearTimer == nil {
+            // Back in bounds: keep message visible for 3 more seconds before clearing
+            let timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+                self.imuClearTimer = nil
+                self.clearIMUError()
             }
+            RunLoop.main.add(timer, forMode: .common)
+            imuClearTimer = timer
         }
     }
     
     private func showIMUError() {
-        guard !hasIMUError else { return } // Don't override if already showing
+        guard !hasIMUError, errorMessage == nil else { return }
 
         let repAttempt = engine.repCount + errorCount
         let timeSec = Double(currentElapsedSeconds())
@@ -1119,19 +1128,15 @@ struct LessonView: View {
     
     private func clearIMUError() {
         guard hasIMUError else { return }
-        
+
+        imuClearTimer?.invalidate()
+        imuClearTimer = nil
         hasIMUError = false
         errorMessage = nil
         errorEndTime = nil
         phaseBeforeError = nil
-        
-        // Start countdown like other errors
+
         startCountdown()
-        
-        // Reset after a delay to allow new validation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            // Animation will resume after countdown
-        }
     }
     
     private func validateMovementSpeed(currentDegrees: Int, expectedDegrees: Int, previousDegrees: Int, timeElapsed: TimeInterval, rest: Int, max: Int) {
@@ -1218,23 +1223,18 @@ struct LessonView: View {
     }
     
     private func showError(_ message: String, duration: TimeInterval) {
-        guard errorMessage == nil && !hasIMUError else { return } // Don't override existing error
-        
+        guard errorMessage == nil && !hasIMUError else { return }
+
         errorMessage = message
         errorEndTime = Date().addingTimeInterval(duration)
-        
-        // Store current phase before showing error
+
         if phaseBeforeError == nil {
             phaseBeforeError = engine.phase
         }
-        
+
         engine.phase = .incorrectHold
         engine.pauseAnimation()
-        
-        // Auto-resume after duration
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
-            self.clearError()
-        }
+        // Expiry is handled by validateMovement() polling errorEndTime
     }
     
     private func clearError() {

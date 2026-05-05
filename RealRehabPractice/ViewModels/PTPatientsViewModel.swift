@@ -72,6 +72,9 @@ final class PTPatientsViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         showOfflineBanner = false
+        if forceRefresh {
+            await CacheService.shared.invalidate(CacheKey.patientList(ptProfileId: ptProfileId))
+        }
         do {
             let (list, isStale) = try await PTService.listMyPatientsForDisplay(ptProfileId: ptProfileId)
             self.patients = list

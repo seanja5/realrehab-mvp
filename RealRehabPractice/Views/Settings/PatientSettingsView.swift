@@ -435,10 +435,11 @@ struct PatientSettingsView: View {
                 patientProfileId: currentPatientProfileId
             )
             
-            // Success! Clear access code and update hasPT
+            // Success! Clear access code, bust stale patientProfileId cache, and re-verify link
             accessCode = ""
-            hasPT = true
-            
+            await CacheService.shared.invalidate(CacheKey.patientProfileId(profileId: profile.id))
+            await checkIfHasPT()
+
             debugLog("✅ PatientSettingsView: Successfully connected patient to PT")
         } catch {
             // Ignore cancellation errors when navigating quickly

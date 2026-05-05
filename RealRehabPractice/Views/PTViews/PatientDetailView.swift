@@ -823,6 +823,9 @@ struct PatientDetailView: View {
 
         isLoading = true
         showOfflineBanner = false
+        if forceRefresh {
+            await CacheService.shared.invalidate(CacheKey.patientDetail(patientProfileId: patientProfileId))
+        }
         do {
             let (loadedPatient, patientStale) = try await PTService.getPatientForDisplay(patientProfileId: patientProfileId)
             self.patient = loadedPatient
